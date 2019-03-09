@@ -1,16 +1,9 @@
 import numpy as np
 from collections import OrderedDict
-from generate_parameters_a1m import default_arctic
 
 
 def main():
 
-    default() #Parameters defined below
-    default_arctic()  #Parameters defined in default_arctic
-
-    return
-
-def default():
     #########################
     # Users should modify here
     #########################
@@ -42,9 +35,9 @@ def default():
 
     # Surface Monin-Obukhov related parameters
     parameters['vkb'] = 0.35     # Von Karman constant from Businger 1971 used by Byun surface formulation
-    parameters['Pr0'] = 0.74 
-    parameters['beta_m'] = 4.7 
-    parameters['beta_h'] = parameters['beta_m']/parameters['Pr0'] 
+    parameters['Pr0'] = 0.74
+    parameters['beta_m'] = 4.7
+    parameters['beta_h'] = parameters['beta_m']/parameters['Pr0']
     parameters['gamma_m'] = 15.0
     parameters['gamma_h'] = 9.0
 

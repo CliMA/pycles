@@ -16,6 +16,7 @@ cdef class ReferenceState:
         public double [:] rho0_global
         public double [:] rho0_half_global
 
+
         double sg
 
     cdef public:
@@ -25,11 +26,6 @@ cdef class ReferenceState:
         double qtg #Surface total water mixing ratio
         double u0 #u velocity removed in Galilean transformation
         double v0 #v velocity removed in Galilean transformation
-
-        #These are initial condition profiles set in case initialization, stored for forcing
-        double [:] ic_rh
-        double [:] ic_thetal
-        double [:] ic_qt
 
     cpdef restart(self, Grid.Grid Gr, Restart.Restart Re)
     cpdef init_from_restart(self, Grid.Grid Gr, Restart.Restart Re)

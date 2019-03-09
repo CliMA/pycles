@@ -6,24 +6,25 @@
 
 cimport numpy as np
 import numpy as np
-cimport Lookup
-cimport ParallelMPI
-from Microphysics_Arctic_1M cimport Microphysics_Arctic_1M
 cimport Grid
-cimport ReferenceState
+cimport Lookup
 cimport PrognosticVariables
 cimport DiagnosticVariables
+cimport ReferenceState
+cimport ParallelMPI
 cimport TimeStepping
 from NetCDFIO cimport NetCDFIO_Stats
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
+
+from Microphysics_Arctic_1M cimport Microphysics_Arctic_1M
 from libc.math cimport fmax, fmin, fabs
+from thermodynamic_functions cimport cpm_c, pv_c, pd_c
 include 'parameters.pxi'
 
 cdef extern from "microphysics.h":
     void microphysics_stokes_sedimentation_velocity(Grid.DimStruct *dims, double* density, double ccn, double*  ql, double*  qt_velocity)
 cdef extern from "scalar_advection.h":
     void compute_advective_fluxes_a(Grid.DimStruct *dims, double *rho0, double *rho0_half, double *velocity, double *scalar, double* flux, int d, int scheme) nogil
-
 
 cdef extern from "microphysics_sb.h":
     void sb_sedimentation_velocity_liquid(Grid.DimStruct *dims, double*  density, double ccn, double* ql, double* qt_velocity)nogil
@@ -76,7 +77,7 @@ cdef class No_Microphysics_SA:
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         if self.cloud_sedimentation:
-            DV.add_variables('w_qt', 'm/s', r'w_ql', 'cloud liquid water sedimentation velocity', 'sym', Pa)
+            DV.add_variables('w_qt', 'm/s', 'sym', Pa)
             NS.add_profile('qt_sedimentation_flux', Gr, Pa)
             NS.add_profile('s_qt_sedimentation_source',Gr,Pa)
 
@@ -256,18 +257,18 @@ cdef class Microphysics_SB_Liquid:
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         # add prognostic variables for mass and number of rain
-        PV.add_variable('nr', '1/kg', r'n_r', 'rain droplet number concentration','sym','scalar',Pa)
-        PV.add_variable('qr', 'kg/kg', r'q_r', 'rain water specific humidity','sym','scalar',Pa)
+        PV.add_variable('nr', '1/kg', 'sym','scalar',Pa)
+        PV.add_variable('qr', 'kg/kg', 'sym','scalar',Pa)
 
         # add sedimentation velocities as diagnostic variables
-        DV.add_variables('w_qr', 'm/s', r'w_{qr}', 'rain mass sedimentation veloctiy', 'sym', Pa)
-        DV.add_variables('w_nr', 'm/s', r'w_{nr}', 'rain number sedimentation velocity', 'sym', Pa)
+        DV.add_variables('w_qr', 'm/s', 'sym', Pa)
+        DV.add_variables('w_nr', 'm/s', 'sym', Pa)
         if self.cloud_sedimentation:
-            DV.add_variables('w_qt', 'm/s', r'w_ql', 'cloud liquid water sedimentation velocity', 'sym', Pa)
+            DV.add_variables('w_qt', 'm/s', 'sym', Pa)
             NS.add_profile('qt_sedimentation_flux', Gr, Pa)
             NS.add_profile('s_qt_sedimentation_source',Gr,Pa)
         # add wet bulb temperature
-        DV.add_variables('temperature_wb', 'K', r'T_{wb}','wet bulb temperature','sym', Pa)
+        DV.add_variables('temperature_wb', 'K', 'sym', Pa)
 
 
         # add statistical output for the class
@@ -288,7 +289,6 @@ cdef class Microphysics_SB_Liquid:
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
         cdef:
-
 
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
@@ -483,10 +483,12 @@ cdef class Microphysics_SB_Liquid:
 
 
 cdef extern from "entropies.h":
-    double sd_c(double pd, double T) nogil
-    double sv_c(double pv, double T) nogil
+    inline double sd_c(double pd, double T) nogil
+    inline double sv_c(double pv, double T) nogil
 cdef extern from "thermodynamic_functions.h":
-    double qv_star_c(const double p0, const double qt, const double pv)nogil
+    inline double qv_star_c(const double p0, const double qt, const double pv)nogil
+
+
 
 
 cdef cython_wetbulb(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double *p0, double *s, double *qt, double *T, double *Twet):
@@ -504,7 +506,7 @@ cdef cython_wetbulb(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double *p0, d
     cdef:
         double T_1, T_2, T_n, pv_star_1, pv_star_2, qv_star_1, qv_star_2
         double pd_1, pd_2, s_1, s_2, f_1, f_2, delta_T
-    print('In wetbulb')
+
     cdef Py
 
     with nogil:
@@ -549,6 +551,92 @@ cdef cython_wetbulb(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double *p0, d
     return
 
 
+cdef class Microphysics_T_Liquid:
+    def __init__(self, ParallelMPI.ParallelMPI Par, LatentHeat LH, namelist):
+
+        LH.Lambda_fp = lambda_constant
+        LH.L_fp = latent_heat_variable
+        self.thermodynamics_type = 'SA'
+        #also set local versions
+        self.Lambda_fp = lambda_constant
+        self.L_fp = latent_heat_variable
+        self.CC = ClausiusClapeyron()
+        self.CC.initialize(namelist, LH, Par)
+
+        return
+
+
+    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
+                     DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        DV.add_variables('dqtdt_precip', 'kg/kg/s', 'sym', Pa)
+        DV.add_variables('dsdt_precip', '', 'sym', Pa)
+
+
+        return
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th, PrognosticVariables.PrognosticVariables PV,
+                 DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
+
+        cdef:
+            Py_ssize_t i, j, k, ijk, ishift, jshift
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t imin = 0
+            Py_ssize_t jmin = 0
+            Py_ssize_t kmin = 0
+            Py_ssize_t imax = Gr.dims.nlg[0]
+            Py_ssize_t jmax = Gr.dims.nlg[1]
+            Py_ssize_t kmax = Gr.dims.nlg[2]
+            Py_ssize_t count
+            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            Py_ssize_t qv_shift = DV.get_varshift(Gr,'qv')
+            Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
+            Py_ssize_t t_shift = DV.get_varshift(Gr,'temperature')
+            Py_ssize_t dqtdt_shift = DV.get_varshift(Gr,'dqtdt_precip')
+            Py_ssize_t dsdt_shift = DV.get_varshift(Gr,'dsdt_precip')
+            double lam, t, p0, rho0, qt, qv, pd, pv
+            double lv
+
+        # Ouput profiles of relative humidity
+        with nogil:
+            count = 0
+            for i in range(imin, imax):
+                ishift = i * istride
+                for j in range(jmin, jmax):
+                    jshift = j * jstride
+                    for k in range(kmin, kmax):
+                        ijk = ishift + jshift + k
+
+                        #Zero the diagnotic tendencies
+                        DV.values[dsdt_shift + ijk] = 0.0
+                        DV.values[dqtdt_shift + ijk] = 0.0
+
+                        if DV.values[ql_shift + ijk] > 0.0:
+                            p0 = Ref.p0_half[k]
+                            rho0 = Ref.rho0_half[k]
+                            qt = PV.values[qt_shift + ijk]
+                            qv = qt - DV.values[ql_shift + ijk]
+                            pd = pd_c(p0,qt,qv)
+                            pv = pv_c(p0,qt,qv)
+                            t  = DV.values[t_shift + ijk]
+
+                            lam = self.Lambda_fp(t)
+                            lv = self.L_fp(t, lam)
+                            DV.values[dqtdt_shift + ijk] = -fmax(0.0, DV.values[ql_shift + ijk] -  0.02 * DV.values[qv_shift+ijk])/TS.dt
+                            DV.values[dsdt_shift + ijk] = (sv_c(pv,t) - sd_c(pd,t) - lv/t ) * DV.values[dqtdt_shift + ijk]
+                            PV.tendencies[qt_shift + ijk] += DV.values[dqtdt_shift + ijk]
+                            PV.tendencies[s_shift + ijk] += DV.values[dsdt_shift + ijk]
+
+
+
+        return
+
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th, PrognosticVariables.PrognosticVariables PV,
+                   DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        return
+
 
 
 def MicrophysicsFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
@@ -558,5 +646,8 @@ def MicrophysicsFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
         return No_Microphysics_SA(Par, LH, namelist)
     elif(namelist['microphysics']['scheme'] == 'SB_Liquid'):
         return Microphysics_SB_Liquid(Par, LH, namelist)
+    elif(namelist['microphysics']['scheme'] == 'T_Liquid'):
+        return Microphysics_T_Liquid(Par, LH, namelist)
     elif(namelist['microphysics']['scheme'] == 'Arctic_1M'):
         return Microphysics_Arctic_1M(Par, LH, namelist)
+

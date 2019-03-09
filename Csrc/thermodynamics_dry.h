@@ -48,6 +48,8 @@ void buoyancy_update(struct DimStruct *dims, double* restrict alpha0, double* re
     const ssize_t jmax = dims->nlg[1]-1;
     const ssize_t kmax = dims->nlg[2]-1;
 
+    const double * metl = dims -> metl;
+
     for (i=imin; i<imax; i++){
        const ssize_t ishift = i * istride;
         for (j=jmin;j<jmax;j++){
@@ -102,7 +104,7 @@ void bvf_dry(struct DimStruct* dims,  double* restrict p0, double* restrict T,do
             const ssize_t jshift = j * jstride;
             for (k=kmin+1;k<kmax-1;k++){
                 const ssize_t ijk = ishift + jshift + k;
-                bvf[ijk] = g/theta[ijk]*(interp_2(theta[ijk],theta[ijk+1])-interp_2(theta[ijk-1],theta[ijk]))*dzi;
+                bvf[ijk] = g/theta[ijk]*(interp_2(theta[ijk],theta[ijk+1])-interp_2(theta[ijk-1],theta[ijk]))*dzi*dims->imetl_half[k];
             } // End k loop
         } // End j loop
     } // End i loop

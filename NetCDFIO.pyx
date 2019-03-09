@@ -46,6 +46,7 @@ cdef class NetCDFIO_Stats:
             except:
                 pass
 
+
         self.path_plus_file = str( self.stats_path + '/' + 'Stats.' + namelist['meta']['simname'] + '.nc')
         if os.path.exists(self.path_plus_file):
             for i in range(100):
@@ -58,6 +59,8 @@ cdef class NetCDFIO_Stats:
                     break
 
         Pa.barrier()
+
+
 
         if Pa.rank == 0:
             shutil.copyfile(
@@ -87,27 +90,33 @@ cdef class NetCDFIO_Stats:
         profile_grp.createDimension('z', Gr.dims.n[2])
         profile_grp.createDimension('t', None)
         z = profile_grp.createVariable('z', 'f8', ('z'))
-        z[:] = np.array(Gr.z[Gr.dims.gw:-Gr.dims.gw])
+        z[:] = np.array(Gr.zp[Gr.dims.gw:-Gr.dims.gw])
         z_half = profile_grp.createVariable('z_half', 'f8', ('z'))
-        z_half[:] = np.array(Gr.z_half[Gr.dims.gw:-Gr.dims.gw])
+        z_half[:] = np.array(Gr.zp_half[Gr.dims.gw:-Gr.dims.gw])
         profile_grp.createVariable('t', 'f8', ('t'))
+        del z
+        del z_half
 
         reference_grp = root_grp.createGroup('reference')
         reference_grp.createDimension('z', Gr.dims.n[2])
-        reference_grp.createDimension('z_full', Gr.dims.n[2])
-        z_full = reference_grp.createVariable('z_full', 'f8', ('z_full'))
-        z_full.setncattr('units', r'm')
-        z_full.setncattr('desc', r'physical height')
-        z_full.setncattr('nice_name', r'z^{full}')
+        z = reference_grp.createVariable('z', 'f8', ('z'))
+        z.setncattr('units', r'm')
+        z.setncattr('desc', r'physical height')
+        z.setncattr('nice_name', r'z')
 
         z[:] = np.array(Gr.z[Gr.dims.gw:-Gr.dims.gw])
 
-        z_half = reference_grp.createVariable('z', 'f8', ('z'))
+        #
+        z_half = reference_grp.createVariable('z_half', 'f8', ('z'))
         z_half.setncattr('units',r'm')
         z_half.setncattr('desc', r'physical height at half levels')
-        z_half.setncattr('nice_name', r'z')
+        z_half.setncattr('nice_name', r'z^{half}')
 
         z_half[:] = np.array(Gr.z_half[Gr.dims.gw:-Gr.dims.gw])
+        zp = reference_grp.createVariable('zp', 'f8', ('z'))
+        zp[:] = np.array(Gr.zp[Gr.dims.gw:-Gr.dims.gw])
+        zp_half = reference_grp.createVariable('zp_half', 'f8', ('z'))
+        zp_half[:] = np.array(Gr.zp_half[Gr.dims.gw:-Gr.dims.gw])
         del z
         del z_half
 
@@ -119,8 +128,6 @@ cdef class NetCDFIO_Stats:
         return
 
     cpdef add_profile(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa, units=None, nice_name=None, desc=None):
-
-        print var_name, units, nice_name, desc
 
         if Pa.rank == 0:
             root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
@@ -147,8 +154,7 @@ cdef class NetCDFIO_Stats:
 
         return
 
-    cpdef add_reference_profile(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa, units=None, nice_name=None,
-                                desc=None, bint z_full=False):
+    cpdef add_reference_profile(self, var_name, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa, units=None, nice_name=None, desc=None):
         '''
         Adds a profile to the reference group NetCDF Stats file.
         :param var_name: name of variable
@@ -159,11 +165,7 @@ cdef class NetCDFIO_Stats:
         if Pa.rank == 0:
             root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
             reference_grp = root_grp.groups['reference']
-
-            if not z_full:
-                new_var = reference_grp.createVariable(var_name, 'f8', ('z',))
-            else:
-                new_var = reference_grp.createVariable(var_name, 'f8', ('z_full',))
+            new_var = reference_grp.createVariable(var_name, 'f8', ('z',))
 
             #Add string attributes to new_var. These are optional arguments. If argument is not given just fill with None
             if units is not None:
@@ -206,6 +208,7 @@ cdef class NetCDFIO_Stats:
                 new_var.setncattr('description', str(desc))
             else:
                 new_var.setncattr('description', 'None')
+
 
             root_grp.close()
         return
@@ -315,12 +318,28 @@ cdef class NetCDFIO_Fields:
         return
 
     cpdef create_fields_file(self, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):
+
         rootgrp = nc.Dataset(self.path_plus_file, 'w', format='NETCDF4')
         dimgrp = rootgrp.createGroup('dims')
         fieldgrp = rootgrp.createGroup('fields')
 
         fieldgrp.createDimension('nl', np.int(Gr.dims.npl))
         dimgrp.createDimension('d1', 1)
+
+        dimgrp.createDimension('x', np.int(Gr.dims.n[0]))
+        dimgrp.createDimension('y', np.int(Gr.dims.n[1]))
+        dimgrp.createDimension('z', np.int(Gr.dims.n[2]))
+
+
+        x = dimgrp.createVariable('x', 'f8', ('x'))
+        y = dimgrp.createVariable('y', 'f8', ('y'))
+        z = dimgrp.createVariable('z', 'f8', ('z'))
+
+
+
+        x[:] = np.array(Gr.x_half[Gr.dims.gw:-Gr.dims.gw],dtype=np.double)
+        y[:] = np.array(Gr.y_half[Gr.dims.gw:-Gr.dims.gw],dtype=np.double)
+        z[:] = np.array(Gr.zp_half[Gr.dims.gw:-Gr.dims.gw],dtype=np.double)
 
         nl_0 = dimgrp.createVariable('nl_0', 'i4', ('d1'))
         nl_1 = dimgrp.createVariable('nl_1', 'i4', ('d1'))
@@ -486,6 +505,8 @@ cdef class NetCDFIO_CondStats:
                     break
 
         Pa.barrier()
+
+
 
         if Pa.rank == 0:
             shutil.copyfile(

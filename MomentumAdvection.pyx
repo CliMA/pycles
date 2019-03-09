@@ -88,7 +88,6 @@ cdef class MomentumAdvection:
 
         return
 
-
     cpdef double [:, :, :] get_flux(self, Py_ssize_t i_advected, Py_ssize_t i_advecting, Grid.Grid Gr):
         '''
         Returns momentum flux tensor component.
