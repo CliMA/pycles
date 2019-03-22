@@ -4,7 +4,7 @@ cimport PrognosticVariables
 cimport DiagnosticVariables
 cimport ParallelMPI
 cimport TimeStepping
-from libc.math cimport pow, fmax, fmin
+from libc.math cimport pow, fmax, fmin, tanh
 include 'parameters_micro.pxi'
 from Thermodynamics cimport ClausiusClapeyron
 from NetCDFIO cimport NetCDFIO_Fields, NetCDFIO_Stats
@@ -24,11 +24,14 @@ cdef inline double latent_heat_constant_Arctic(double T, double Lambda) nogil:
 
 cdef inline double lambda_Arctic(double T) nogil:
     cdef:
-        double Twarm = 273.0
-        double Tcold = 235.0
+        double Twarm = 273.15
+        double Tcold = 263.15
         double Lambda = 0.0
 
     #POW_N can be modified in generate_parameters_a1m.py
+
+    #Lambda = 0.5 + 0.5 * tanh((T - 266.65000072654806)/2.6409572185027406)
+
 
     if T > Tcold and T <= Twarm:
         Lambda = pow((T - Tcold)/(Twarm - Tcold), POW_N)
@@ -71,7 +74,7 @@ cdef class Microphysics_Arctic_1M:
 
         double [:] evap_rate
         double [:] precip_rate
-
+        double [:] melt_rate
 
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                      NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
@@ -82,4 +85,3 @@ cdef class Microphysics_Arctic_1M:
                    DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cpdef ice_stats(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
                     DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-
