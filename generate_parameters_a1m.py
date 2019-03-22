@@ -20,7 +20,7 @@ def main():
     parameters['MAX_ITER'] = 15 # max interation of micro source terms
 
     # Liquid fraction power parameter
-    parameters['POW_N'] = 0.5
+    parameters['POW_N'] = 1.0
 
     # Rain parameters
     parameters['A_RAIN'] = np.pi/6.0*parameters['DENSITY_LIQUID']
