@@ -84,10 +84,10 @@ cdef class Rayleigh:
 
         with nogil:
             for k in range(Gr.dims.nlg[2]):
-                if Gr.zp_half[k] >= z_top - self.z_d:
+                if Gr.zpl_half[k] >= z_top - self.z_d:
                     self.gamma_zhalf[
                         k] = self.gamma_r * sin((pi / 2.0) * (1.0 - (z_top - Gr.zpl_half[k]) / self.z_d))**2.0
-                if Gr.zp[k] >= z_top - self.z_d:
+                if Gr.zpl[k] >= z_top - self.z_d:
                     self.gamma_z[
                         k] = self.gamma_r * sin((pi / 2.0) * (1.0 - (z_top - Gr.zpl[k]) / self.z_d))**2.0
         return
