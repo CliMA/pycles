@@ -20,6 +20,8 @@ cdef class PrognosticVariables:
         self.name_index = {}
         self.index_name = []
         self.units = {}
+        self.nice_name = {}
+        self.desc = {}
         self.nv = 0
         self.nv_scalars = 0
         self.nv_velocities = 0

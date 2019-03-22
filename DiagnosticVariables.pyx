@@ -23,6 +23,8 @@ cdef class DiagnosticVariables:
         self.name_index = {}
         self.index_name = []
         self.units = {}
+        self.nice_name = {}
+        self.desc = {}
         self.nv = 0
         self.bc_type = np.array([],dtype=np.double,order='c')
 

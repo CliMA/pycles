@@ -87,7 +87,8 @@ class Simulation3d:
         self.Th.initialize(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Micro.initialize(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.SGS.initialize(self.Gr,self.PV,self.StatsIO, self.Pa)
-        self.Tr.initialize(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa, namelist)
+        #self.Tr.initialize(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa, namelist)
+        self.Tr.initialize(self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.PV.initialize(self.Gr, self.StatsIO, self.Pa)
         self.Ke.initialize(self.Gr, self.StatsIO, self.Pa)
 

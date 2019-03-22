@@ -5,6 +5,8 @@ cdef class DiagnosticVariables:
     cdef:
         dict name_index
         dict units
+        dict nice_name
+        dict desc
         list index_name
         Py_ssize_t nv
         double [:] values
