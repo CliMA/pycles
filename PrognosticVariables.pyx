@@ -29,12 +29,14 @@ cdef class PrognosticVariables:
         self.velocity_names_directional = ["" for dim in range(Gr.dims.dims)]
         return
 
-    cpdef add_variable(self,name,units,bc_type,var_type,ParallelMPI.ParallelMPI Pa):
+    cpdef add_variable(self, name, units, nice_name, desc, bc_type, var_type, ParallelMPI.ParallelMPI Pa):
 
         #Store names and units
         self.name_index[name] = self.nv
         self.index_name.append(name)
         self.units[name] = units
+        self.nice_name[name] = nice_name
+        self.desc[name] = desc
         self.nv = len(self.name_index.keys())
 
         #Add bc type to array

@@ -52,7 +52,7 @@ cdef class TracersNone:
     def __init__(self):
         return
     cpdef initialize(self, Grid.Grid Gr,  PrognosticVariables.PrognosticVariables PV,
-                     DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, namelist):
+                     DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
@@ -78,7 +78,7 @@ cdef class UpdraftTracers:
         return
 
     cpdef initialize(self, Grid.Grid Gr,  PrognosticVariables.PrognosticVariables PV,
-                     DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, namelist):
+                     DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         self.updraft_indicator = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
 
@@ -86,20 +86,20 @@ cdef class UpdraftTracers:
         # Can be expanded for different init heights or timescales
         self.tracer_dict = {}
         self.tracer_dict['surface'] = {}
-        self.tracer_dict['surface']['c_srf_60'] = {}
-        self.tracer_dict['surface']['c_srf_60']['timescale'] = namelist['tracers']['timescale'] * 60.0 # changed for 60 for deep convection
-        self.tracer_time = namelist['tracers']['timescale'] # yair
+        self.tracer_dict['surface']['c_srf_15'] = {}
+        self.tracer_dict['surface']['c_srf_15']['timescale'] = 15.0 * 60.0
         if self.lcl_tracers:
             self.tracer_dict['lcl'] = {}
-            self.tracer_dict['lcl']['c_lcl_60'] = {}
-            self.tracer_dict['lcl']['c_lcl_60']['timescale'] = namelist['tracers']['timescale'] * 60.0
+            self.tracer_dict['lcl']['c_lcl_15'] = {}
+            self.tracer_dict['lcl']['c_lcl_15']['timescale'] = 15.0 * 60.0
 
         for var in self.tracer_dict['surface'].keys():
-            PV.add_variable(var, '-', "sym", "scalar", Pa)
+
+           PV.add_variable(var, '-', var, 'tracer diagnostics' , "sym", "scalar", Pa)
 
         if self.lcl_tracers:
             for var in self.tracer_dict['lcl'].keys():
-                PV.add_variable(var, '-', "sym", "scalar", Pa)
+                PV.add_variable(var, '-', var, 'tracer diagnostics', "sym", "scalar", Pa)
             NS.add_ts('grid_lcl', Gr, Pa )
 
 
@@ -136,6 +136,25 @@ cdef class UpdraftTracers:
         NS.add_profile('updraft_qt_thetali', Gr, Pa, units=r'kg kg^{-1} K', nice_name=r'(q_t \theta_{li})_u',
                        desc=r'updraft product of q_t and \theta_{li}')
 
+
+
+        NS.add_profile('updraft_bvf', Gr, Pa, units=r's^{-1}', nice_name=r'N_{b,u}',
+                       desc=r'updraft buoyancy frequency')
+        NS.add_profile('updraft_thetarho', Gr, Pa, units=r'K', nice_name=r'\theta_{\rho,u}',
+                       desc=r'updraft density potential temperature')
+
+        NS.add_profile('updraft_temperature', Gr, Pa, units=r'K', nice_name=r'T_{u}',
+                       desc=r'updraft temperature')
+        NS.add_profile('updraft_temperature2', Gr, Pa, units=r'K^2', nice_name=r'T_{u}^2',
+                       desc=r'updraft temperature square')
+        NS.add_profile('updraft_qv', Gr, Pa, units=r'kg kg^{-1}',nice_name=r'q_{v,u}',
+                       desc=r'updraft vapor specific humidity')
+        NS.add_profile('updraft_qv2', Gr, Pa, units=r'kg^{2} kg^{-2}',nice_name=r'q_{v,u}^2',
+                       desc=r'updraft vapor specific humidity square')
+        NS.add_profile('updraft_cloudfraction', Gr, Pa, units=r'--', nice_name= r'f_{c,u}',
+                       desc=r'updraft cloud fraction')
+
+
         NS.add_profile('env_fraction', Gr, Pa, units=r'-',nice_name=r'a_e',
                        desc=r'environment area fraction' )
         NS.add_profile('env_w', Gr, Pa, units=r'm s^{-1}', nice_name=r'w_e',
@@ -168,6 +187,26 @@ cdef class UpdraftTracers:
                        desc=r'environment product of w and \theta_{li}')
         NS.add_profile('env_qt_thetali', Gr, Pa, units=r'kg kg^{-1} K', nice_name=r'(q_t \theta_{li})_e',
                        desc=r'environment product of q_t and \theta_{li}')
+
+        NS.add_profile('env_bvf', Gr, Pa, units=r's^{-1}', nice_name=r'N_{b,e}',
+                       desc=r'environment buoyancy frequency')
+
+
+        NS.add_profile('env_temperature', Gr, Pa, units=r'K', nice_name=r'T_{e}',
+                       desc=r'environment temperature')
+        NS.add_profile('env_temperature2', Gr, Pa, units=r'K^2', nice_name=r'T_{e}^2',
+                       desc=r'environment temperature square')
+        NS.add_profile('env_qv', Gr, Pa, units=r'kg kg^{-1}',nice_name=r'q_{v,e}',
+                       desc=r'environment vapor specific humidity')
+        NS.add_profile('env_qv2', Gr, Pa, units=r'kg^{2} kg^{-2}',nice_name=r'q_{v,e}^2',
+                       desc=r'environment vapor specific humidity square')
+
+        NS.add_profile('env_cloudfraction', Gr, Pa, units=r'--', nice_name= r'f_{c,e}',
+                       desc=r'environment cloud fraction')
+        NS.add_profile('env_thetarho', Gr, Pa, units=r'K', nice_name=r'\theta_{\rho,e}',
+                       desc=r'environment density potential temperature')
+
+
         if 'ql' in DV.name_index:
             NS.add_profile('updraft_ql', Gr, Pa, units=r'kg kg^{-1}',nice_name=r'q_{l,u}',
                        desc=r'updraft liquid water specific humidity')
@@ -312,8 +351,6 @@ cdef class UpdraftTracers:
                             for k in xrange( Gr.dims.nlg[2]):
                                 ijk = i * istride + j * jstride + k
                                 PV.values[var_shift + ijk] = fmax(PV.values[var_shift + ijk],0.0)
-
-
         return
 
 
@@ -324,9 +361,14 @@ cdef class UpdraftTracers:
             Py_ssize_t v_shift = PV.get_varshift(Gr,'v')
             Py_ssize_t w_shift = PV.get_varshift(Gr,'w')
             Py_ssize_t q_shift = PV.get_varshift(Gr,'qt')
-            Py_ssize_t c_shift = PV.get_varshift(Gr,'c_srf_' + str(int(self.tracer_time))) # yair
+            Py_ssize_t c_shift = PV.get_varshift(Gr,'c_srf_15')
             Py_ssize_t b_shift = DV.get_varshift(Gr, 'buoyancy')
+            Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
+            Py_ssize_t bvf_shift = DV.get_varshift(Gr, 'buoyancy_frequency')
+            Py_ssize_t thr_shift = DV.get_varshift(Gr, 'theta_rho')
+            Py_ssize_t qv_shift = DV.get_varshift(Gr, 'qv')
             Py_ssize_t ql_shift, th_shift, qr_shift
+            double [:] cloudfraction = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
             double [:] tracer_normed = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
             double [:] env_indicator = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
             double [:] u_half = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
@@ -349,7 +391,7 @@ cdef class UpdraftTracers:
         if 'ql' in DV.name_index:
             ql_shift = DV.get_varshift(Gr,'ql')
             self.get_cloud_heights(Gr, DV, Pa)
-            #print('cloud base, height ', self.cloud_base, self.cloud_top)
+            print('cloud base, height', self.cloud_base, self.cloud_top)
             updraft_indicator_sc_w_ql(&Gr.dims, &PV.values[c_shift], &tracer_normed[0], &mean[0], &mean_square[0],
                                       &PV.values[w_shift],&DV.values[ql_shift], &Gr.z_half[0], self.cloud_base, self.cloud_top)
             # updraft_indicator_sc_w(&Gr.dims, &PV.values[c_shift], &tracer_normed[0], &mean[0], &mean_square[0], &PV.values[w_shift])
@@ -427,6 +469,24 @@ cdef class UpdraftTracers:
         NS.write_profile('updraft_qt_thetali', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
 
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[t_shift], &self.updraft_indicator[0])
+        NS.write_profile('updraft_temperature', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[t_shift], &DV.values[t_shift], &self.updraft_indicator[0])
+        NS.write_profile('updraft_temperature2', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[qv_shift], &self.updraft_indicator[0])
+        NS.write_profile('updraft_qv', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[qv_shift], &DV.values[qv_shift], &self.updraft_indicator[0])
+        NS.write_profile('updraft_qv2', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[thr_shift], &self.updraft_indicator[0])
+        NS.write_profile('updraft_thetarho', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[bvf_shift], &self.updraft_indicator[0])
+        NS.write_profile('updraft_bvf', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+
+
 
         tmp = Pa.HorizontalMean(Gr, &env_indicator[0])
         NS.write_profile('env_fraction', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
@@ -471,6 +531,22 @@ cdef class UpdraftTracers:
         NS.write_profile('env_qt_thetali', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
 
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[t_shift], &env_indicator[0])
+        NS.write_profile('env_temperature', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[t_shift], &DV.values[t_shift], &env_indicator[0])
+        NS.write_profile('env_temperature2', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[qv_shift], &env_indicator[0])
+        NS.write_profile('env_qv', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[qv_shift], &DV.values[qv_shift], &env_indicator[0])
+        NS.write_profile('env_qv2', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[thr_shift], &env_indicator[0])
+        NS.write_profile('env_thetarho', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[bvf_shift], &env_indicator[0])
+        NS.write_profile('env_bvf', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
         if 'ql' in DV.name_index:
             ql_shift = DV.get_varshift(Gr, 'ql')
             tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[ql_shift], &self.updraft_indicator[0])
@@ -482,6 +558,23 @@ cdef class UpdraftTracers:
             NS.write_profile('env_ql', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
             tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[ql_shift], &DV.values[ql_shift], &env_indicator[0])
             NS.write_profile('env_ql2', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+            with nogil:
+                for i in range(Gr.dims.nlg[0]):
+                    ishift = i * istride
+                    for j in range(Gr.dims.nlg[1]):
+                        jshift = j * jstride
+                        for k in range(Gr.dims.nlg[2]):
+                            ijk = ishift + jshift + k
+                            if DV.values[ql_shift+ ijk] >= ql_threshold:
+                                cloudfraction[ijk] = 1.0
+
+            tmp = Pa.HorizontalMeanConditional(Gr, &cloudfraction[0], &self.updraft_indicator[0])
+            NS.write_profile('updraft_cloudfraction', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+            tmp = Pa.HorizontalMeanConditional(Gr, &cloudfraction[0], &env_indicator[0])
+            NS.write_profile('env_cloudfraction', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+
 
 
         if 'qr' in PV.name_index:
@@ -549,22 +642,22 @@ cdef class PurityTracers:
         return
 
     cpdef initialize(self, Grid.Grid Gr,  PrognosticVariables.PrognosticVariables PV,
-                     DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, namelist):
-        self.TracersUpdraft.initialize(Gr, PV, DV, NS, Pa, namelist)
+                     DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        self.TracersUpdraft.initialize(Gr, PV, DV, NS, Pa)
         # Here we need to add purity + origin info tracers for each of the updraft diagnostic tracers
         # To get this working, we assume only 15 min timescale diagnostic tracers
-        PV.add_variable('purity_srf', '-', "sym", "scalar", Pa)
-        PV.add_variable('time_srf', 's', "sym", "scalar", Pa)
-        PV.add_variable('qt_srf', 'kg/kg', "sym", "scalar", Pa)
-        PV.add_variable('thetali_srf', 'K', "sym", "scalar", Pa)
-        self.tracer_time = namelist['tracers']['timescale'] #Yair
+
+        PV.add_variable('purity_srf', '-', 'purity_srf', 'tracer diagnostics', "sym", "scalar", Pa)
+        PV.add_variable('time_srf', '-', 'time_srf', 'tracer diagnostics', "sym", "scalar", Pa)
+        PV.add_variable('qt_srf', '-', 'qt_srf', 'tracer diagnostics', "sym", "scalar", Pa)
+        PV.add_variable('thetali_srf', '-', 'thetali_srf', 'tracer diagnostics', "sym", "scalar", Pa)
 
         if self.TracersUpdraft.lcl_tracers:
 
-            PV.add_variable('purity_lcl', '-', "sym", "scalar", Pa)
-            PV.add_variable('time_lcl', 's', "sym", "scalar", Pa)
-            PV.add_variable('qt_lcl', 'kg/kg', "sym", "scalar", Pa)
-            PV.add_variable('thetali_lcl', 'K', "sym", "scalar", Pa)
+            PV.add_variable('purity_lcl', '-', 'purity_lcl', 'tracer diagnostics', "sym", "scalar", Pa)
+            PV.add_variable('time_lcl', '-', 'time_lcl', 'tracer diagnostics', "sym", "scalar", Pa)
+            PV.add_variable('qt_lcl', '-', 'qt_lcl', 'tracer diagnostics', "sym", "scalar", Pa)
+            PV.add_variable('thetali_lcl', '-', 'thetali_lcl', 'tracer diagnostics', "sym", "scalar", Pa)
 
         NS.add_profile('updraft_purity_srf', Gr, Pa)
         NS.add_profile('updraft_time_srf', Gr, Pa)
@@ -583,7 +676,7 @@ cdef class PurityTracers:
             Py_ssize_t w_shift = PV.get_varshift(Gr,'w')
             Py_ssize_t q_shift = PV.get_varshift(Gr,'qt')
             Py_ssize_t th_shift #= DV.get_varshift(Gr,'thetali')
-            Py_ssize_t c_shift = PV.get_varshift(Gr,'c_srf_' + str(int(self.tracer_time))) # yair
+            Py_ssize_t c_shift = PV.get_varshift(Gr,'c_srf_15')
             Py_ssize_t p_shift = PV.get_varshift(Gr,'purity_srf')
             Py_ssize_t pt_shift = PV.get_varshift(Gr,'time_srf')
             Py_ssize_t pq_shift = PV.get_varshift(Gr,'qt_srf')
@@ -651,7 +744,7 @@ cdef class PurityTracers:
         if self.TracersUpdraft.lcl_tracers:
             index_lcl = self.TracersUpdraft.index_lcl
 
-            c_shift = PV.get_varshift(Gr,'c_lcl_' + str(int(self.tracer_time))) # yair
+            c_shift = PV.get_varshift(Gr,'c_lcl_15')
             p_shift = PV.get_varshift(Gr,'purity_lcl')
             pt_shift = PV.get_varshift(Gr,'time_lcl')
             pq_shift = PV.get_varshift(Gr,'qt_lcl')
@@ -910,8 +1003,6 @@ cdef updraft_indicator_sc_w_ql(Grid.DimStruct *dims,  double *tracer_raw, double
     return
 
 
-
-
 cdef purity_extract_time(Grid.DimStruct *dims,  double *purity_tracer, double *time_tracer_raw, double *time_tracer,
                          double current_time):
     cdef:
@@ -949,4 +1040,3 @@ cdef purity_extract_value(Grid.DimStruct *dims,  double *purity_tracer, double *
                     ijk = ishift + jshift + k
                     value_tracer[ijk] = fmax(value_tracer_raw[ijk],0.0)/fmin(fmax(purity_tracer[ijk],1e-3),1.0)
     return
-

@@ -33,7 +33,7 @@ cdef class DiagnosticVariables:
         self.sedv_index  = np.array([],dtype=np.int,order='c')
         self.nsedv = 0
 
-    cpdef add_variables(self, name, units,bc_type,  ParallelMPI.ParallelMPI Pa):
+    cpdef add_variables(self, name, units, nice_name, desc, bc_type,  ParallelMPI.ParallelMPI Pa):
         self.name_index[name] = self.nv
         self.index_name.append(name)
         self.units[name] = units

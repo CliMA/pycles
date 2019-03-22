@@ -31,7 +31,7 @@ cdef class PrognosticVariables:
         cdef long [:] velocity_directions
         list velocity_names_directional
 
-    cpdef add_variable(self,name,units,bc_type,var_type,ParallelMPI.ParallelMPI Pa)
+    cpdef add_variable(self, name,units, nice_name, desc, bc_type, var_type, ParallelMPI.ParallelMPI Pa)
     cpdef initialize(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
     cdef:
         void update_all_bcs(self, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa)
