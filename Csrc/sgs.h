@@ -21,7 +21,7 @@ double* restrict buoy_freq, double* restrict strain_rate_mag, double cs, double 
 
     //Compute delta allowing for grid stretching of physical coordiante
     for(ssize_t k = 0; k < kmax; k++){
-        delta[k] = cbrt(dims->dx[0] * dims-> dx[1] * dims->dzpl_half[k]);
+        delta[k] = dims -> dzpl_half[k]; //cbrt(dims->dx[0] * dims-> dx[1] * dims->dzpl_half[k]);
     }
 
 
