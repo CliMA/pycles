@@ -361,7 +361,7 @@ cdef class UpdraftTracers:
             Py_ssize_t v_shift = PV.get_varshift(Gr,'v')
             Py_ssize_t w_shift = PV.get_varshift(Gr,'w')
             Py_ssize_t q_shift = PV.get_varshift(Gr,'qt')
-            Py_ssize_t c_shift = PV.get_varshift(Gr,'c_srf_15')
+            Py_ssize_t c_shift = PV.get_varshift(Gr,'c_srf_' + str(int(self.tracer_time)))
             Py_ssize_t b_shift = DV.get_varshift(Gr, 'buoyancy')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t bvf_shift = DV.get_varshift(Gr, 'buoyancy_frequency')
@@ -676,7 +676,7 @@ cdef class PurityTracers:
             Py_ssize_t w_shift = PV.get_varshift(Gr,'w')
             Py_ssize_t q_shift = PV.get_varshift(Gr,'qt')
             Py_ssize_t th_shift #= DV.get_varshift(Gr,'thetali')
-            Py_ssize_t c_shift = PV.get_varshift(Gr,'c_srf_15')
+            Py_ssize_t c_shift = PV.get_varshift(Gr,'c_srf_' + str(int(self.tracer_time)))
             Py_ssize_t p_shift = PV.get_varshift(Gr,'purity_srf')
             Py_ssize_t pt_shift = PV.get_varshift(Gr,'time_srf')
             Py_ssize_t pq_shift = PV.get_varshift(Gr,'qt_srf')
@@ -744,7 +744,7 @@ cdef class PurityTracers:
         if self.TracersUpdraft.lcl_tracers:
             index_lcl = self.TracersUpdraft.index_lcl
 
-            c_shift = PV.get_varshift(Gr,'c_lcl_15')
+            c_shift = PV.get_varshift(Gr,'c_lcl_' + str(int(self.tracer_time)))
             p_shift = PV.get_varshift(Gr,'purity_lcl')
             pt_shift = PV.get_varshift(Gr,'time_lcl')
             pq_shift = PV.get_varshift(Gr,'qt_lcl')
