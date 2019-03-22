@@ -413,7 +413,7 @@ def InitSoares(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
             qt[k] = 5.0e-3 - 3.7e-4* Gr.zp_half[k]/1000.0
         else:
             thetal[k] = 300.0 + 2.0 * (Gr.zp_half[k]-1350.0)/1000.0
-            qt[k] = 5.0e-3 - 3.7e-4 * 1.35 - 9.4e-4 * (Gr.z_half[k]-1350.0)/1000.0
+            qt[k] = 5.0e-3 - 3.7e-4 * 1.35 - 9.4e-4 * (Gr.zp_half[k]-1350.0)/1000.0
         #Set u profile
         u[k] = 0.01
 
@@ -497,17 +497,17 @@ def InitSoares_moist(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariab
 
     for k in xrange(Gr.dims.nlg[2]):
         # Initial theta profile (Soares)
-        if Gr.zl_half[k] <= 1350.0:
+        if Gr.zpl_half[k] <= 1350.0:
             theta[k] = 300.0
         else:
-            theta[k] = 300.0 + 2.0/1000.0 * (Gr.zl_half[k] - 1350.0)
-        # theta[k] = 297.3 + 2.0/1000.0 * (Gr.zl_half[k])
+            theta[k] = 300.0 + 2.0/1000.0 * (Gr.zpl_half[k] - 1350.0)
+        # theta[k] = 297.3 + 2.0/1000.0 * (Gr.zpl_half[k])
 
         # Initial qt profile (Soares)
-        if Gr.zl_half[k] <= 1350:
-            qt[k] = 5.0 - (Gr.zl_half[k]) * 3.7e-4
-        if Gr.zl_half[k] > 1350:
-            qt[k] = 5.0 - 1350.0 * 3.7e-4 - (Gr.zl_half[k] - 1350.0) * 9.4e-4
+        if Gr.zpl_half[k] <= 1350:
+            qt[k] = 5.0 - (Gr.zpl_half[k]) * 3.7e-4
+        if Gr.zpl_half[k] > 1350:
+            qt[k] = 5.0 - 1350.0 * 3.7e-4 - (Gr.zpl_half[k] - 1350.0) * 9.4e-4
 
         #Change units to kg/kg
         qt[k]/= 1000.0
@@ -526,7 +526,7 @@ def InitSoares_moist(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariab
                 PV.values[w_varshift + ijk] = 0.0
                 # Set the entropy prognostic variable including a potential temperature perturbation
                 # fluctuation height = 200m; fluctuation amplitude = 0.1 K
-                if Gr.zl_half[k] < 200.0:
+                if Gr.zpl_half[k] < 200.0:
                     temp = (theta[k] + (theta_pert[count])) * exner_c(RS.p0_half[k])
                     qt_ = qt[k]+qt_pert[count]
                 else:
