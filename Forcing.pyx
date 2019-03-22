@@ -63,20 +63,20 @@ cdef class Forcing:
             Pa.kill()
         return
 
-    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        self.scheme.initialize(Gr, Ref, NS, Pa)
+    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState RS, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        self.scheme.initialize(Gr, RS, NS, Pa)
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
-        self.scheme.update(Gr, Ref, PV, DV, Pa, TS)
+        self.scheme.update(Gr, RS, PV, DV, Pa, TS)
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
-        self.scheme.stats_io(Gr, Ref, PV, DV, NS, Pa)
+        self.scheme.stats_io(Gr, RS, PV, DV, NS, Pa)
 
         return
 
@@ -84,14 +84,14 @@ cdef class Forcing:
 cdef class ForcingNone:
     def __init__(self):
         pass
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
@@ -100,7 +100,7 @@ cdef class ForcingBomex:
     def __init__(self):
         return
 
-    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState RS, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.ug = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.dtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
@@ -119,10 +119,10 @@ cdef class ForcingBomex:
                 #Set large scale cooling
                 # Convert given form of tendencies (theta) to temperature tendency
                 if Gr.zpl_half[k] <= 1500.0:
-                    self.dtdt[k] = (-2.0/(3600 * 24.0))  * exner_c(Ref.p0_half[k])     #K/s
+                    self.dtdt[k] = (-2.0/(3600 * 24.0))  * exner_c(RS.p0_half[k])     #K/s
                 if Gr.zpl_half[k] > 1500.0:
                     self.dtdt[k] = (-2.0/(3600 * 24.0) + (Gr.zpl_half[k] - 1500.0)
-                                    * (0.0 - -2.0/(3600 * 24.0)) / (3000.0 - 1500.0)) * exner_c(Ref.p0_half[k])
+                                    * (0.0 - -2.0/(3600 * 24.0)) / (3000.0 - 1500.0)) * exner_c(RS.p0_half[k])
 
                 #Set large scale drying
                 if Gr.zpl_half[k] <= 300.0:
@@ -148,7 +148,7 @@ cdef class ForcingBomex:
         return
 
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
 
         cdef:
@@ -176,7 +176,7 @@ cdef class ForcingBomex:
 
         #Apply Coriolis Forcing
         large_scale_p_gradient(&Gr.dims, &umean[0], &vmean[0], &PV.tendencies[u_shift],
-                       &PV.tendencies[v_shift], &self.ug[0], &self.vg[0], self.coriolis_param, Ref.u0, Ref.v0)
+                       &PV.tendencies[v_shift], &self.ug[0], &self.vg[0], self.coriolis_param, RS.u0, RS.v0)
 
         #Apply large scale source terms
         with nogil:
@@ -186,20 +186,20 @@ cdef class ForcingBomex:
                     jshift = j * jstride
                     for k in xrange(kmin,kmax):
                         ijk = ishift + jshift + k
-                        p0 = Ref.p0_half[k]
+                        p0 = RS.p0_half[k]
                         qt = PV.values[qt_shift + ijk]
                         qv = qt - DV.values[ql_shift + ijk]
                         t  = DV.values[t_shift + ijk]
                         PV.tendencies[s_shift + ijk] += s_tendency_c(p0,qt,qv,t, self.dqtdt[k], self.dtdt[k])
                         PV.tendencies[qt_shift + ijk] += self.dqtdt[k]
 
-        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[s_shift], &PV.tendencies[s_shift])
-        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
-        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[u_shift], &PV.tendencies[u_shift])
-        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[v_shift], &PV.tendencies[v_shift])
+        apply_subsidence(&Gr.dims, &RS.rho0[0], &RS.rho0_half[0], &self.subsidence[0], &PV.values[s_shift], &PV.tendencies[s_shift])
+        apply_subsidence(&Gr.dims, &RS.rho0[0], &RS.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
+        apply_subsidence(&Gr.dims, &RS.rho0[0], &RS.rho0_half[0], &self.subsidence[0], &PV.values[u_shift], &PV.tendencies[u_shift])
+        apply_subsidence(&Gr.dims, &RS.rho0[0], &RS.rho0_half[0], &self.subsidence[0], &PV.values[v_shift], &PV.tendencies[v_shift])
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
@@ -216,25 +216,25 @@ cdef class ForcingBomex:
             double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
 
         #Output subsidence tendencies
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],
+        apply_subsidence(&Gr.dims,&RS.rho0[0],&RS.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],
                          &tmp_tendency[0])
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         NS.write_profile('s_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         tmp_tendency[:] = 0.0
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],
+        apply_subsidence(&Gr.dims,&RS.rho0[0],&RS.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],
                          &tmp_tendency[0])
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         NS.write_profile('qt_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         tmp_tendency[:] = 0.0
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[u_shift],
+        apply_subsidence(&Gr.dims,&RS.rho0[0],&RS.rho0_half[0],&self.subsidence[0],&PV.values[u_shift],
                          &tmp_tendency[0])
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         NS.write_profile('u_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         tmp_tendency[:] = 0.0
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[v_shift],
+        apply_subsidence(&Gr.dims,&RS.rho0[0],&RS.rho0_half[0],&self.subsidence[0],&PV.values[v_shift],
                          &tmp_tendency[0])
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         NS.write_profile('v_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
@@ -242,7 +242,7 @@ cdef class ForcingBomex:
         #Output Coriolis tendencies
         tmp_tendency[:] = 0.0
         large_scale_p_gradient(&Gr.dims, &umean[0], &vmean[0], &tmp_tendency[0],
-                       &tmp_tendency_2[0], &self.ug[0], &self.vg[0], self.coriolis_param, Ref.u0, Ref.v0)
+                       &tmp_tendency_2[0], &self.ug[0], &self.vg[0], self.coriolis_param, RS.u0, RS.v0)
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         mean_tendency_2 = Pa.HorizontalMean(Gr,&tmp_tendency_2[0])
         NS.write_profile('u_coriolis_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
@@ -254,7 +254,7 @@ cdef class ForcingSoares:
     def __init__(self):
         return
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         # self.ug = np.ones(Gr.dims.nlg[2],dtype=np.double, order='c') #m/s
         # self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double, order='c')  #m/s
         # self.coriolis_param = 0.0 #s^{-1}
@@ -262,12 +262,12 @@ cdef class ForcingSoares:
 #         NS.add_profile('v_coriolis_tendency',Gr, Pa)
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
 
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
@@ -278,7 +278,7 @@ cdef class ForcingSullivanPatton:
     def __init__(self):
 
         return
-    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState RS, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.ug = np.ones(Gr.dims.nlg[2],dtype=np.double, order='c') #m/s
         self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double, order='c')  #m/s
         self.coriolis_param = 1.0e-4 #s^{-1}
@@ -287,17 +287,17 @@ cdef class ForcingSullivanPatton:
         NS.add_profile('v_coriolis_tendency',Gr, Pa)
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
 
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
-                       &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
+                       &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, RS.u0, RS.v0  )
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
@@ -311,7 +311,7 @@ cdef class ForcingSullivanPatton:
 
         #Only need to output coriolis_forcing
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&tmp_tendency[0],
-                       &tmp_tendency_2[0],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0)
+                       &tmp_tendency_2[0],&self.ug[0], &self.vg[0],self.coriolis_param, RS.u0, RS.v0)
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         mean_tendency_2 = Pa.HorizontalMean(Gr,&tmp_tendency_2[0])
         NS.write_profile('u_coriolis_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
@@ -324,24 +324,24 @@ cdef class ForcingGabls:
     def __init__(self):
         return
 
-    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState RS, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.ug = np.ones(Gr.dims.nlg[2],dtype=np.double,order='c') * 8.0
         self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.coriolis_param = 1.39e-4 #s^{-1}
         NS.add_profile('u_coriolis_tendency', Gr, Pa)
         NS.add_profile('v_coriolis_tendency',Gr, Pa)
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
 
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
-                       &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
+                       &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, RS.u0, RS.v0  )
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
@@ -355,7 +355,7 @@ cdef class ForcingGabls:
 
         #Only need to output coriolis_forcing
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&tmp_tendency[0],
-                       &tmp_tendency_2[0],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0)
+                       &tmp_tendency_2[0],&self.ug[0], &self.vg[0],self.coriolis_param, RS.u0, RS.v0)
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         mean_tendency_2 = Pa.HorizontalMean(Gr,&tmp_tendency_2[0])
         NS.write_profile('u_coriolis_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
@@ -376,7 +376,7 @@ cdef class ForcingDyCOMS_RF01:
 
         return
 
-    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState RS, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
             Py_ssize_t k
@@ -410,7 +410,7 @@ cdef class ForcingDyCOMS_RF01:
         return
 
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
@@ -418,17 +418,17 @@ cdef class ForcingDyCOMS_RF01:
             Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
             Py_ssize_t qt_shift = PV.get_varshift(Gr,'qt')
 
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],&PV.tendencies[s_shift])
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],&PV.tendencies[qt_shift])
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[u_shift],&PV.tendencies[u_shift])
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[v_shift],&PV.tendencies[v_shift])
+        apply_subsidence(&Gr.dims,&RS.rho0[0],&RS.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],&PV.tendencies[s_shift])
+        apply_subsidence(&Gr.dims,&RS.rho0[0],&RS.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],&PV.tendencies[qt_shift])
+        apply_subsidence(&Gr.dims,&RS.rho0[0],&RS.rho0_half[0],&self.subsidence[0],&PV.values[u_shift],&PV.tendencies[u_shift])
+        apply_subsidence(&Gr.dims,&RS.rho0[0],&RS.rho0_half[0],&self.subsidence[0],&PV.values[v_shift],&PV.tendencies[v_shift])
 
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
-                       &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
+                       &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, RS.u0, RS.v0  )
 
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
@@ -445,25 +445,25 @@ cdef class ForcingDyCOMS_RF01:
             double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
 
         #Output subsidence tendencies
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],
+        apply_subsidence(&Gr.dims,&RS.rho0[0],&RS.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],
                          &tmp_tendency[0])
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         NS.write_profile('s_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         tmp_tendency[:] = 0.0
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],
+        apply_subsidence(&Gr.dims,&RS.rho0[0],&RS.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],
                          &tmp_tendency[0])
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         NS.write_profile('qt_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         tmp_tendency[:] = 0.0
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[u_shift],
+        apply_subsidence(&Gr.dims,&RS.rho0[0],&RS.rho0_half[0],&self.subsidence[0],&PV.values[u_shift],
                          &tmp_tendency[0])
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         NS.write_profile('u_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         tmp_tendency[:] = 0.0
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[v_shift],
+        apply_subsidence(&Gr.dims,&RS.rho0[0],&RS.rho0_half[0],&self.subsidence[0],&PV.values[v_shift],
                          &tmp_tendency[0])
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         NS.write_profile('v_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
@@ -471,9 +471,9 @@ cdef class ForcingDyCOMS_RF01:
         #Output Coriolis tendencies
         tmp_tendency[:] = 0.0
         large_scale_p_gradient(&Gr.dims, &umean[0], &vmean[0], &tmp_tendency[0],
-                       &tmp_tendency_2[0], &self.ug[0], &self.vg[0], self.coriolis_param, Ref.u0, Ref.v0)
+                       &tmp_tendency_2[0], &self.ug[0], &self.vg[0], self.coriolis_param, RS.u0, RS.v0)
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&tmp_tendency[0],
-                       &tmp_tendency_2[0],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0)
+                       &tmp_tendency_2[0],&self.ug[0], &self.vg[0],self.coriolis_param, RS.u0, RS.v0)
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         mean_tendency_2 = Pa.HorizontalMean(Gr,&tmp_tendency_2[0])
         NS.write_profile('u_coriolis_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
@@ -488,7 +488,7 @@ cdef class ForcingRico:
         self.momentum_subsidence = 0
         return
 
-    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState RS, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         cdef Py_ssize_t k
 
         self.subsidence = np.empty((Gr.dims.nlg[2]),dtype=np.double, order='c')
@@ -500,7 +500,7 @@ cdef class ForcingRico:
         # Convert given theta forcing to temperature forcing
         with nogil:
             for k in range(Gr.dims.nlg[2]):
-                self.dtdt[k] = self.dtdt[k] * exner_c(Ref.p0_half[k])
+                self.dtdt[k] = self.dtdt[k] * exner_c(RS.p0_half[k])
                 if Gr.zpl_half[k] <= 2260.0:
                     self.subsidence[k] = -(0.005/2260.0) * Gr.zpl_half[k]
                 else:
@@ -523,7 +523,7 @@ cdef class ForcingRico:
 
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
 
         cdef:
@@ -545,11 +545,11 @@ cdef class ForcingRico:
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
             double qt, qv, p0, t
 
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],&PV.tendencies[s_shift])
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],&PV.tendencies[qt_shift])
+        apply_subsidence(&Gr.dims,&RS.rho0[0],&RS.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],&PV.tendencies[s_shift])
+        apply_subsidence(&Gr.dims,&RS.rho0[0],&RS.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],&PV.tendencies[qt_shift])
         if self.momentum_subsidence == 1:
-            apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[u_shift],&PV.tendencies[u_shift])
-            apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[v_shift],&PV.tendencies[v_shift])
+            apply_subsidence(&Gr.dims,&RS.rho0[0],&RS.rho0_half[0],&self.subsidence[0],&PV.values[u_shift],&PV.tendencies[u_shift])
+            apply_subsidence(&Gr.dims,&RS.rho0[0],&RS.rho0_half[0],&self.subsidence[0],&PV.values[v_shift],&PV.tendencies[v_shift])
 
 
                 #Apply large scale source terms
@@ -560,7 +560,7 @@ cdef class ForcingRico:
                     jshift = j * jstride
                     for k in xrange(kmin,kmax):
                         ijk = ishift + jshift + k
-                        p0 = Ref.p0_half[k]
+                        p0 = RS.p0_half[k]
                         qt = PV.values[qt_shift + ijk]
                         qv = qt - DV.values[ql_shift + ijk]
                         t  = DV.values[t_shift + ijk]
@@ -568,11 +568,11 @@ cdef class ForcingRico:
                         PV.tendencies[qt_shift + ijk] += self.dqtdt[k]
 
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
-                       &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
+                       &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, RS.u0, RS.v0  )
 
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
@@ -622,7 +622,7 @@ cdef class ForcingCGILS:
 
         return
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         self.dtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.dqtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
@@ -674,16 +674,16 @@ cdef class ForcingCGILS:
         pressure = np.append(pressure, Ps)
 
         # interpolate the subsidence profile from the data (below we convert from dp--> dz)
-        self.subsidence = np.array(np.interp(Ref.p0_half, pressure, omega_data),dtype=np.double, order='c')
+        self.subsidence = np.array(np.interp(RS.p0_half, pressure, omega_data),dtype=np.double, order='c')
         # interpolate large scale advection forcings
-        self.dqtdt = np.array(np.interp(Ref.p0_half, pressure, divq_data),dtype=np.double, order='c')
-        self.dtdt = np.array(np.interp(Ref.p0_half, pressure, divT_data),dtype=np.double, order='c')
+        self.dqtdt = np.array(np.interp(RS.p0_half, pressure, divq_data),dtype=np.double, order='c')
+        self.dtdt = np.array(np.interp(RS.p0_half, pressure, divT_data),dtype=np.double, order='c')
 
         # interpolate the reference profiles
-        self.nudge_qt = np.array(np.interp(Ref.p0_half, pressure, q_data),dtype=np.double, order='c')
-        self.nudge_temperature = np.array(np.interp(Ref.p0_half, pressure, temperature_data),dtype=np.double, order='c')
-        self.nudge_u = np.array(np.interp(Ref.p0_half, pressure, u_data),dtype=np.double, order='c')
-        self.nudge_v = np.array(np.interp(Ref.p0_half, pressure, v_data),dtype=np.double, order='c')
+        self.nudge_qt = np.array(np.interp(RS.p0_half, pressure, q_data),dtype=np.double, order='c')
+        self.nudge_temperature = np.array(np.interp(RS.p0_half, pressure, temperature_data),dtype=np.double, order='c')
+        self.nudge_u = np.array(np.interp(RS.p0_half, pressure, u_data),dtype=np.double, order='c')
+        self.nudge_v = np.array(np.interp(RS.p0_half, pressure, v_data),dtype=np.double, order='c')
 
         # Initialize arrays for the  nudging related source terms
         self.source_qt_floor = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
@@ -699,7 +699,7 @@ cdef class ForcingCGILS:
         cdef Py_ssize_t k
         with nogil:
             for k in xrange(Gr.dims.nlg[2]):
-                self.subsidence[k] = -self.subsidence[k]*Ref.alpha0_half[k]/g
+                self.subsidence[k] = -self.subsidence[k]*RS.alpha0_half[k]/g
 
 
         # Obtain the moisture floor and find the max index corresponding to z <= 1300 m
@@ -768,7 +768,7 @@ cdef class ForcingCGILS:
         return
 
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
 
         cdef:
@@ -795,8 +795,8 @@ cdef class ForcingCGILS:
             double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
 
         # Apply subsidence
-        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[s_shift], &PV.tendencies[s_shift])
-        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
+        apply_subsidence(&Gr.dims, &RS.rho0[0], &RS.rho0_half[0], &self.subsidence[0], &PV.values[s_shift], &PV.tendencies[s_shift])
+        apply_subsidence(&Gr.dims, &RS.rho0[0], &RS.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
 
        # Calculate nudging
         with nogil:
@@ -805,8 +805,8 @@ cdef class ForcingCGILS:
                 self.source_t_nudge[k] = -(tmean[k] - self.nudge_temperature[k]) * self.gamma_z[k]
                 self.source_qt_nudge[k]= -(qtmean[k] - self.nudge_qt[k]) * self.gamma_z[k]
                 # Nudge mean wind profiles through entire depth
-                self.source_u_nudge[k] = -(umean[k] + Ref.u0 - self.nudge_u[k]) * self.tau_vel_inverse
-                self.source_v_nudge[k] = -(vmean[k] + Ref.v0 - self.nudge_v[k]) * self.tau_vel_inverse
+                self.source_u_nudge[k] = -(umean[k] + RS.u0 - self.nudge_u[k]) * self.tau_vel_inverse
+                self.source_v_nudge[k] = -(vmean[k] + RS.v0 - self.nudge_v[k]) * self.tau_vel_inverse
 
         # Moisture floor nudging for S12 case
         if self.loc == 12:
@@ -828,7 +828,7 @@ cdef class ForcingCGILS:
                     jshift = j * jstride
                     for k in xrange(kmin,kmax):
                         ijk = ishift + jshift + k
-                        p0 = Ref.p0_half[k]
+                        p0 = RS.p0_half[k]
                         qt = PV.values[qt_shift + ijk]
                         qv = qt - DV.values[ql_shift + ijk]
                         t  = DV.values[t_shift + ijk]
@@ -848,7 +848,7 @@ cdef class ForcingCGILS:
 
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
@@ -865,13 +865,13 @@ cdef class ForcingCGILS:
             double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
 
         #Output subsidence tendencies
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],
+        apply_subsidence(&Gr.dims,&RS.rho0[0],&RS.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],
                          &tmp_tendency[0])
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         NS.write_profile('s_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         tmp_tendency[:] = 0.0
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],
+        apply_subsidence(&Gr.dims,&RS.rho0[0],&RS.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],
                          &tmp_tendency[0])
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         NS.write_profile('qt_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
@@ -927,7 +927,7 @@ cdef class ForcingZGILS:
 
         return
 
-    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr,ReferenceState.ReferenceState RS, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.ug = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.vg = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
         self.dtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
@@ -945,30 +945,30 @@ cdef class ForcingZGILS:
         cdef double Tg_parcel = 295.0
         cdef double RH_ref = 0.3
 
-        self.forcing_ref.initialize(Pa, Ref.p0_half[:], Gr.dims.nlg[2],
+        self.forcing_ref.initialize(Pa, RS.p0_half[:], Gr.dims.nlg[2],
                                     Pg_parcel, Tg_parcel, RH_ref)
 
         cdef:
             Py_ssize_t k
-            double sub_factor = self.divergence/(Ref.Pg*Ref.Pg)/g
+            double sub_factor = self.divergence/(RS.Pg*RS.Pg)/g
 
         # initialize the profiles of geostrophic velocity, subsidence, and large scale advection
         with nogil:
             for k in xrange(Gr.dims.nlg[2]):
-                self.ug[k] =  min(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(Ref.p0_half[k]-1000.0e2),-4.0)
+                self.ug[k] =  min(-10.0 + (-7.0-(-10.0))/(750.0e2-1000.0e2)*(RS.p0_half[k]-1000.0e2),-4.0)
 
-                self.subsidence[k]= sub_factor * (Ref.p0_half[k] - Ref.Pg) * Ref.p0_half[k] * Ref.p0_half[k] * Ref.alpha0_half[k]
+                self.subsidence[k]= sub_factor * (RS.p0_half[k] - RS.Pg) * RS.p0_half[k] * RS.p0_half[k] * RS.alpha0_half[k]
 
                 #Set large scale cooling
-                if Ref.p0_half[k] > 900.0e2:
+                if RS.p0_half[k] > 900.0e2:
                     self.dtdt[k] = self.t_adv_max
                     self.dqtdt[k] = self.qt_adv_max
-                elif  Ref.p0_half[k]< 800.0e2:
+                elif  RS.p0_half[k]< 800.0e2:
                     self.dtdt[k] = 0.0
                     self.dqtdt[k] = 0.0
                 else:
-                    self.dtdt[k] = self.t_adv_max * (Ref.p0_half[k]-800.0e2)/(900.0e2-800.0e2)
-                    self.dqtdt[k] = self.qt_adv_max * (Ref.p0_half[k]-800.0e2)/(900.0e2-800.0e2)
+                    self.dtdt[k] = self.t_adv_max * (RS.p0_half[k]-800.0e2)/(900.0e2-800.0e2)
+                    self.dqtdt[k] = self.qt_adv_max * (RS.p0_half[k]-800.0e2)/(900.0e2-800.0e2)
 
 
 
@@ -1011,7 +1011,7 @@ cdef class ForcingZGILS:
         return
 
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
 
         cdef:
@@ -1036,11 +1036,11 @@ cdef class ForcingZGILS:
         #Apply Coriolis Forcing
 
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
-                       &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
+                       &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, RS.u0, RS.v0  )
 
         # Apply Subsidence
-        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[s_shift], &PV.tendencies[s_shift])
-        apply_subsidence(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
+        apply_subsidence(&Gr.dims, &RS.rho0[0], &RS.rho0_half[0], &self.subsidence[0], &PV.values[s_shift], &PV.tendencies[s_shift])
+        apply_subsidence(&Gr.dims, &RS.rho0[0], &RS.rho0_half[0], &self.subsidence[0], &PV.values[qt_shift], &PV.tendencies[qt_shift])
 
         # Prepare for nudging by finding the boundary layer height
         self.h_BL = Gr.z_half[Gr.dims.n[2]]
@@ -1066,7 +1066,7 @@ cdef class ForcingZGILS:
                 # here we also set the nudging to 20% rh in the BL
                 if Gr.zpl_half[k] < 2000.0:
                     pv_star = self.CC.LT.fast_lookup(tmean[k])
-                    qv_star = eps_v * pv_star/(Ref.p0_half[k] + (eps_v-1.0)*pv_star)
+                    qv_star = eps_v * pv_star/(RS.p0_half[k] + (eps_v-1.0)*pv_star)
                     if qtmean[k] < 0.2 * qv_star:
                         self.source_rh_nudge[k] = (qv_star*0.2-qtmean[k])/3600.0
                 # Here we find the nudging rates
@@ -1084,7 +1084,7 @@ cdef class ForcingZGILS:
                     jshift = j * jstride
                     for k in xrange(gw,kmax):
                         ijk = ishift + jshift + k
-                        p0 = Ref.p0_half[k]
+                        p0 = RS.p0_half[k]
                         qt = PV.values[qt_shift + ijk]
                         qv = qt - DV.values[ql_shift + ijk]
                         t  = DV.values[t_shift + ijk]
@@ -1102,7 +1102,7 @@ cdef class ForcingZGILS:
 
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
@@ -1119,13 +1119,13 @@ cdef class ForcingZGILS:
             # double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
 
         #Output subsidence tendencies
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],
+        apply_subsidence(&Gr.dims,&RS.rho0[0],&RS.rho0_half[0],&self.subsidence[0],&PV.values[s_shift],
                          &tmp_tendency[0])
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         NS.write_profile('s_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
 
         tmp_tendency[:] = 0.0
-        apply_subsidence(&Gr.dims,&Ref.rho0[0],&Ref.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],
+        apply_subsidence(&Gr.dims,&RS.rho0[0],&RS.rho0_half[0],&self.subsidence[0],&PV.values[qt_shift],
                          &tmp_tendency[0])
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         NS.write_profile('qt_subsidence_tendency',mean_tendency[Gr.dims.gw:-Gr.dims.gw],Pa)
@@ -1136,7 +1136,7 @@ cdef class ForcingZGILS:
 
 
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&tmp_tendency[0],
-                       &tmp_tendency_2[0],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
+                       &tmp_tendency_2[0],&self.ug[0], &self.vg[0],self.coriolis_param, RS.u0, RS.v0  )
 
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         mean_tendency_2 = Pa.HorizontalMean(Gr,&tmp_tendency_2[0])
@@ -1164,7 +1164,7 @@ cdef class ForcingTRMM_LBA: # YAIR - check if indeed you wanna duplicate DyCOMS_
 
         return
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         # nudging profiles
 
@@ -1203,7 +1203,7 @@ cdef class ForcingTRMM_LBA: # YAIR - check if indeed you wanna duplicate DyCOMS_
         return
 
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
 
         cdef:
@@ -1232,8 +1232,8 @@ cdef class ForcingTRMM_LBA: # YAIR - check if indeed you wanna duplicate DyCOMS_
         # Nudge mean wind profiles through entire depth
             for k in xrange(kmin, kmax):
 
-                self.source_u_nudge[k] = -(umean[k] + Ref.u0 - self.nudge_u[k]) * self.tau_inverse
-                self.source_v_nudge[k] = -(vmean[k] + Ref.v0 - self.nudge_v[k]) * self.tau_inverse
+                self.source_u_nudge[k] = -(umean[k] + RS.u0 - self.nudge_u[k]) * self.tau_inverse
+                self.source_v_nudge[k] = -(vmean[k] + RS.v0 - self.nudge_v[k]) * self.tau_inverse
 
 
         #Apply large scale source terms
@@ -1244,13 +1244,13 @@ cdef class ForcingTRMM_LBA: # YAIR - check if indeed you wanna duplicate DyCOMS_
                     jshift = j * jstride
                     for k in xrange(kmin,kmax):
                         ijk = ishift + jshift + k
-                        p0 = Ref.p0_half[k]
+                        p0 = RS.p0_half[k]
                         PV.tendencies[u_shift  + ijk] +=  self.source_u_nudge[k]
                         PV.tendencies[v_shift  + ijk] +=  self.source_v_nudge[k]
 
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
@@ -1278,7 +1278,7 @@ cdef class ForcingARM_SGP: # YAIR - check if indeed you wanna duplicate DyCOMS_R
         self.coriolis_param = 8.5e-5
         return
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
 
         self.ug = np.ones(Gr.dims.nlg[2],dtype=np.double,order='c')*10.0 # np.zeros(Gr.dims.nlg[2]) + 10.0
@@ -1298,7 +1298,7 @@ cdef class ForcingARM_SGP: # YAIR - check if indeed you wanna duplicate DyCOMS_R
         return
 
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
 
         # Yair - this is incomplete
@@ -1336,7 +1336,7 @@ cdef class ForcingARM_SGP: # YAIR - check if indeed you wanna duplicate DyCOMS_R
          #           jshift = j * jstride
          #           for k in xrange(kmin,kmax):
          #               ijk = ishift + jshift + k
-         #               p0 = Ref.p0_half[k]
+         #               p0 = RS.p0_half[k]
          #               PV.tendencies[u_shift  + ijk] +=  self.source_u_nudge[k]
          #              PV.tendencies[v_shift  + ijk] +=  self.source_v_nudge[k]
 
@@ -1347,10 +1347,10 @@ cdef class ForcingARM_SGP: # YAIR - check if indeed you wanna duplicate DyCOMS_R
             for k in range(0,Gr.dims.nlg[2]):
                 if Gr.zp_half[k] <=1000:
                     self.dqtdt[k] = dqtdt
-                    self.dtdt[k]  = (dtdt_a + dtdt_r) * exner_c(Ref.p0_half[k])
+                    self.dtdt[k]  = (dtdt_a + dtdt_r) * exner_c(RS.p0_half[k])
                 elif Gr.zp_half[k] > 1000  and Gr.zp_half[k] <= 2000:
                     self.dqtdt[k] =   dqtdt*(1-(Gr.zp_half[k]-1000)/1000)
-                    self.dtdt[k]  = (dtdt_a + dtdt_r) * exner_c(Ref.p0_half[k])*(1-(Gr.zp_half[k]-1000)/1000)
+                    self.dtdt[k]  = (dtdt_a + dtdt_r) * exner_c(RS.p0_half[k])*(1-(Gr.zp_half[k]-1000)/1000)
          # Now update entropy tendenci
         with nogil:
             for i in xrange(imin, imax):
@@ -1359,7 +1359,7 @@ cdef class ForcingARM_SGP: # YAIR - check if indeed you wanna duplicate DyCOMS_R
                     jshift = j * jstride
                     for k in xrange(kmin, kmax):
                         ijk = ishift + jshift + k
-                        p0 = Ref.p0_half[k]
+                        p0 = RS.p0_half[k]
                         qt = PV.values[qt_shift + ijk]
                         qv = qt - DV.values[ql_shift + ijk]
                         t  = DV.values[t_shift + ijk]
@@ -1369,11 +1369,11 @@ cdef class ForcingARM_SGP: # YAIR - check if indeed you wanna duplicate DyCOMS_R
         #Apply Coriolis Forcing
 
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
-                       &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
+                       &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, RS.u0, RS.v0  )
 
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
@@ -1390,7 +1390,7 @@ cdef class ForcingARM_SGP: # YAIR - check if indeed you wanna duplicate DyCOMS_R
             double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
 
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&tmp_tendency[0],
-                       &tmp_tendency_2[0],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
+                       &tmp_tendency_2[0],&self.ug[0], &self.vg[0],self.coriolis_param, RS.u0, RS.v0  )
 
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         mean_tendency_2 = Pa.HorizontalMean(Gr,&tmp_tendency_2[0])
@@ -1408,7 +1408,7 @@ cdef class ForcingSCMS: # YAIR - check if indeed you wanna duplicate DyCOMS_RF01
         self.coriolis_param = 8.5e-5
         return
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
 
 
@@ -1429,7 +1429,7 @@ cdef class ForcingSCMS: # YAIR - check if indeed you wanna duplicate DyCOMS_RF01
         return
 
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
 
 
@@ -1484,7 +1484,7 @@ cdef class ForcingSCMS: # YAIR - check if indeed you wanna duplicate DyCOMS_RF01
                     jshift = j * jstride
                     for k in xrange(kmin, kmax):
                         ijk = ishift + jshift + k
-                        p0 = Ref.p0_half[k]
+                        p0 = RS.p0_half[k]
                         qt = PV.values[qt_shift + ijk]
                         qv = qt - DV.values[ql_shift + ijk]
                         t  = DV.values[t_shift + ijk]
@@ -1493,12 +1493,12 @@ cdef class ForcingSCMS: # YAIR - check if indeed you wanna duplicate DyCOMS_RF01
 
         #Apply Coriolis Forcing
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&PV.tendencies[u_shift],
-                      &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
+                      &PV.tendencies[v_shift],&self.ug[0], &self.vg[0],self.coriolis_param, RS.u0, RS.v0  )
 
 
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
@@ -1515,7 +1515,7 @@ cdef class ForcingSCMS: # YAIR - check if indeed you wanna duplicate DyCOMS_RF01
             double [:] vmean = Pa.HorizontalMean(Gr, &PV.values[v_shift])
 
         coriolis_force(&Gr.dims,&PV.values[u_shift],&PV.values[v_shift],&tmp_tendency[0],
-                       &tmp_tendency_2[0],&self.ug[0], &self.vg[0],self.coriolis_param, Ref.u0, Ref.v0  )
+                       &tmp_tendency_2[0],&self.ug[0], &self.vg[0],self.coriolis_param, RS.u0, RS.v0  )
 
         mean_tendency = Pa.HorizontalMean(Gr,&tmp_tendency[0])
         mean_tendency_2 = Pa.HorizontalMean(Gr,&tmp_tendency_2[0])
@@ -1531,7 +1531,7 @@ cdef class ForcingGATE_III:
         self.tau_inverse = 1/(2.0*3600.0) # inverse of  max nudging timescale, 1 hr, for all cases
         return
 
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
 
         self.dtdt = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')  # T
@@ -1553,7 +1553,7 @@ cdef class ForcingGATE_III:
         return
 
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
 
         # Yair - this is incomplete
@@ -1588,11 +1588,11 @@ cdef class ForcingGATE_III:
         with nogil:
         # Nudge mean wind profiles through entire depth
             for k in xrange(kmin, kmax):
-                self.source_v_nudge[k] = -(vmean[k] + Ref.v0) * self.tau_inverse
+                self.source_v_nudge[k] = -(vmean[k] + RS.v0) * self.tau_inverse
                 if Gr.zp_half[k] < 18000.0:
-                    self.source_u_nudge[k] = -(umean[k] + Ref.u0 - self.nudge_u[k]) * self.tau_inverse
+                    self.source_u_nudge[k] = -(umean[k] + RS.u0 - self.nudge_u[k]) * self.tau_inverse
                 else:
-                    self.source_u_nudge[k] = -(umean[k] + Ref.u0) * self.tau_inverse
+                    self.source_u_nudge[k] = -(umean[k] + RS.u0) * self.tau_inverse
         #Apply large scale source terms
         with nogil:
             for i in xrange(imin,imax):
@@ -1620,7 +1620,7 @@ cdef class ForcingGATE_III:
                     jshift = j * jstride
                     for k in xrange(kmin, kmax):
                         ijk = ishift + jshift + k
-                        p0 = Ref.p0_half[k]
+                        p0 = RS.p0_half[k]
                         qt = PV.values[qt_shift + ijk]
                         qv = qt - DV.values[ql_shift + ijk]
                         t  = DV.values[t_shift + ijk]
@@ -1629,7 +1629,7 @@ cdef class ForcingGATE_III:
 
         return
 
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
@@ -1811,4 +1811,3 @@ cdef apply_subsidence(Grid.DimStruct *dims, double *rho0, double *rho0_half, dou
                     tendencies[ijk] -= (values[ijk+1] - values[ijk]) * dxi * subsidence[k] * dims.imetl[k]
 
     return
-

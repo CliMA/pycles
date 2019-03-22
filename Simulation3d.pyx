@@ -98,7 +98,7 @@ class Simulation3d:
         self.MD.initialize(self.Gr,self.PV,self.DV,self.StatsIO, self.Pa)
 
         self.TS.initialize(namelist,self.PV,self.Pa)
-        self.Sur.initialize(self.Gr, self.Ref,  self.StatsIO, self.Pa)
+        self.Sur.initialize(self.Gr, self.RS,  self.StatsIO, self.Pa)
         if self.Restart.is_restart_run:
             self.Pa.root_print('This run is being restarted!')
             try:
@@ -121,13 +121,13 @@ class Simulation3d:
         else:
             self.Pa.root_print('This is not a restart run!')
             SetInitialConditions = InitializationFactory(namelist)
-            SetInitialConditions(namelist,self.Gr, self.PV, self.Ref, self.Th, self.StatsIO, self.Pa, self.LH)
+            SetInitialConditions(namelist,self.Gr, self.PV, self.RS, self.Th, self.StatsIO, self.Pa, self.LH)
             del SetInitialConditions
 
-        self.Pr.initialize(namelist, self.Gr, self.Ref, self.DV, self.Pa)
+        self.Pr.initialize(namelist, self.Gr, self.RS, self.DV, self.Pa)
 
         self.DV.initialize(self.Gr, self.StatsIO, self.Pa)
-        self.Fo.initialize(self.Gr, self.Ref,self.StatsIO, self.Pa)
+        self.Fo.initialize(self.Gr, self.RS,self.StatsIO, self.Pa)
         self.Ra.initialize(self.Gr, self.StatsIO,self.Pa)
         self.Budg.initialize(self.Gr, self.StatsIO,self.Pa)
         self.Damping.initialize(self.Gr, self.Ref)
@@ -147,8 +147,8 @@ class Simulation3d:
         cdef ParallelMPI.ParallelMPI PA_ = self.Pa
         cdef int rk_step
         # DO First Output
-        self.Th.update(self.Gr, self.Ref, PV_, DV_)
-        self.Ra.initialize_profiles(self.Gr, self.Ref, self.DV, self.StatsIO,self.Pa)
+        self.Th.update(self.Gr, self.RS, PV_, DV_)
+        self.Ra.initialize_profiles(self.Gr, self.RS, self.DV, self.StatsIO,self.Pa)
 
         #Do IO if not a restarted run
         if not self.Restart.is_restart_run:
@@ -157,26 +157,26 @@ class Simulation3d:
             time1 = time.time()
             for self.TS.rk_step in xrange(self.TS.n_rk_steps):
                 self.Ke.update(self.Gr,PV_)
-                self.Th.update(self.Gr,self.Ref,PV_,DV_)
-                self.Micro.update(self.Gr, self.Ref, self.Th,PV_, DV_, self.TS, self.Pa )
-                self.Tr.update(self.Gr, self.Ref, PV_, DV_, self.TS,self.Pa)
-                self.SA.update(self.Gr,self.Ref,PV_, DV_,  self.Pa)
-                self.MA.update(self.Gr,self.Ref,PV_,self.Pa)
-                self.Sur.update(self.Gr, self.Ref,self.PV, self.DV,self.Pa,self.TS)
+                self.Th.update(self.Gr,self.RS,PV_,DV_)
+                self.Micro.update(self.Gr, self.RS, self.Th,PV_, DV_, self.TS, self.Pa )
+                self.Tr.update(self.Gr, self.RS, PV_, DV_, self.TS,self.Pa)
+                self.SA.update(self.Gr,self.RS,PV_, DV_,  self.Pa)
+                self.MA.update(self.Gr,self.RS,PV_,self.Pa)
+                self.Sur.update(self.Gr, self.RS,self.PV, self.DV,self.Pa,self.TS)
                 self.SGS.update(self.Gr,self.DV,self.PV, self.Ke, self.Sur,self.Pa)
-                self.Damping.update(self.Gr, self.Ref,self.PV, self.DV, self.Pa)
-                self.SD.update(self.Gr,self.Ref,self.PV,self.DV)
-                self.MD.update(self.Gr,self.Ref,self.PV,self.DV,self.Ke)
-                self.Fo.update(self.Gr, self.Ref, self.PV, self.DV, self.Pa, self.TS)
-                self.Ra.update(self.Gr, self.Ref, self.PV, self.DV, self.Sur, self.TS, self.Pa)
+                self.Damping.update(self.Gr, self.RS,self.PV, self.DV, self.Pa)
+                self.SD.update(self.Gr,self.RS,self.PV,self.DV)
+                self.MD.update(self.Gr,self.RS,self.PV,self.DV,self.Ke)
+                self.Fo.update(self.Gr, self.RS, self.PV, self.DV, self.Pa, self.TS)
+                self.Ra.update(self.Gr, self.RS, self.PV, self.DV, self.Sur, self.TS, self.Pa)
                 self.Budg.update(self.Gr,self.Ra, self.Sur, self.TS, self.Pa)
-                self.Tr.update_cleanup(self.Gr, self.Ref, PV_, DV_, self.Pa, self.TS)
+                self.Tr.update_cleanup(self.Gr, self.RS, PV_, DV_, self.Pa, self.TS)
                 self.TS.update(self.Gr, self.PV, self.Pa)
                 PV_.Update_all_bcs(self.Gr, self.Pa)
-                self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
+                self.Pr.update(self.Gr, self.RS, self.DV, self.PV, self.Pa)
                 self.TS.adjust_timestep(self.Gr, self.PV, self.DV,self.Pa)
                 self.io()
-                #PV_.debug(self.Gr,self.Ref,self.StatsIO,self.Pa)
+                #PV_.debug(self.Gr,self.RS,self.StatsIO,self.Pa)
             time2 = time.time()
             self.Pa.root_print('T = ' + str(self.TS.t) + ' dt = ' + str(self.TS.dt) +
                                ' cfl_max = ' + str(self.TS.cfl_max) + ' walltime = ' + str(time2 - time1))
@@ -214,7 +214,7 @@ class Simulation3d:
             # If time to ouptut fields do output
             if self.FieldsIO.last_output_time + self.FieldsIO.frequency == self.TS.t:
                 self.Pa.root_print('Doing 3D FieldIO')
-                self.Th.update(self.Gr, self.Ref, self.PV, self.DV)
+                self.Th.update(self.Gr, self.RS, self.PV, self.DV)
                 self.FieldsIO.last_output_time = self.TS.t
                 self.FieldsIO.update(self.Gr, self.PV, self.DV, self.TS, self.Pa)
                 self.FieldsIO.dump_prognostic_variables(self.Gr, self.PV)
@@ -227,26 +227,26 @@ class Simulation3d:
                 self.StatsIO.last_output_time = self.TS.t
                 self.StatsIO.open_files(self.Pa)
                 self.StatsIO.write_simulation_time(self.TS.t, self.Pa)
-                self.Micro.stats_io(self.Gr, self.Ref, self.Th, self.PV, self.DV, self.StatsIO, self.Pa) # do Micro.stats_io prior to DV.stats_io to get sedimentation velocity only in output
-                self.PV.stats_io(self.Gr, self.Ref, self.StatsIO, self.Pa)
+                self.Micro.stats_io(self.Gr, self.RS, self.Th, self.PV, self.DV, self.StatsIO, self.Pa) # do Micro.stats_io prior to DV.stats_io to get sedimentation velocity only in output
+                self.PV.stats_io(self.Gr, self.RS, self.StatsIO, self.Pa)
 
                 self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
-                self.Fo.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
-                self.Th.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
+                self.Fo.stats_io(self.Gr, self.RS, self.PV, self.DV, self.StatsIO, self.Pa)
+                self.Th.stats_io(self.Gr, self.RS, self.PV, self.DV, self.StatsIO, self.Pa)
 
                 self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
                 self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke,self.StatsIO,self.Pa)
                 self.SA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
                 self.MA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
-                self.SD.stats_io(self.Gr, self.Ref,self.PV, self.DV, self.StatsIO, self.Pa)
+                self.SD.stats_io(self.Gr, self.RS,self.PV, self.DV, self.StatsIO, self.Pa)
                 self.MD.stats_io(self.Gr, self.PV, self.DV, self.Ke, self.StatsIO, self.Pa)
-                self.Ke.stats_io(self.Gr,self.Ref,self.PV,self.StatsIO,self.Pa)
+                self.Ke.stats_io(self.Gr,self.RS,self.PV,self.StatsIO,self.Pa)
                 self.Tr.stats_io(self.Gr, self.PV, self.DV, self.TS, self.StatsIO, self.Pa)
 
-                self.Ra.stats_io(self.Gr, self.Ref, self.DV, self.StatsIO, self.Pa)
+                self.Ra.stats_io(self.Gr, self.RS, self.DV, self.StatsIO, self.Pa)
                 self.Budg.stats_io(self.Sur, self.StatsIO, self.Pa)
 
-                self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
+                self.Aux.stats_io(self.Gr, self.RS, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
                 self.StatsIO.close_files(self.Pa)
                 self.Pa.root_print('Finished Doing StatsIO')
 
@@ -257,13 +257,13 @@ class Simulation3d:
                 self.CondStatsIO.last_output_time = self.TS.t
                 self.CondStatsIO.write_condstat_time(self.TS.t, self.Pa)
 
-                self.CondStats.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.CondStatsIO, self.Pa)
+                self.CondStats.stats_io(self.Gr, self.RS, self.PV, self.DV, self.CondStatsIO, self.Pa)
                 self.Pa.root_print('Finished Doing CondStatsIO')
 
 
             if self.VO.last_vis_time + self.VO.frequency == self.TS.t:
                 self.VO.last_vis_time = self.TS.t
-                self.VO.write(self.Gr, self.Ref, self.PV, self.DV, self.Pa)
+                self.VO.write(self.Gr, self.RS, self.PV, self.DV, self.Pa)
 
 
             if self.Restart.last_restart_time + self.Restart.frequency == self.TS.t:
@@ -293,7 +293,7 @@ class Simulation3d:
         # output stats here
 
         self.Pa.root_print('Doing 3D FieldIO')
-        self.Th.update(self.Gr, self.Ref, self.PV, self.DV)
+        self.Th.update(self.Gr, self.RS, self.PV, self.DV)
         self.FieldsIO.update(self.Gr, self.PV, self.DV, self.TS, self.Pa)
         self.FieldsIO.dump_prognostic_variables(self.Gr, self.PV)
         self.FieldsIO.dump_diagnostic_variables(self.Gr, self.DV, self.Pa)
@@ -301,25 +301,25 @@ class Simulation3d:
 
         self.StatsIO.open_files(self.Pa)
         self.StatsIO.write_simulation_time(self.TS.t, self.Pa)
-        self.PV.stats_io(self.Gr, self.Ref, self.StatsIO, self.Pa)
+        self.PV.stats_io(self.Gr, self.RS, self.StatsIO, self.Pa)
 
         self.DV.stats_io(self.Gr, self.StatsIO, self.Pa)
         self.Fo.stats_io(
-            self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
-        self.Th.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.StatsIO, self.Pa)
-        self.Micro.stats_io(self.Gr, self.Ref, self.Th, self.PV, self.DV, self.StatsIO, self.Pa)
+            self.Gr, self.RS, self.PV, self.DV, self.StatsIO, self.Pa)
+        self.Th.stats_io(self.Gr, self.RS, self.PV, self.DV, self.StatsIO, self.Pa)
+        self.Micro.stats_io(self.Gr, self.RS, self.Th, self.PV, self.DV, self.StatsIO, self.Pa)
         self.Sur.stats_io(self.Gr, self.StatsIO, self.Pa)
         self.SGS.stats_io(self.Gr,self.DV,self.PV,self.Ke ,self.StatsIO, self.Pa)
         self.SA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
         self.MA.stats_io(self.Gr, self.PV, self.StatsIO, self.Pa)
-        self.SD.stats_io(self.Gr, self.Ref,self.PV, self.DV, self.StatsIO, self.Pa)
+        self.SD.stats_io(self.Gr, self.RS,self.PV, self.DV, self.StatsIO, self.Pa)
         self.MD.stats_io(self.Gr, self.PV, self.DV, self.Ke, self.StatsIO, self.Pa)
-        self.Ke.stats_io(self.Gr, self.Ref, self.PV, self.StatsIO, self.Pa)
+        self.Ke.stats_io(self.Gr, self.RS, self.PV, self.StatsIO, self.Pa)
         self.Tr.stats_io(self.Gr, self.PV, self.DV, self.TS, self.StatsIO, self.Pa)
-        self.Ra.stats_io(self.Gr, self.Ref, self.DV, self.StatsIO, self.Pa)
+        self.Ra.stats_io(self.Gr, self.RS, self.DV, self.StatsIO, self.Pa)
         self.Budg.stats_io(self.Sur, self.StatsIO, self.Pa)
 
-        self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
+        self.Aux.stats_io(self.Gr, self.RS, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
         self.StatsIO.close_files(self.Pa)
         return
 
