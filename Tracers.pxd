@@ -31,9 +31,11 @@ cdef class TracersNone:
 cdef class UpdraftTracers:
     cdef:
         bint lcl_tracers
+        double timescale
         Py_ssize_t index_lcl
         dict tracer_dict
         double cloud_base
+        double tracer_time
         double cloud_top
         double [:] updraft_indicator
 

@@ -19,7 +19,7 @@ from libc.math cimport fmax, fmin, sqrt, copysign
 cimport numpy as np
 import numpy as np
 include "parameters.pxi"
-
+import pylab as plt
 import cython
 
 cdef extern from "thermodynamic_functions.h":
@@ -32,6 +32,7 @@ def TracersFactory(namelist):
     except:
         use_tracers = False
     if use_tracers:
+
         try:
             tracer_scheme = namelist['tracers']['scheme']
             if tracer_scheme == 'UpdraftTracers':
@@ -72,6 +73,11 @@ cdef class UpdraftTracers:
             self.lcl_tracers = namelist['tracers']['use_lcl_tracers']
         except:
             self.lcl_tracers = False
+        try:
+            self.timescale = namelist['tracers']['timescale']
+        except:
+            self.timescale = 15.0
+            print('Tracer timescale is set do 15min by default')
 
         self.index_lcl = 0
 
@@ -87,11 +93,11 @@ cdef class UpdraftTracers:
         self.tracer_dict = {}
         self.tracer_dict['surface'] = {}
         self.tracer_dict['surface']['c_srf_15'] = {}
-        self.tracer_dict['surface']['c_srf_15']['timescale'] = 15.0 * 60.0
+        self.tracer_dict['surface']['c_srf_15']['timescale'] = self.timescale * 60.0
         if self.lcl_tracers:
             self.tracer_dict['lcl'] = {}
             self.tracer_dict['lcl']['c_lcl_15'] = {}
-            self.tracer_dict['lcl']['c_lcl_15']['timescale'] = 15.0 * 60.0
+            self.tracer_dict['lcl']['c_lcl_15']['timescale'] = self.timescale * 60.0
 
         for var in self.tracer_dict['surface'].keys():
 
@@ -361,7 +367,7 @@ cdef class UpdraftTracers:
             Py_ssize_t v_shift = PV.get_varshift(Gr,'v')
             Py_ssize_t w_shift = PV.get_varshift(Gr,'w')
             Py_ssize_t q_shift = PV.get_varshift(Gr,'qt')
-            Py_ssize_t c_shift = PV.get_varshift(Gr,'c_srf_' + str(int(self.tracer_time)))
+            Py_ssize_t c_shift = PV.get_varshift(Gr,'c_srf_' + str(int(self.timescale)))
             Py_ssize_t b_shift = DV.get_varshift(Gr, 'buoyancy')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t bvf_shift = DV.get_varshift(Gr, 'buoyancy_frequency')
@@ -676,7 +682,7 @@ cdef class PurityTracers:
             Py_ssize_t w_shift = PV.get_varshift(Gr,'w')
             Py_ssize_t q_shift = PV.get_varshift(Gr,'qt')
             Py_ssize_t th_shift #= DV.get_varshift(Gr,'thetali')
-            Py_ssize_t c_shift = PV.get_varshift(Gr,'c_srf_' + str(int(self.tracer_time)))
+            Py_ssize_t c_shift = PV.get_varshift(Gr,'c_srf_'+ str(int(self.timescale)))
             Py_ssize_t p_shift = PV.get_varshift(Gr,'purity_srf')
             Py_ssize_t pt_shift = PV.get_varshift(Gr,'time_srf')
             Py_ssize_t pq_shift = PV.get_varshift(Gr,'qt_srf')
@@ -744,7 +750,7 @@ cdef class PurityTracers:
         if self.TracersUpdraft.lcl_tracers:
             index_lcl = self.TracersUpdraft.index_lcl
 
-            c_shift = PV.get_varshift(Gr,'c_lcl_' + str(int(self.tracer_time)))
+            c_shift = PV.get_varshift(Gr,'c_lcl_'+ str(int(self.timescale)))
             p_shift = PV.get_varshift(Gr,'purity_lcl')
             pt_shift = PV.get_varshift(Gr,'time_lcl')
             pq_shift = PV.get_varshift(Gr,'qt_lcl')
