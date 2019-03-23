@@ -53,7 +53,7 @@ class Simulation3d:
         self.SD = ScalarDiffusion.ScalarDiffusion(namelist, self.LH, self.DV, self.Pa)
         self.MD = MomentumDiffusion.MomentumDiffusion(self.DV, self.Pa)
         self.Th = ThermodynamicsFactory(namelist, self.Micro, self.LH, self.Pa)
-        self.Ref = ReferenceState.ReferenceState(self.Gr)
+        self.RS = ReferenceState.ReferenceState(self.Gr)
         self.Sur = SurfaceFactory(namelist, self.LH, self.Pa)
         self.Fo = Forcing.Forcing(namelist, self.LH, self.Pa)
         self.Ra = RadiationFactory(namelist,self.LH, self.Pa)
@@ -109,7 +109,7 @@ class Simulation3d:
 
             self.TS.t = self.Restart.restart_data['TS']['t']
             self.TS.dt = self.Restart.restart_data['TS']['dt']
-            self.Ref.init_from_restart(self.Gr, self.Restart)
+            self.RS.init_from_restart(self.Gr, self.Restart)
             self.PV.init_from_restart(self.Gr, self.Restart)
             self.Sur.init_from_restart(self.Restart)
             self.StatsIO.last_output_time = self.Restart.restart_data['last_stats_output']
@@ -130,7 +130,7 @@ class Simulation3d:
         self.Fo.initialize(self.Gr, self.RS,self.StatsIO, self.Pa)
         self.Ra.initialize(self.Gr, self.StatsIO,self.Pa)
         self.Budg.initialize(self.Gr, self.StatsIO,self.Pa)
-        self.Damping.initialize(self.Gr, self.Ref)
+        self.Damping.initialize(self.Gr, self.RS)
         self.Aux.initialize(namelist, self.Gr, self.PV, self.DV, self.StatsIO, self.Pa)
         self.CondStats.initialize(namelist, self.Gr, self.PV, self.DV, self.CondStatsIO, self.Pa)
 
@@ -275,7 +275,7 @@ class Simulation3d:
                 self.Restart.restart_data['last_vis_time'] = self.VO.last_vis_time
                 self.Gr.restart(self.Restart)
                 self.Sur.restart(self.Restart)
-                self.Ref.restart(self.Gr, self.Restart)
+                self.RS.restart(self.Gr, self.Restart)
                 self.PV.restart(self.Gr, self.Restart)
                 self.TS.restart(self.Restart)
 
