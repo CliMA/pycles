@@ -91,12 +91,12 @@ cdef class UpdraftTracers:
         # Can be expanded for different init heights or timescales
         self.tracer_dict = {}
         self.tracer_dict['surface'] = {}
-        self.tracer_dict['surface']['c_srf_15'] = {}
-        self.tracer_dict['surface']['c_srf_15']['timescale'] = self.timescale * 60.0
+        self.tracer_dict['surface']['c_srf_' + str(int(self.timescale))] = {}
+        self.tracer_dict['surface']['c_srf_' + str(int(self.timescale))]['timescale'] = self.timescale * 60.0
         if self.lcl_tracers:
             self.tracer_dict['lcl'] = {}
-            self.tracer_dict['lcl']['c_lcl_15'] = {}
-            self.tracer_dict['lcl']['c_lcl_15']['timescale'] = self.timescale * 60.0
+            self.tracer_dict['lcl']['c_lcl_' + str(int(self.timescale))] = {}
+            self.tracer_dict['lcl']['c_lcl_' + str(int(self.timescale))]['timescale'] = self.timescale * 60.0
 
         for var in self.tracer_dict['surface'].keys():
 

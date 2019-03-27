@@ -35,7 +35,6 @@ cdef class UpdraftTracers:
         Py_ssize_t index_lcl
         dict tracer_dict
         double cloud_base
-        #double timescale
         double cloud_top
         double [:] updraft_indicator
 
