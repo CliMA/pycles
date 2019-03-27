@@ -19,7 +19,6 @@ from libc.math cimport fmax, fmin, sqrt, copysign
 cimport numpy as np
 import numpy as np
 include "parameters.pxi"
-import pylab as plt
 import cython
 
 cdef extern from "thermodynamic_functions.h":
