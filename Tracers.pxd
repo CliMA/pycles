@@ -54,6 +54,7 @@ cdef class UpdraftTracers:
 cdef class PurityTracers:
     cdef:
        UpdraftTracers TracersUpdraft
+       double timescale
 
     cpdef initialize(self, Grid.Grid Gr,  PrognosticVariables.PrognosticVariables PV,
                      DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
