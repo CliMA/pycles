@@ -1328,8 +1328,8 @@ cdef class SurfaceARM_SGP(SurfaceBase):
         #F_pert = np.random.random_sample(Gr.dims.npg)
         cdef:
             double th_flux
-            double [:] SH = np.zeros(5580.0,dtype=np.double,order='c') # simulation time / dt
-            double [:] LH = np.zeros(5580.0,dtype=np.double,order='c')
+            double [:] SH = np.zeros(5580,dtype=np.double,order='c') # simulation time / dt
+            double [:] LH = np.zeros(5580,dtype=np.double,order='c')
         # update fluxes start from the second
         t_in = np.array([0.0, 4.0, 6.5, 7.5, 10.0, 12.5, 14.5]) * 3600 #LES time is in sec
         SH = np.array([-30.0, 90.0, 140.0, 140.0, 100.0, -10, -10]) # W/m^2

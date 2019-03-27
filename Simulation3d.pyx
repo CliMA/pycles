@@ -37,6 +37,7 @@ class Simulation3d:
 
     def __init__(self, namelist):
         return
+        
 
     def initialize(self, namelist):
         self.Pa = ParallelMPI.ParallelMPI(namelist)
