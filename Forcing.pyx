@@ -24,7 +24,7 @@ from Thermodynamics cimport LatentHeat, ClausiusClapeyron
 include 'parameters.pxi'
 from Initialization import sat_adjst, qv_unsat
 # import matplotlib.pyplot as plt
-import _pickle
+import cPickle
 
 cdef class Forcing:
     def __init__(self, namelist, LatentHeat LH, ParallelMPI.ParallelMPI Pa):
@@ -1127,7 +1127,7 @@ cdef class ForcingSheba:
 
         #Original SHEBA forcing file from https://atmos.washington.edu/~roode/SHEBA.html
         fh = open('./SHEBAdata/SHEBA_forcing.pkl', 'r')
-        sheba_ec = _pickle.load(fh)
+        sheba_ec = cPickle.load(fh)
         fh.close()
 
         Pa.root_print('Finish reading in SHEBA forcing fields.')
