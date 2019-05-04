@@ -614,11 +614,11 @@ class TKEStatistics:
 
         #Compute the dissipation of TKE
         with nogil:
-            for i in xrange(1, Gr.dims.nlg[0]):
+            for i in xrange(1, Gr.dims.nlg[0]-1):
                 ishift = i * istride
-                for j in xrange(1, Gr.dims.nlg[1]):
+                for j in xrange(1, Gr.dims.nlg[1]-1):
                     jshift = j * jstride
-                    for k in xrange(1, Gr.dims.nlg[2]):
+                    for k in xrange(1, Gr.dims.nlg[2]-1):
                         ijk = ishift + jshift + k
                         nu = DV.values[visc_shift + ijk]
                         e_dis[ijk] += (up[ijk + istride] - up[ijk-istride]) * 0.5 * Gr.dims.dxi[0] * (up[ijk + istride] - up[ijk-istride]) * 0.5 * Gr.dims.dxi[0]
