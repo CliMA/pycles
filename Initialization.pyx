@@ -54,8 +54,6 @@ def InitializationFactory(namelist):
             return  InitTRMM_LBA
         elif casename == 'ARM_SGP':
             return  InitARM_SGP
-        elif casename == 'SCMS':
-            return  InitSCMS
         elif casename == 'GATE_III':
             return  InitGATE_III
         elif casename == 'WANGARA':
@@ -1698,87 +1696,6 @@ def InitARM_SGP(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables P
                     PV.values[ijk + s_varshift] = Th.entropy(RS.p0_half[k], T , qt[k], 0.0, 0.0)
     return
 
-def InitSCMS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa , LatentHeat LH):
-
-    reference_profiles = AdjustedMoistAdiabat(namelist, LH, Pa)
-
-    RS.Tg  = 297.0   # surface values for reference state (RS) which outputs p0 rho0 alpha0
-    RS.Pg  = 1013*100
-    RS.qtg = 17.5/1000
-
-    # ARM_SGP inputs
-
-
-    u = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')+10
-    v = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
-
-    RS.initialize(Gr ,Th, NS, Pa)
-
-
-    cdef:
-        Py_ssize_t i, j, k, ijk, ishift, jshift
-        Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
-        Py_ssize_t jstride = Gr.dims.nlg[2]
-        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
-        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
-        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
-        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
-        Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
-        double [:] Theta = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c') # change to temp interp to zp_hlaf (LES press is in pasc)
-        double [:] qt = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
-        #double [:] u = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
-        #double [:] v = np.zeros((Gr.dims.nlg[2],),dtype=np.double,order='c')
-
-    for k in xrange(Gr.dims.nlg[2]):
-        if Gr.zp_half[k] <= 1500:
-            Theta[k] = RS.Tg- Gr.zp_half[k]/1500*(297-303)
-        elif Gr.zp_half[k] > 1500 and Gr.zp_half[k] <= 2200:
-            Theta[k] = 303 - (Gr.zp_half[k]-1500)/700*(303 - 311)
-        elif Gr.zp_half[k] > 2200:# and Gr.zp_half[k] <= 3000:
-            Theta[k] = 311 - (Gr.zp_half[k]-2200)/800*(311 - 312)
-
-    for k in xrange(Gr.dims.nlg[2]):
-        if Gr.zp_half[k] <= 800:
-            qt[k] = RS.qtg*1000 - Gr.zp_half[k]/800*(17.5-16)
-        elif Gr.zp_half[k] > 800 and Gr.zp_half[k] <= 1500:
-            qt[k] = 16 - (Gr.zp_half[k]-800)/700*(16 - 13)
-        elif Gr.zp_half[k] > 1500 and Gr.zp_half[k] <= 2100:
-            qt[k] = 13 - (Gr.zp_half[k]-1500)/600*(13 - 3)
-        elif Gr.zp_half[k] > 2100:
-            qt[k] = 3
-    qt = np.divide(qt,1000.0) # in [kg/kg]
-      #Set velocities for Galilean transformation
-    RS.u0 = 0.5 * (np.amax(u)+np.amin(u))
-    RS.v0 = 0.5 * (np.amax(v)+np.amin(v))
-
-    # it is not clear if there is any random perturbation in the Neggers paper
-    np.random.seed(Pa.rank)
-    cdef double [:] T_pert = np.random.random_sample(Gr.dims.npg)
-    cdef double T_pert_
-    cdef double pv_star
-    cdef double qv_star
-
-    epsi = 287.1/461.5
-    # Here we fill in the 3D arrays
-    # We perform saturation adjustment on the S6 data, although this should not actually be necessary (but doesn't hurt)
-    for i in xrange(Gr.dims.nlg[0]):
-        ishift = istride * i
-        for j in xrange(Gr.dims.nlg[1]):
-            jshift = jstride * j
-            for k in xrange(Gr.dims.nlg[2]):
-                ijk = ishift + jshift + k
-                PV.values[ijk + u_varshift] = u[k] - RS.u0
-                PV.values[ijk + v_varshift] = v[k] - RS.v0
-                PV.values[ijk + w_varshift] = 0.0
-                PV.values[ijk + qt_varshift]  = qt[k]
-                T  = Theta[k]*exner_c(RS.p0_half[k])
-                if Gr.zp_half[k] < 1000.0:
-                    T_pert_ = (T_pert[ijk] - 0.5)* 0.1
-                    PV.values[ijk + s_varshift] = Th.entropy(RS.p0_half[k], T + T_pert_, qt[k], 0.0, 0.0)
-                else:
-                    PV.values[ijk + s_varshift] = Th.entropy(RS.p0_half[k], T , qt[k], 0.0, 0.0)
-    return
 
 def InitGATE_III(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa , LatentHeat LH):

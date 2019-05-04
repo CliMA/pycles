@@ -235,40 +235,6 @@ cdef class SurfaceARM_SGP(SurfaceBase):
                  ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS)
     cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
-cdef class SurfaceSCMS(SurfaceBase):
-    cdef:
-        double lv
-        double ft
-        double fq
-        double cm
-        double z0
-        double buoyancy_flux
-        double gustiness
-        double [:] windspeed
-
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
-                 DiagnosticVariables.DiagnosticVariables DV,
-                 ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS)
-    cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-
-cdef class SurfaceSCMS2(SurfaceBase):
-    cdef:
-        double lv
-        double ft
-        double fq
-        double cm
-        double z0
-        double buoyancy_flux
-        double gustiness
-        double [:] windspeed
-
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
-                 DiagnosticVariables.DiagnosticVariables DV,
-                 ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS)
-    cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-
 cdef class SurfaceGATE_III(SurfaceBase):
     cdef:
         ClausiusClapeyron CC

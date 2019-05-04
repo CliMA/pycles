@@ -208,24 +208,6 @@ cdef class ForcingARM_SGP:
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                    NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 
-cdef class ForcingSCMS:
-    cdef:
-
-        double [:] ug
-        double [:] vg
-        double tau_inverse
-        double coriolis_param
-        double [:] dtdt
-        double [:] dqtdt
-        double zinv
-
-    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
-                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS)
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS,
-                 PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                   NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
-
 cdef class ForcingGATE_III:
     cdef:
 
