@@ -108,12 +108,26 @@ cdef class Microphysics_Arctic_1M:
                 self.Lambda_fp = lambda_constant_Arctic
                 LH.Lambda_fp = lambda_constant_Arctic
                 Par.root_print('liquid only microphysics set Lambda = 1.0 ')
-            else:
+            elif namelist['microphysics']['phase_partitioning'] == 'Hu2010':
+                self.Lambda_fp = lambda_Hu2010
+                LH.Lambda_fp = lambda_Hu2010
+                Par.root_print('Using CALIPSO derived liquid fraction by Hu et al. 2015!')
+            elif namelist['microphysics']['phase_partitioning'] == 'arctic':
                 self.Lambda_fp = lambda_Arctic
                 LH.Lambda_fp = lambda_Arctic
+                Par.root_print('Using Arctic specific liquid fraction by Kaul et al. 2015!')
+            elif namelist['microphysics']['phase_partitioning'] == 'lambda_logistic':
+                self.Lambda_fp = lambda_logistic
+                LH.Lambda_fp = lambda_logistic
+                Par.root_print('Liquid fraction formulation not recognized! Using default logistic function as liquid fraction!')
+            else:
+                self.Lambda_fp = lambda_logistic
+                LH.Lambda_fp = lambda_logistic
+                Par.root_print('Liquid fraction formulation not recognized! Using default logistic function as liquid fraction!')
         except:
-            self.Lambda_fp = lambda_Arctic
-            LH.Lambda_fp = lambda_Arctic
+            self.Lambda_fp = lambda_logistic
+            LH.Lambda_fp = lambda_logistic
+            Par.root_print('Using default logistic function as liquid fraction!')
 
 
         LH.L_fp = latent_heat_Arctic
