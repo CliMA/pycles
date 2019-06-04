@@ -82,6 +82,8 @@ class CumulusStatistics:
             NS.add_profile('fraction_'+cond,Gr,Pa)
             NS.add_profile('w_'+cond,Gr,Pa)
             NS.add_profile('w2_'+cond,Gr,Pa)
+            NS.add_profile('dyn_pressure_'+cond,Gr,Pa)
+            NS.add_profile('buoyancy_'+cond,Gr,Pa)
             for scalar in scalars:
                 NS.add_profile(scalar+'_'+cond,Gr,Pa)
                 NS.add_profile(scalar+'2_'+cond,Gr,Pa)
@@ -140,6 +142,20 @@ class CumulusStatistics:
         NS.write_profile('w_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
         tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &PV.values[shift], &PV.values[shift], &coremask[0])
         NS.write_profile('w2_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        #-dynamic_pressure --Jia
+        shift = DV.get_varshift(Gr, 'dynamic_pressure')
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &cloudmask[0])
+        NS.write_profile('dyn_pressure_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &coremask[0])
+        NS.write_profile('dyn_pressure_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        #-buoyancy --Jia
+        shift = DV.get_varshift(Gr, 'buoyancy')
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &cloudmask[0])
+        NS.write_profile('buoyancy_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &coremask[0])
+        NS.write_profile('buoyancy_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         #-qt
         shift = PV.get_varshift(Gr, 'qt')
@@ -614,11 +630,11 @@ class TKEStatistics:
 
         #Compute the dissipation of TKE
         with nogil:
-            for i in xrange(1, Gr.dims.nlg[0]-1):
+            for i in xrange(1, Gr.dims.nlg[0]):
                 ishift = i * istride
-                for j in xrange(1, Gr.dims.nlg[1]-1):
+                for j in xrange(1, Gr.dims.nlg[1]):
                     jshift = j * jstride
-                    for k in xrange(1, Gr.dims.nlg[2]-1):
+                    for k in xrange(1, Gr.dims.nlg[2]):
                         ijk = ishift + jshift + k
                         nu = DV.values[visc_shift + ijk]
                         e_dis[ijk] += (up[ijk + istride] - up[ijk-istride]) * 0.5 * Gr.dims.dxi[0] * (up[ijk + istride] - up[ijk-istride]) * 0.5 * Gr.dims.dxi[0]
