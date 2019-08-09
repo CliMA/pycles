@@ -488,7 +488,7 @@ cdef class UpdraftTracers:
                     jshift = j * jstride
                     for k in range(kmin,kmax):
                         ijk = ishift + jshift + k
-                        dpalphadz[ijk] = 0.5*(Ref.alpha0_half[k+1]*DV.values[ijk+1]-Ref.alpha0_half[k-1]*DV.values[ijk-1])*Gr.dims.dxi[2]
+                        dpalphadz[ijk] = 0.5*(Ref.alpha0_half[k+1]*DV.values[p_shift+ijk+1]-Ref.alpha0_half[k-1]*DV.values[p_shift+ijk-1])*Gr.dims.dxi[2]
         tmp = Pa.HorizontalMeanConditional(Gr, &dpalphadz[0], &self.updraft_indicator[0])
         NS.write_profile('updraft_ddz_p_alpha', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
