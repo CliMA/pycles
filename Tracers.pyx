@@ -900,8 +900,8 @@ cdef class PurityTracers:
         return
 
     cpdef stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                   TimeStepping.TimeStepping TS, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        self.TracersUpdraft.stats_io(Gr, PV, DV, TS, NS, Pa)
+                   TimeStepping.TimeStepping TS, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ReferenceState.ReferenceState Ref):
+        self.TracersUpdraft.stats_io(Gr, PV, DV, TS, NS, Pa, Ref)
 
         cdef:
             double [:] extracted_purity_var = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
