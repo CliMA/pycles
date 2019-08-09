@@ -208,6 +208,8 @@ cdef class UpdraftTracers:
 
         NS.add_profile('updraft_dyn_pressure', Gr, Pa, units=r'Pa', nice_name=r'dynamic pressure',
                        desc=r'updraft dynamic pressure')
+        NS.add_profile('updraft_ddz_p_alpha', Gr, Pa, units=r'm/s^2', nice_name=r'updraft vertical pressure gradient',
+                       desc=r'updraft vertical pressure gradient')
         NS.add_profile('updraft_u_dyn_pressure', Gr, Pa, units=r'm/s Pa', nice_name=r'u''p''',
                        desc=r'updraft dynamic pressure*u')
         NS.add_profile('updraft_v_dyn_pressure', Gr, Pa, units=r'm/s Pa', nice_name=r'v''p''',
@@ -369,7 +371,7 @@ cdef class UpdraftTracers:
 
 
     cpdef stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                   TimeStepping.TimeStepping TS, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+                   TimeStepping.TimeStepping TS, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ReferenceState.ReferenceState Ref):
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr,'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr,'v')
@@ -390,6 +392,7 @@ cdef class UpdraftTracers:
             double [:] u_half = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
             double [:] v_half = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
             double [:] w_half = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
+            double [:] dpalphadz = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
             double [:] mean = Pa.HorizontalMean(Gr, &PV.values[c_shift])
             double [:] mean_square = Pa.HorizontalMeanofSquares(Gr, &PV.values[c_shift], &PV.values[c_shift])
             Py_ssize_t i,j,k, ijk, ishift, jshift
@@ -477,6 +480,18 @@ cdef class UpdraftTracers:
 
         tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[p_shift], &self.updraft_indicator[0])
         NS.write_profile('updraft_dyn_pressure', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        with nogil:
+            for i in range(Gr.dims.nlg[0]):
+                ishift = i * istride
+                for j in range(Gr.dims.nlg[1]):
+                    jshift = j * jstride
+                    for k in range(kmin,kmax):
+                        ijk = ishift + jshift + k
+                        dpalphadz[ijk] = 0.5*(Ref.alpha0_half[k+1]*DV.values[ijk+1]-Ref.alpha0_half[k-1]*DV.values[ijk-1])*Gr.dims.dxi[2]
+        tmp = Pa.HorizontalMeanConditional(Gr, &dpalphadz[0], &self.updraft_indicator[0])
+        NS.write_profile('updraft_ddz_p_alpha', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
         tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &w_half[0], &DV.values[p_shift], &self.updraft_indicator[0])
         NS.write_profile('updraft_w_dyn_pressure', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
         tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &u_half[0], &DV.values[p_shift], &self.updraft_indicator[0])
