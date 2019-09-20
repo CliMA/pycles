@@ -25,12 +25,13 @@
 
 double CLIMA_terminal_velocity_single_drop_coeff(double rho){
 
-    return sqrt(8./3 / C_drag * (rho_cloud_liq / rho - 1.));
+    double drop_vel_coeff = sqrt(8./3 / C_drag * (rho_cloud_liq / rho - 1.));
+    return drop_vel_coeff;
 }
 
 double CLIMA_terminal_velocity(double q_rai, double rho){
 
-    double v_c = terminal_velocity_single_drop_coeff(rho);
+    double v_c = CLIMA_terminal_velocity_single_drop_coeff(rho);
     double gamma_9_2 = 11.631728396567448;
 
     double term_vel = 0.;
@@ -52,7 +53,7 @@ void CLIMA_conv_q_liq_to_q_rai_acnv(double q_liq, double* qr_tendency_aut){
 void CLIMA_conv_q_liq_to_q_rai_accr(double q_liq, double q_rai, double rho,
                                     double* qr_tendency_acc){
 
-    double v_c = terminal_velocity_single_drop_coeff(rho);
+    double v_c = CLIMA_terminal_velocity_single_drop_coeff(rho);
     double gamma_7_2 = 3.3233509704478426;
 
     double accr_coeff = gamma_7_2 * pow(8., -7./8) * pow(pi, 1./8) * v_c * E_col *
@@ -70,7 +71,7 @@ void CLIMA_conv_q_rai_to_q_vap(double q_rai, double q_tot, double q_liq,
                                double* qr_tendency_evp){
 
     double gamma_11_4 = 1.6083594219855457;
-    double v_c = terminal_velocity_single_drop_coeff(rho);
+    double v_c = CLIMA_terminal_velocity_single_drop_coeff(rho);
     double N_Sc = nu_air / D_vapor;
 
     double av_param = sqrt(2. * pi) * a_vent * sqrt(rho / rho_cloud_liq);

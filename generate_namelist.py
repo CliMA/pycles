@@ -303,7 +303,7 @@ def StableBubble():
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
 
-    namelist['conditional_stats'] = {} 
+    namelist['conditional_stats'] = {}
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
@@ -766,8 +766,8 @@ def DYCOMS_RF01():
     namelist['grid']['dz'] = 5.0
 
     namelist['mpi'] = {}
-    namelist['mpi']['nprocx'] = 1
-    namelist['mpi']['nprocy'] = 1
+    namelist['mpi']['nprocx'] = 8
+    namelist['mpi']['nprocy'] = 8
     namelist['mpi']['nprocz'] = 1
 
     namelist['time_stepping'] = {}
@@ -781,10 +781,9 @@ def DYCOMS_RF01():
     namelist['thermodynamics']['latentheat'] = 'constant'
 
     namelist['microphysics'] = {}
-    namelist['microphysics']['scheme'] = 'None_SA'
+    namelist['microphysics']['scheme'] = 'CLIMA_liquid_1M'
     namelist['microphysics']['phase_partitioning'] = 'liquid_only'
     namelist['microphysics']['cloud_sedimentation'] = False
-    namelist['microphysics']['ccn'] = 100.0e6
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
@@ -813,21 +812,26 @@ def DYCOMS_RF01():
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
 
+    namelist['tracers'] = {}
+    namelist['tracers']['use_tracers'] = True
+    namelist['tracers']['scheme'] = 'UpdraftTracers'
+    namelist['tracers']['use_lcl_tracers'] = False
+    namelist['tracers']['timescale'] = 15.0
+
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['DYCOMS', 'Flux','TKE']
+    namelist['stats_io']['auxiliary'] = ['DYCOMS', 'Flux','TKE', 'Cumulus']
     namelist['stats_io']['frequency'] = 60.0
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
-    namelist['fields_io']['frequency'] = 3600.0
-    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+    namelist['fields_io']['frequency'] = 1800.0
+    namelist['fields_io']['diagnostic_fields'] = ['ql', 'temperature', 'buoyancy_frequency', 'viscosity', 'buoyancy' , 'thetali']
 
     namelist['conditional_stats'] ={}
     namelist['conditional_stats']['classes'] = ['Spectra']
     namelist['conditional_stats']['frequency'] = 600.0
     namelist['conditional_stats']['stats_dir'] = 'cond_stats'
-
 
     namelist['visualization'] = {}
     namelist['visualization']['frequency'] = 1e6
@@ -1031,8 +1035,8 @@ def Rico():
     namelist['grid']['dz'] = 40.0
 
     namelist['mpi'] = {}
-    namelist['mpi']['nprocx'] = 1
-    namelist['mpi']['nprocy'] = 1
+    namelist['mpi']['nprocx'] = 8
+    namelist['mpi']['nprocy'] = 8
     namelist['mpi']['nprocz'] = 1
 
     namelist['time_stepping'] = {}
@@ -1048,18 +1052,7 @@ def Rico():
     namelist['microphysics'] = {}
     namelist['microphysics']['phase_partitioning'] = 'liquid_only'
     namelist['microphysics']['cloud_sedimentation'] = False
-    namelist['microphysics']['ccn'] = 70.0e6
-    namelist['microphysics']['scheme'] = 'SB_Liquid'
-    namelist['microphysics']['SB_Liquid'] = {}
-
-    namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
-    namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
-
-    namelist['tracers'] = {}
-    namelist['tracers']['use_tracers'] = True
-    namelist['tracers']['scheme'] = 'UpdraftTracers'
-    namelist['tracers']['use_lcl_tracers'] = False
-    namelist['tracers']['timescale'] = 15.0
+    namelist['microphysics']['scheme'] = 'CLIMA_liquid_1M'
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
@@ -1083,6 +1076,12 @@ def Rico():
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
+    namelist['tracers'] = {}
+    namelist['tracers']['use_tracers'] = True
+    namelist['tracers']['scheme'] = 'UpdraftTracers'
+    namelist['tracers']['use_lcl_tracers'] = False
+    namelist['tracers']['timescale'] = 15.0
+
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
     namelist['stats_io']['auxiliary'] = ['Cumulus']
@@ -1091,7 +1090,7 @@ def Rico():
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 1800.0
-    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+    namelist['fields_io']['diagnostic_fields'] = ['ql', 'temperature', 'buoyancy_frequency', 'viscosity', 'buoyancy' , 'thetali']
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'Rico'
@@ -1615,8 +1614,8 @@ def TRMM_LBA():
     namelist['grid']['stretch'] = True
 
     namelist['mpi'] = {}
-    namelist['mpi']['nprocx'] = 1
-    namelist['mpi']['nprocy'] = 1
+    namelist['mpi']['nprocx'] = 8
+    namelist['mpi']['nprocy'] = 8
     namelist['mpi']['nprocz'] = 1
 
     namelist['time_stepping'] = {}
@@ -1630,13 +1629,8 @@ def TRMM_LBA():
     namelist['thermodynamics']['latentheat'] = 'constant'
 
     namelist['microphysics'] = {}
-    namelist['microphysics']['scheme'] = 'Arctic_1M' #T_Liquid'
-    namelist['microphysics']['phase_partitioning'] = 'liquid_only' # liquid_ice
-
-    #namelist['microphysics']['cloud_sedimentation'] = False
-    #namelist['microphysics']['ccn'] = 70.0e6
-    #namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
-    #namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
+    namelist['microphysics']['scheme'] = 'CLIMA_liquid_1M'
+    namelist['microphysics']['phase_partitioning'] = 'liquid_only'
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
@@ -1646,6 +1640,16 @@ def TRMM_LBA():
     namelist['tracers']['scheme'] = 'UpdraftTracers'
     namelist['tracers']['use_lcl_tracers'] = False
     namelist['tracers']['timescale'] = 60.0
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['auxiliary'] = ['Cumulus']
+    namelist['stats_io']['frequency'] = 100.0
+
+    namelist['fields_io'] = {}
+    namelist['fields_io']['fields_dir'] = 'fields'
+    namelist['fields_io']['frequency'] = 1800.0
+    namelist['fields_io']['diagnostic_fields'] = ['ql', 'temperature', 'buoyancy_frequency', 'viscosity', 'buoyancy' , 'thetali']
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -1665,16 +1669,6 @@ def TRMM_LBA():
 
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
-
-    namelist['stats_io'] = {}
-    namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['Cumulus']
-    namelist['stats_io']['frequency'] = 100.0
-
-    namelist['fields_io'] = {}
-    namelist['fields_io']['fields_dir'] = 'fields'
-    namelist['fields_io']['frequency'] = 1800.0
-    namelist['fields_io']['diagnostic_fields'] = ['ql', 'temperature', 'buoyancy_frequency', 'viscosity', 'buoyancy' , 'thetali']
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'TRMM_LBA'
