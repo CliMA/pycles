@@ -80,7 +80,7 @@ else:
         netcdf_lib = '/share/apps/software/rhel6/software/netCDF/4.4.0-foss-2016a/lib'
         f_compiler = 'gfortran'
 
-    else: 
+    else:
         print('Unknown system platform: ' + sys.platform  + 'or unknown system name: ' + platform.node())
         sys.exit()
 
