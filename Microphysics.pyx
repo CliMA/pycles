@@ -6,12 +6,13 @@
 
 cimport numpy as np
 import numpy as np
-cimport Grid
+
 cimport Lookup
+cimport ParallelMPI
+cimport Grid
 cimport PrognosticVariables
 cimport DiagnosticVariables
 cimport ReferenceState
-cimport ParallelMPI
 cimport TimeStepping
 from NetCDFIO cimport NetCDFIO_Stats
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
@@ -481,6 +482,258 @@ cdef class Microphysics_SB_Liquid:
         return
 
 
+cdef extern from "microphysics_CLIMA.h":
+
+    void CLIMA_sedimentation_velocity_rain(Grid.DimStruct *dims,\
+                                           double* density, double* qr,\
+                                           double* qr_velocity) nogil
+
+    void CLIMA_microphysics_sources(Grid.DimStruct *dims, Lookup.LookupStruct *LT,\
+                                    double (*lam_fp)(double), double (*L_fp)(double, double),\
+                                    double* density, double* p0, double* temperature,\
+                                    double* qt, double* ql, double* qr, double dt,\
+                                    double* qr_tendency_micro, double* qr_tendency) nogil
+
+    void CLIMA_qt_source_formation(Grid.DimStruct *dims, double* qr_tendency,\
+                                   double* qt_tendency) nogil
+
+    void CLIMA_entropy_source_formation(Grid.DimStruct *dims, Lookup.LookupStruct *LT,\
+                                        double (*lam_fp)(double), double (*L_fp)(double, double),\
+                                        double* p0, double* T, double* Twet, double* qt,\
+                                        double* qv, double* qr_tendency,\
+                                        double* entropy_tendency) nogil
+
+    void CLIMA_entropy_source_heating(Grid.DimStruct *dims, double* T, double* Twet,\
+                                      double* qr, double* w_qr, double* w,\
+                                      double* entropy_tendency) nogil
+
+    void CLIMA_entropy_source_drag(Grid.DimStruct *dims, double* T,\
+                                   double* qr, double* w_qr,\
+                                   double* entropy_tendency) nogil
+
+    void CLIMA_autoconversion_rain_wrapper(Grid.DimStruct *dims,\
+                                           double* ql,\
+                                           double* qr_tendency) nogil
+
+    void CLIMA_accretion_rain_wrapper(Grid.DimStruct *dims, double* density,\
+                                      double* ql, double* qr,\
+                                      double* qr_tendency) nogil
+
+    void CLIMA_evaporation_rain_wrapper(Grid.DimStruct *dims, Lookup.LookupStruct *LT,\
+                                        double (*lam_fp)(double),\
+                                        double (*L_fp)(double, double),\
+                                        double* density, double* p0,\
+                                        double* temperature, double* qt,\
+                                        double* ql, double* qr,\
+                                        double* qr_tendency) nogil
+
+cdef class Microphysics_CLIMA_Liquid_1M:
+    def __init__(self, ParallelMPI.ParallelMPI Par, LatentHeat LH, namelist):
+        # Create the appropriate linkages to the bulk thermodynamics
+        LH.Lambda_fp = lambda_constant
+        LH.L_fp = latent_heat_variable
+        self.thermodynamics_type = 'SA'
+        #also set local versions
+        self.Lambda_fp = lambda_constant
+        self.L_fp = latent_heat_variable
+        self.CC = ClausiusClapeyron()
+        self.CC.initialize(namelist, LH, Par)
+
+        try:
+            self.order = namelist['scalar_transport']['order_sedimentation']
+        except:
+            self.order = namelist['scalar_transport']['order']
+
+        return
+
+    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,\
+                     DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS,\
+                     ParallelMPI.ParallelMPI Pa):
+
+        PV.add_variable('qr', 'kg/kg', r'q_r', 'rain water specific humidity','sym','scalar',Pa)
+
+        DV.add_variables('w_qr', 'm/s', r'w_{qr}', 'rain mass sedimentation veloctiy', 'sym', Pa)
+        DV.add_variables('temperature_wb', 'K', r'T_{wb}','wet bulb temperature','sym', Pa)
+
+        # add statistical output for the class
+        NS.add_profile('qr_sedimentation_flux', Gr, Pa)
+        NS.add_profile('qr_autoconversion', Gr, Pa)
+        NS.add_profile('qr_accretion', Gr, Pa)
+        NS.add_profile('qr_evaporation', Gr,Pa)
+        NS.add_profile('s_autoconversion', Gr, Pa)
+        NS.add_profile('s_accretion', Gr, Pa)
+        NS.add_profile('s_evaporation', Gr,Pa)
+        NS.add_profile('s_precip_heating', Gr, Pa)
+        NS.add_profile('s_precip_drag', Gr, Pa)
+        return
+
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th,\
+                 PrognosticVariables.PrognosticVariables PV,\
+                 DiagnosticVariables.DiagnosticVariables DV,\
+                 TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
+        cdef:
+
+            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            Py_ssize_t qr_shift = PV.get_varshift(Gr, 'qr')
+            Py_ssize_t w_shift = PV.get_varshift(Gr, 'w')
+
+            Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
+            Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
+            Py_ssize_t qv_shift = DV.get_varshift(Gr,'qv')
+
+            double dt = TS.dt
+            Py_ssize_t wqr_shift = DV.get_varshift(Gr, 'w_qr')
+
+            double[:] qr_tend_micro = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+
+        CLIMA_microphysics_sources(&Gr.dims, &self.CC.LT.LookupStructC,\
+                                   self.Lambda_fp, self.L_fp,\
+                                   &Ref.rho0_half[0], &Ref.p0_half[0],\
+                                   &DV.values[t_shift], &PV.values[qt_shift],\
+                                   &DV.values[ql_shift], &PV.values[qr_shift],\
+                                   dt, &qr_tend_micro[0], &PV.tendencies[qr_shift])
+
+
+        CLIMA_sedimentation_velocity_rain(&Gr.dims, &Ref.rho0_half[0],\
+                                          &PV.values[qr_shift],\
+                                          &DV.values[wqr_shift])
+
+        CLIMA_qt_source_formation(&Gr.dims, &qr_tend_micro[0],\
+                                  &PV.tendencies[qt_shift])
+
+        cdef:
+            Py_ssize_t tw_shift = DV.get_varshift(Gr, 'temperature_wb')
+            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+
+        microphysics_wetbulb_temperature(&Gr.dims, &self.CC.LT.LookupStructC,\
+                                         &Ref.p0_half[0], &PV.values[s_shift],\
+                                         &PV.values[qt_shift],\
+                                         &DV.values[t_shift], &DV.values[tw_shift])
+
+        CLIMA_entropy_source_formation(&Gr.dims, &self.CC.LT.LookupStructC,\
+                                       self.Lambda_fp, self.L_fp, &Ref.p0_half[0],\
+                                       &DV.values[t_shift], &DV.values[tw_shift],\
+                                       &PV.values[qt_shift], &DV.values[qv_shift],\
+                                       &qr_tend_micro[0], &PV.tendencies[s_shift])
+
+        CLIMA_entropy_source_heating(&Gr.dims, &DV.values[t_shift],\
+                                     &DV.values[tw_shift], &PV.values[qr_shift],\
+                                     &DV.values[wqr_shift], &PV.values[w_shift],\
+                                     &PV.tendencies[s_shift])
+
+        CLIMA_entropy_source_drag(&Gr.dims, &DV.values[t_shift],\
+                                  &PV.values[qr_shift], &DV.values[wqr_shift],\
+                                  &PV.tendencies[s_shift])
+        return
+
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th,\
+                   PrognosticVariables.PrognosticVariables PV,\
+                   DiagnosticVariables.DiagnosticVariables DV,\
+                   NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        cdef:
+            Py_ssize_t i, j, k, ijk
+            Py_ssize_t gw = Gr.dims.gw
+            Py_ssize_t imax = Gr.dims.nlg[0]
+            Py_ssize_t jmax = Gr.dims.nlg[1]
+            Py_ssize_t kmax = Gr.dims.nlg[2]
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t ishift, jshift
+
+            Py_ssize_t qr_shift = PV.get_varshift(Gr, 'qr')
+            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            Py_ssize_t w_shift  = PV.get_varshift(Gr, 'w')
+
+            Py_ssize_t t_shift   = DV.get_varshift(Gr, 'temperature')
+            Py_ssize_t tw_shift  = DV.get_varshift(Gr, 'temperature_wb')
+            Py_ssize_t qv_shift  = DV.get_varshift(Gr, 'qv')
+            Py_ssize_t ql_shift  = DV.get_varshift(Gr, 'ql')
+            Py_ssize_t wqr_shift = DV.get_varshift(Gr, 'w_qr')
+
+            double[:] qr_tendency = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
+            double[:] tmp
+            double[:] dummy =  np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+            double[:] s_src =  np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+
+        # copied from SB microphysics
+
+        # sedimentation flux of qr
+        compute_advective_fluxes_a(&Gr.dims, &Ref.rho0[0], &Ref.rho0_half[0],\
+                                   &DV.values[wqr_shift], &PV.values[qr_shift],\
+                                   &dummy[0], 2, self.order)
+        tmp = Pa.HorizontalMean(Gr, &dummy[0])
+        NS.write_profile('qr_sedimentation_flux', tmp[gw:-gw], Pa)
+
+        # autoconversion tendencies of qr
+        CLIMA_autoconversion_rain_wrapper(&Gr.dims, &DV.values[ql_shift], &qr_tendency[0])
+        tmp = Pa.HorizontalMean(Gr, &qr_tendency[0])
+        NS.write_profile('qr_autoconversion', tmp[gw: -gw], Pa)
+
+        # autoconversion tendencies of s
+        cdef double[:] s_auto = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+        CLIMA_entropy_source_formation(&Gr.dims, &self.CC.LT.LookupStructC,\
+                                       self.Lambda_fp, self.L_fp, &Ref.p0_half[0],\
+                                       &DV.values[t_shift], &DV.values[tw_shift],\
+                                       &PV.values[qt_shift], &DV.values[qv_shift],\
+                                       &qr_tendency[0], &s_auto[0])
+        tmp = Pa.HorizontalMean(Gr, &s_auto[0])
+        NS.write_profile('s_autoconversion', tmp[gw: -gw], Pa)
+
+        # accretion tendencies of qr
+        CLIMA_accretion_rain_wrapper(&Gr.dims, &Ref.rho0_half[0],\
+                                     &DV.values[ql_shift], &PV.values[qr_shift],\
+                                     &qr_tendency[0])
+        tmp = Pa.HorizontalMean(Gr, &qr_tendency[0])
+        NS.write_profile('qr_accretion', tmp[gw: -gw], Pa)
+
+        # accretion tendencies of s
+        cdef double[:] s_accr = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+        CLIMA_entropy_source_formation(&Gr.dims, &self.CC.LT.LookupStructC,\
+                                       self.Lambda_fp, self.L_fp, &Ref.p0_half[0],\
+                                       &DV.values[t_shift], &DV.values[tw_shift],\
+                                       &PV.values[qt_shift], &DV.values[qv_shift],\
+                                       &qr_tendency[0], &s_accr[0])
+        tmp = Pa.HorizontalMean(Gr, &s_accr[0])
+        NS.write_profile('s_accretion', tmp[gw: -gw], Pa)
+
+        # evaporation tendencies of qr
+        CLIMA_evaporation_rain_wrapper(&Gr.dims, &self.CC.LT.LookupStructC,\
+                                       self.Lambda_fp, self.L_fp,\
+                                       &Ref.rho0_half[0], &Ref.p0_half[0],\
+                                       &DV.values[t_shift], &PV.values[qt_shift],\
+                                       &DV.values[ql_shift], &PV.values[qr_shift],\
+                                       &qr_tendency[0])
+        tmp = Pa.HorizontalMean(Gr, &qr_tendency[0])
+        NS.write_profile('qr_evaporation', tmp[gw: -gw], Pa)
+
+        # evaporation tendencies of s
+        cdef double[:] s_evp = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+        CLIMA_entropy_source_formation(&Gr.dims, &self.CC.LT.LookupStructC,\
+                                       self.Lambda_fp, self.L_fp, &Ref.p0_half[0],\
+                                       &DV.values[t_shift], &DV.values[tw_shift],\
+                                       &PV.values[qt_shift], &DV.values[qv_shift],\
+                                       &qr_tendency[0], &s_evp[0])
+        tmp = Pa.HorizontalMean(Gr, &s_evp[0])
+        NS.write_profile('s_evaporation', tmp[gw: -gw], Pa)
+
+        # precip heating tendencies of s
+        cdef double[:] s_heat = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+        CLIMA_entropy_source_heating(&Gr.dims, &DV.values[t_shift],\
+                                     &DV.values[tw_shift], &PV.values[qr_shift],\
+                                     &DV.values[wqr_shift], &PV.values[w_shift],\
+                                     &s_heat[0])
+        tmp = Pa.HorizontalMean(Gr, &s_heat[0])
+        NS.write_profile('s_precip_heating', tmp[gw: -gw], Pa)
+
+        # precip drag tendencies of s
+        cdef double[:] s_drag = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+        CLIMA_entropy_source_drag(&Gr.dims, &DV.values[t_shift],\
+                                  &PV.values[qr_shift], &DV.values[wqr_shift],\
+                                  &s_drag[0])
+        tmp = Pa.HorizontalMean(Gr, &s_drag[0])
+        NS.write_profile('s_precip_drag', tmp[gw: -gw], Pa)
+
+        return
 
 cdef extern from "entropies.h":
     inline double sd_c(double pd, double T) nogil
@@ -549,7 +802,6 @@ cdef cython_wetbulb(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double *p0, d
 
     print('leaving wetbulb')
     return
-
 
 cdef class Microphysics_T_Liquid:
     def __init__(self, ParallelMPI.ParallelMPI Par, LatentHeat LH, namelist):
@@ -637,8 +889,6 @@ cdef class Microphysics_T_Liquid:
 
         return
 
-
-
 def MicrophysicsFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
     if(namelist['microphysics']['scheme'] == 'None_Dry'):
         return No_Microphysics_Dry(Par, LH, namelist)
@@ -650,4 +900,5 @@ def MicrophysicsFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
         return Microphysics_T_Liquid(Par, LH, namelist)
     elif(namelist['microphysics']['scheme'] == 'Arctic_1M'):
         return Microphysics_Arctic_1M(Par, LH, namelist)
-
+    elif(namelist['microphysics']['scheme'] == 'CLIMA_liquid_1M'):
+        return Microphysics_CLIMA_Liquid_1M(Par, LH, namelist)
