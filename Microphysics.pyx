@@ -8,7 +8,7 @@ cimport numpy as np
 import numpy as np
 cimport Lookup
 cimport ParallelMPI
-from Microphysics_Arctic_1M cimport Microphysics_Arctic_1M
+#from Microphysics_Arctic_1M cimport Microphysics_Arctic_1M
 cimport Grid
 cimport ReferenceState
 cimport PrognosticVariables
@@ -511,8 +511,7 @@ cdef extern from "microphysics_CLIMA.h":
                                    double* entropy_tendency) nogil
 
     void CLIMA_autoconversion_rain_wrapper(Grid.DimStruct *dims,\
-                                           double* density,\
-                                           double* ql, double* qr,\
+                                           double* ql,\
                                            double* qr_tendency) nogil
 
     void CLIMA_accretion_rain_wrapper(Grid.DimStruct *dims, double* density,\
@@ -527,8 +526,7 @@ cdef extern from "microphysics_CLIMA.h":
                                         double* ql, double* qr,\
                                         double* qr_tendency) nogil
 
-cdef class Microphysics_CLIMA_liquid_1M:
-
+cdef class Microphysics_CLIMA_Liquid_1M:
     def __init__(self, ParallelMPI.ParallelMPI Par, LatentHeat LH, namelist):
         # Create the appropriate linkages to the bulk thermodynamics
         LH.Lambda_fp = lambda_constant
@@ -809,7 +807,7 @@ def MicrophysicsFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Par):
         return No_Microphysics_SA(Par, LH, namelist)
     elif(namelist['microphysics']['scheme'] == 'SB_Liquid'):
         return Microphysics_SB_Liquid(Par, LH, namelist)
-    elif(namelist['microphysics']['scheme'] == 'Arctic_1M'):
-        return Microphysics_Arctic_1M(Par, LH, namelist)
+    #elif(namelist['microphysics']['scheme'] == 'Arctic_1M'):
+    #    return Microphysics_Arctic_1M(Par, LH, namelist)
     elif(namelist['microphysics']['scheme'] == 'CLIMA_liquid_1M'):
-        return Microphysics_CLIMA_liquid_1M(Par, LH, namelist)
+        return Microphysics_CLIMA_Liquid_1M(Par, LH, namelist)
