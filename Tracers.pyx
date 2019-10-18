@@ -962,7 +962,7 @@ cdef updraft_indicator_sc(Grid.DimStruct *dims, double *tracer_raw, double *trac
                     for j in xrange(jmax):
                         jshift = j*jstride
                         ijk = ishift + jshift + k
-                        tracer_normed[ijk] = 0.0
+                        tracer_normed[ijk] = (tracer_raw[ijk] - mean[k])/ sigma_min
             else:
                for i in xrange(imax):
                     ishift = i*istride
@@ -1001,7 +1001,7 @@ cdef updraft_indicator_sc_w(Grid.DimStruct *dims, double *tracer_raw, double *tr
                     for j in xrange(jmax):
                         jshift = j*jstride
                         ijk = ishift + jshift + k
-                        tracer_normed[ijk] = 0.0
+                        tracer_normed[ijk] = copysign( (tracer_raw[ijk] - mean[k])/ sigma_min, w_half)
             else:
                for i in xrange(imax):
                     ishift = i*istride
@@ -1037,7 +1037,7 @@ cdef updraft_indicator_sc_w_ql(Grid.DimStruct *dims,  double *tracer_raw, double
                     for j in xrange(dims.nlg[1]):
                         jshift = j*jstride
                         ijk = ishift + jshift + k
-                        tracer_normed[ijk] = 0.0
+                        tracer_normed[ijk] = copysign( (tracer_raw[ijk] - mean[k])/ sigma_min, w_half)
             else:
                for i in xrange(dims.nlg[0]):
                     ishift = i*istride
