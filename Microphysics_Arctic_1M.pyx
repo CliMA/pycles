@@ -435,9 +435,9 @@ cdef class Microphysics_Arctic_1M:
                 rwp[pi] = 0.0
                 swp[pi] = 0.0
                 for k in xrange(kmin, kmax):
-                    iwp[pi] += RS.rho0_half[k] * qi_pencils[pi, k] * dz
-                    rwp[pi] += RS.rho0_half[k] * qrain_pencils[pi, k] * dz
-                    swp[pi] += RS.rho0_half[k] * qsnow_pencils[pi, k] * dz
+                    iwp[pi] += RS.rho0_half[k] * qi_pencils[pi, k] * dz * Gr.dims.met_half[k]
+                    rwp[pi] += RS.rho0_half[k] * qrain_pencils[pi, k] * dz * Gr.dims.met_half[k]
+                    swp[pi] += RS.rho0_half[k] * qsnow_pencils[pi, k] * dz * Gr.dims.met_half[k]
 
             for pi in xrange(z_pencil.n_local_pencils):
                 iwp_weighted_sum += iwp[pi]

@@ -478,7 +478,7 @@ cdef class ThermodynamicsSA:
             for pi in xrange(z_pencil.n_local_pencils):
                 lwp[pi] = 0.0
                 for k in xrange(kmin, kmax):
-                    lwp[pi] += RS.rho0_half[k] * ql_pencils[pi, k] * dz
+                    lwp[pi] += RS.rho0_half[k] * ql_pencils[pi, k] * dz * Gr.dims.met_half[k]
 
             for pi in xrange(z_pencil.n_local_pencils):
                 lwp_weighted_sum += lwp[pi]
