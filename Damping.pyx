@@ -119,7 +119,7 @@ cdef class Rayleigh:
                             for k in xrange(kmin, kmax):
                                 ijk = ishift + jshift + k
                                 PV.tendencies[var_shift + ijk] -= (PV.values[var_shift + ijk] - domain_mean[k]) * self.gamma_zhalf[k]
-            else:
+            elif var_name == 'u' or var_name == 'v':
                 with nogil:
                     for i in xrange(imin, imax):
                         ishift = i * istride
