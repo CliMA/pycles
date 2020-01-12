@@ -1156,6 +1156,7 @@ cdef class RadiationTRMM_LBA(RadiationBase):
 
         if TS.t<600.0: # first 10 min use the radiative forcing of t=10min
             for kk in range(0,Gr.dims.nlg[2]):
+                self.rad_cool[kk] = self.rad[0,kk]
         else:
             if TS.t%600.0 == 0:     # in case you step right on the data point
                 for kk in range(0,Gr.dims.nlg[2]):
@@ -1163,7 +1164,7 @@ cdef class RadiationTRMM_LBA(RadiationBase):
             else: # in all other cases - interpolate
                 for kk in range(0,Gr.dims.nlg[2]):
                     if Gr.zp_half[kk] < 22699.48:
-                        self.rad_cool[kk] = (self.rad[ind2,kk]-self.rad[ind1,kk])/(self.rad_time[ind2]-self.rad_time[ind1])*(TS.t-self.rad_time[ind1])+self.rad[ind1,kk] # yair check the impact of the dt typo
+                        self.rad_cool[kk]    = (self.rad[ind2,kk]-self.rad[ind1,kk])/(self.rad_time[ind2]-self.rad_time[ind1])*(TS.t-self.rad_time[ind1])+self.rad[ind1,kk] # yair check the impact of the dt typo
                     else:
                         self.rad_cool[kk] = 0.1
         # elif TS.t>18900.0: this is used if one would liek to lock in the focring at t=5.25h for the rest of the simualtion
