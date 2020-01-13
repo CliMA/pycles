@@ -1322,22 +1322,14 @@ cdef class SurfaceTRMM_LBA(SurfaceBase):
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t ql_shift = DV.get_varshift(Gr, 'ql')
-        #cdef double[:]
+
         F_pert = np.random.random_sample(Gr.dims.npg)
         cdef double th_flux
-        cdef double Tmax = 5.25
         if TS.rk_step == 0:
-            if TS.t<Tmax*3600.0:
-                self.ft = 270.0 * np.power(np.maximum(0, np.cos(np.pi/2*((5.25*3600.0 - TS.t)/5.25/3600.0))),1.5) #*(1.0 + 0.1*F_pert) # F_S equation from TRMM paper with 10% random pert
-                self.fq = 554.0 * np.power(np.maximum(0, np.cos(np.pi/2*((5.25*3600.0 - TS.t)/5.25/3600.0))),1.3) #*(1.0 + 0.1*F_pert) # F_L equation from TRMM paper with 10% random pert
-                #self.ft = np.cos(np.pi/2.0*((5.25*3600.0 - TS.t)/5.25/3600.0)) # F_S equation from TRMM paper with 10% random pert
-                #self.fq = np.cos(np.pi/2.0*((5.25*3600.0 - TS.t)/5.25/3600.0)) # F_L equation from TRMM paper with 10% random pert
-            else:
-                self.ft = 270.0 * np.power(np.maximum(0, np.cos(np.pi/2*((5.25*3600.0 - Tmax*3600.0)/5.25/3600.0))),1.5) #*(1.0 + 0.1*F_pert) # F_S equation from TRMM paper with 10% random pert
-                self.fq = 554.0 * np.power(np.maximum(0, np.cos(np.pi/2*((5.25*3600.0 - Tmax*3600.0)/5.25/3600.0))),1.3) #*(1.0 + 0.1*F_pert) # F_L equation from TRMM paper with 10% random pert
+            self.ft = 270.0 * np.power(np.maximum(0, np.cos(np.pi/2*((5.25*3600.0 - TS.t)/5.25/3600.0))),1.5)
+            self.fq = 554.0 * np.power(np.maximum(0, np.cos(np.pi/2*((5.25*3600.0 - TS.t)/5.25/3600.0))),1.3)
 
         cdef double EX = exner_c(Ref.Pg)
-            #th_flux = self.ft#/Ref.rho0[Gr.dims.gw-1]/cpd/EX
 
         cdef:
             Py_ssize_t i,j, ijk, ij
