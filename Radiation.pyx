@@ -1154,6 +1154,8 @@ cdef class RadiationTRMM_LBA(RadiationBase):
         ind1 = int(math.trunc(TS.t/600.0)) # the index preceding the current time step
         ind2 = int(math.ceil(TS.t/600.0))  # the index following the current time step
 
+        # for kk in range(0,Gr.dims.nlg[2]):
+        #     self.rad_cool[kk] = 0.0
         if TS.t<600.0: # first 10 min use the radiative forcing of t=10min
             for kk in range(0,Gr.dims.nlg[2]):
                 if Gr.zp_half[kk] < 22699.48:
@@ -1170,7 +1172,10 @@ cdef class RadiationTRMM_LBA(RadiationBase):
             else: # in all other cases - interpolate
                 for kk in range(0,Gr.dims.nlg[2]):
                     if Gr.zp_half[kk] < 22699.48:
-                        self.rad_cool[kk]    = (self.rad[ind2,kk]-self.rad[ind1,kk])/(self.rad_time[ind2]-self.rad_time[ind1])*(TS.t-self.rad_time[ind1])+self.rad[ind1,kk] # yair check the impact of the dt typo
+                        if (TS.t-self.rad_time[ind1])>1e-6: # sometimes you get seg-fault when TS.t-self.rad_time[ind1]~0
+                            self.rad_cool[kk] = (self.rad[ind2,kk]-self.rad[ind1,kk])/(self.rad_time[ind2]-self.rad_time[ind1])*(TS.t-self.rad_time[ind1]) + self.rad[ind1,kk] # yair check the impact of the dt typo
+                        else:
+                            self.rad_cool[kk] =  + self.rad[ind1,kk]
                     else:
                         self.rad_cool[kk] = 0.0
         # elif TS.t>18900.0: this is used if one would liek to lock in the focring at t=5.25h for the rest of the simualtion
