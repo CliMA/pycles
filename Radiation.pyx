@@ -20,7 +20,7 @@ import numpy as np
 cimport numpy as np
 import netCDF4 as nc
 from scipy.interpolate import pchip_interpolate
-from libc.math cimport pow, cbrt, exp, fmin, fmax
+from libc.math cimport pow, cbrt, exp, fmin, fmax,fabs
 from thermodynamic_functions cimport cpm_c
 include 'parameters.pxi'
 from profiles import profile_data
