@@ -453,7 +453,7 @@ def InitDYCOMS_RF01(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariable
     James Edwards, Jean-Christophe Golaz, Hongli Jiang, Marat Khairoutdinov, Michael P. Kirkpatrick, David C. Lewellen,
     Adrian Lock, Frank Müller, David E. Stevens, Eoin Whelan, and Ping Zhu, 2005: Evaluation of Large-Eddy Simulations
     via Observations of Nocturnal Marine Stratocumulus. Mon. Wea. Rev., 133, 1443–1462.
-    doi: http://dx.doi.org/10.1175/MWR2930.1
+    doi: https://doi.org/10.1175/MWR2930.1
     :param Gr: Grid cdef extension class
     :param PV: PrognosticVariables cdef extension class
     :param RS: ReferenceState cdef extension class
