@@ -1141,7 +1141,7 @@ cdef class RadiationTRMM_LBA(RadiationBase):
 
         # build a matrix of interpulated radiative forcing
         A = np.interp(Gr.zp_half,self.z_in,self.rad_in[0,:]) # Gr.zp_half,self.rad
-        for tt in range(1,36):
+        for tt in range(0,36):
             A = np.vstack((A, np.interp(Gr.zp_half,self.z_in,self.rad_in[tt,:])))
         self.rad = A # store matrix in self
         return
@@ -1154,33 +1154,19 @@ cdef class RadiationTRMM_LBA(RadiationBase):
         ind1 = int(math.trunc(TS.t/600.0)) # the index preceding the current time step
         ind2 = int(math.ceil(TS.t/600.0))  # the index following the current time step
 
-        # for kk in range(0,Gr.dims.nlg[2]):
-        #     self.rad_cool[kk] = 0.0
-        if TS.t<600.0: # first 10 min use the radiative forcing of t=10min
-            for kk in range(0,Gr.dims.nlg[2]):
-                if Gr.zp_half[kk] < 22699.48:
+        for kk in range(0,Gr.dims.nlg[2]):
+            if Gr.zp_half[kk] >= 22699.48:
+                self.rad_cool[kk] = 0.0
+            else:
+                if TS.t<600.0: # first 10 min use the radiative forcing of t=10min
                     self.rad_cool[kk] = self.rad[0,kk]
-                else:
-                    self.rad_cool[kk] = 0.0
-        else:
-            if TS.t%600.0 == 0 or ind1 == ind2: #fabs(TS.t-self.rad_time[ind1])<1e-6:  # sometimes you get seg-fault when TS.t-self.rad_time[ind1]~0
-                for kk in range(0,Gr.dims.nlg[2]):
-                    if Gr.zp_half[kk] < 22699.48:
+                elif TS.t<21600.0:
+                    if TS.t%600.0 == 0 or ind1 == ind2:
                         self.rad_cool[kk] = self.rad[ind1,kk]
                     else:
-                        self.rad_cool[kk] = 0.0
-            else: # in all other cases - interpolate
-                for kk in range(0,Gr.dims.nlg[2]):
-                    if Gr.zp_half[kk] < 22699.48:
                         self.rad_cool[kk] = (self.rad[ind2,kk]-self.rad[ind1,kk])/(self.rad_time[ind2]-self.rad_time[ind1])*(TS.t-self.rad_time[ind1]) + self.rad[ind1,kk]
-                    else:
-                        self.rad_cool[kk] = self.rad[ind1,kk]
                 else:
-                    self.rad_cool[kk] = 0.0
-        # elif TS.t>18900.0: this is used if one would liek to lock in the focring at t=5.25h for the rest of the simualtion
-        #     for kk in range(0,Gr.dims.nlg[2]):
-        #         self.rad_cool[kk] = (self.rad[31,kk]-self.rad[30,kk])/(self.rad_time[31]-self.rad_time[30])*(18900.0-self.rad_time[30])+self.rad[30,kk]
-
+                    self.rad_cool[kk] = self.rad[35,kk]
 
         # get the radiative cooling to the moist entropy equation - here is it in K /day
         cdef:
