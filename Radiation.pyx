@@ -1163,7 +1163,7 @@ cdef class RadiationTRMM_LBA(RadiationBase):
                 else:
                     self.rad_cool[kk] = 0.0
         else:
-            if fabs(TS.t-self.rad_time[ind1])<1e-6:  # sometimes you get seg-fault when TS.t-self.rad_time[ind1]~0
+            if TS.t%600.0 == 0 or ind1 == ind2: #fabs(TS.t-self.rad_time[ind1])<1e-6:  # sometimes you get seg-fault when TS.t-self.rad_time[ind1]~0
                 for kk in range(0,Gr.dims.nlg[2]):
                     if Gr.zp_half[kk] < 22699.48:
                         self.rad_cool[kk] = self.rad[ind1,kk]
@@ -1174,7 +1174,7 @@ cdef class RadiationTRMM_LBA(RadiationBase):
                     if Gr.zp_half[kk] < 22699.48:
                         self.rad_cool[kk] = (self.rad[ind2,kk]-self.rad[ind1,kk])/(self.rad_time[ind2]-self.rad_time[ind1])*(TS.t-self.rad_time[ind1]) + self.rad[ind1,kk]
                     else:
-                        self.rad_cool[kk] =  + self.rad[ind1,kk]
+                        self.rad_cool[kk] = self.rad[ind1,kk]
                 else:
                     self.rad_cool[kk] = 0.0
         # elif TS.t>18900.0: this is used if one would liek to lock in the focring at t=5.25h for the rest of the simualtion
