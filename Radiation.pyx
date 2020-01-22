@@ -1019,7 +1019,7 @@ cdef class RadiationTRMM_LBA(RadiationBase):
 
     def __init__(self, namelist, LatentHeat LH, ParallelMPI.ParallelMPI Pa):
 
-        self.rad_time     = np.linspace(10,360,37)*60
+        self.rad_time     = np.linspace(10,360,36)*60
         # radiation time is 10min : 10:min :360min in sec
         self.z_in         = np.array([42.5, 200.92, 456.28, 743, 1061.08, 1410.52, 1791.32, 2203.48, 2647,
                                       3121.88, 3628.12, 4165.72, 4734.68, 5335, 5966.68, 6629.72, 7324.12,
@@ -1143,8 +1143,6 @@ cdef class RadiationTRMM_LBA(RadiationBase):
         A = np.interp(Gr.zp_half,self.z_in,self.rad_in[0,:]) # Gr.zp_half,self.rad
         for tt in range(0,36):
             A = np.vstack((A, np.interp(Gr.zp_half,self.z_in,self.rad_in[tt,:])))
-        # add one more line of the same as the last one in the data
-        A = np.vstack((A, np.interp(Gr.zp_half,self.z_in,self.rad_in[tt,:])))
         self.rad = A # store matrix in self
         return
 
@@ -1153,8 +1151,8 @@ cdef class RadiationTRMM_LBA(RadiationBase):
                  Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
 
         self.rad_cool = np.zeros(Gr.dims.nlg[2], dtype=np.double)
-        ind1 = int(math.trunc(TS.t/600.0)) # the index preceding the current time step
-        ind2 = int(math.ceil(TS.t/600.0))  # the index following the current time step
+        ind1 = int(math.trunc(TS.t/600.0)) - 1 # the index preceding the current time step
+        ind2 = int(math.ceil(TS.t/600.0)) - 1 # the index following the current time step
 
         for kk in range(0,Gr.dims.nlg[2]):
             if Gr.zp_half[kk] >= 22699.48:
