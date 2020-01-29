@@ -467,241 +467,196 @@ cdef class SurfaceLifecycle_Tan2018(SurfaceBase):
         return
 
 
-def InitSoares(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat LH ):
+cdef class SurfaceSoares(SurfaceBase):
+    def __init__(self, LatentHeat LH):
+        self.z0 = 0.16 #m (Roughness length)
+        self.gustiness = 0.001 #m/s, minimum surface windspeed for determination of u*
 
-    #First generate the reference profiles
-    RS.Pg = 1000.0 * 100.0  #Pressure at ground
-    RS.Tg = 300.0  #Temperature at ground
-    RS.qtg = 0.0 #This was set to 4.5e-3 earlier, but Soares 2004 sets 5e-3   #Total water mixing ratio at surface
+        self.L_fp = LH.L_fp
+        self.Lambda_fp = LH.Lambda_fp
+        self.dry_case = True
+        return
 
-    RS.initialize(Gr, Th, NS, Pa)
+    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
+    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
+    @cython.cdivision(True)
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
+        self.theta_surface = 300.0 # K
+        self.theta_flux = 0.06 # K m/s
+        #T0 = Ref.p0_half[gw] * Ref.alpha0_half[gw]/Rd
+        # yair - I chenged self.buoyancy_flux = self.theta_flux * exner(Ref.p0_half[Gr.dims.gw]) * g /T0 using the theta flux and theta surface as Ref had no values
+        self.buoyancy_flux = self.theta_flux * g /self.theta_surface
 
-    try:
-        random_seed_factor = namelist['initialization']['random_seed_factor']
-    except:
-        random_seed_factor = 1
+        return
 
-    np.random.seed(Pa.rank * random_seed_factor)
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.cdivision(True)
+# # update adopted and modified from Sullivan + Bomex
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
+        # Since this case is completely dry, the computation of entropy flux from sensible heat flux is very simple
 
-    #Get the variable number for each of the velocity components
+        if Pa.sub_z_rank != 0:
+            return
 
-    cdef:
-        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
-        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
-        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
-        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
-        Py_ssize_t i,j,k
-        Py_ssize_t ishift, jshift
-        Py_ssize_t ijk, e_varshift
-        double temp
-        double [:] thetal = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
-        double [:] qt = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
-        double [:] u = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
-        Py_ssize_t count
+        cdef:
+            Py_ssize_t i, j, ijk, ij
+            Py_ssize_t gw = Gr.dims.gw
+            Py_ssize_t imax = Gr.dims.nlg[0]
+            Py_ssize_t jmax = Gr.dims.nlg[1]
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t istride_2d = Gr.dims.nlg[1]
+            Py_ssize_t temp_shift = DV.get_varshift(Gr, 'temperature')
+            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            # Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            # Py_ssize_t qv_shift = DV.get_varshift(Gr,'qv')
 
-        theta_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.1 # Yair check what is the correct perturbation
-
-    for k in xrange(Gr.dims.nlg[2]):
-
-        #Set Thetal and qt profile
-        if Gr.zp_half[k] <= 1350.0:
-            thetal[k] = 300.0
-        else:
-            thetal[k] = 300.0 + 3.0 * (Gr.zp_half[k]-1350.0)/1000.0
-        #Set u profile
-        u[k] = 0.01
-
-
-    #Set velocities for Galilean transformation
-    RS.v0 = 0.0
-    RS.u0 = 0.5 * (np.amax(u)+np.amin(u))
-
-    #Now loop and set the initial condition
-    #First set the velocities
-    count = 0
-    for i in xrange(Gr.dims.nlg[0]):
-        ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
-        for j in xrange(Gr.dims.nlg[1]):
-            jshift = j * Gr.dims.nlg[2]
-            for k in xrange(Gr.dims.nlg[2]):
-                ijk = ishift + jshift + k
-                PV.values[u_varshift + ijk] = u[k] - RS.u0
-                PV.values[v_varshift + ijk] = 0.0 - RS.v0
-                PV.values[w_varshift + ijk] = 0.0
-                if Gr.zp_half[k] <= 1600.0:
-                    temp = (thetal[k] + (theta_pert[count])) * exner_c(RS.p0_half[k])
-                else:
-                    temp = (thetal[k]) * exner_c(RS.p0_half[k])
-                PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],temp,0.0,0.0,0.0)
-                count += 1
-
-    if 'e' in PV.name_index:
-        e_varshift = PV.get_varshift(Gr, 'e')
-        for i in xrange(Gr.dims.nlg[0]):
-            ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
-            for j in xrange(Gr.dims.nlg[1]):
-                jshift = j * Gr.dims.nlg[2]
-                for k in xrange(Gr.dims.nlg[2]):
-                    ijk = ishift + jshift + k
-                    PV.values[e_varshift + ijk] = 0.1*1.46*1.46*(1.0-Gr.zp_half[k]/1600.0)
-
-    return
-
-# This case is based on (Soares et al, 2004): An EDMF parameterization for dry and shallow cumulus convection
-def InitSoares_moist(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
-                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat La):
-    # Generate the reference profiles
-    # RS.Pg = 1.015e5  #Pressure at ground (Bomex)
-    RS.Pg = 1.0e5     #Pressure at ground (Soares)
-    RS.Tg = 300.0     #Temperature at ground (Soares)
-    RS.qtg = 5.0e-3     #Total water mixing ratio at surface: qt = 5 g/kg (Soares)
-    RS.u0 = 0.01   # velocities removed in Galilean transformation (Soares: u = 0.01 m/s, IOP: 0.0 m/s)
-    RS.v0 = 0.0   # (Soares: v = 0.0 m/s)
-
-    RS.initialize(Gr, Th, NS, Pa)
-
-    try:
-        random_seed_factor = namelist['initialization']['random_seed_factor']
-    except:
-        random_seed_factor = 1
-
-    #Get the variable number for each of the velocity components
-    np.random.seed(Pa.rank)
-    cdef:
-        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
-        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
-        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
-        Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
-        Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
-        Py_ssize_t i,j,k
-        Py_ssize_t ishift, jshift, e_varshift
-        Py_ssize_t ijk
-        double temp
-        double qt_
-        double [:] theta = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
-        # double [:] thetal = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
-        double [:] qt = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
-        # double [:] u = np.zeros((Gr.dims.nlg[2]),dtype=np.double,order='c')
-        Py_ssize_t count
-
-        #Generate initial perturbations (here we are generating more than we need)      ??? where amplitude of perturbations given?
-        theta_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.1
-        qt_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.025/1000.0
-
-    for k in xrange(Gr.dims.nlg[2]):
-        # Initial theta profile (Soares)
-        if Gr.zpl_half[k] <= 1350.0:
-            theta[k] = 300.0
-        else:
-            theta[k] = 300.0 + 2.0/1000.0 * (Gr.zpl_half[k] - 1350.0)
-
-        # Initial qt profile (Soares)
-        if Gr.zpl_half[k] <= 1350:
-            qt[k] = 5.0 - (Gr.zpl_half[k]) * 3.7e-4
-        if Gr.zpl_half[k] > 1350:
-            qt[k] = 5.0 - 1350.0 * 3.7e-4 - (Gr.zpl_half[k] - 1350.0) * 9.4e-4
-
-        #Change units to kg/kg
-        qt[k]/= 1000.0
-
-    #Now loop and set the initial condition
-    #First set the velocities
-    count = 0
-    for i in xrange(Gr.dims.nlg[0]):
-        ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
-        for j in xrange(Gr.dims.nlg[1]):
-            jshift = j * Gr.dims.nlg[2]
-            for k in xrange(Gr.dims.nlg[2]):
-                ijk = ishift + jshift + k
-                PV.values[u_varshift + ijk] = 0.0 - RS.u0
-                PV.values[v_varshift + ijk] = 0.0 - RS.v0
-                PV.values[w_varshift + ijk] = 0.0
-                # Set the entropy prognostic variable including a potential temperature perturbation
-                # fluctuation height = 200m; fluctuation amplitude = 0.1 K
-                if Gr.zpl_half[k] < 200.0:
-                    temp = (theta[k] + (theta_pert[count])) * exner_c(RS.p0_half[k])
-                    qt_ = qt[k]+qt_pert[count]
-                else:
-                    temp = (theta[k]) * exner_c(RS.p0_half[k])
-                    qt_ = qt[k]
-
-                PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],temp,qt_,0.0,0.0)
-                PV.values[qt_varshift + ijk] = qt_
-                count += 1
-
-    if 'e' in PV.name_index:
-        e_varshift = PV.get_varshift(Gr, 'e')
-        for i in xrange(Gr.dims.nlg[0]):
-            ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
-            for j in xrange(Gr.dims.nlg[1]):
-                jshift = j * Gr.dims.nlg[2]
-                for k in xrange(Gr.dims.nlg[2]):
-                    ijk = ishift + jshift + k
-                    PV.values[e_varshift + ijk] = 0.1*1.46*1.46*(1.0-Gr.zp_half[k]/1600.0)  
-
-    # __ Initialize phi __
-    try:
-        use_tracers = namelist['tracers']['use_tracers']
-    except:
-        use_tracers = False
-
-    cdef:
-        Py_ssize_t kmin = 0
-        Py_ssize_t kmax = 10
-        Py_ssize_t var_shift
-
-    if use_tracers == 'passive':
-        Pa.root_print('initializing passive tracer phi')
-        var_shift = PV.get_varshift(Gr, 'phi')
+        # Scalar fluxes (adopted from Bomex)
         with nogil:
-            for i in xrange(Gr.dims.nlg[0]):
-                ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
-                for j in xrange(Gr.dims.nlg[1]):
-                    jshift = j * Gr.dims.nlg[2]
-                    for k in xrange(Gr.dims.nlg[2]):
-                        ijk = ishift + jshift + k
-                        if k > kmin and k < kmax:
-                    # for k in xrange(kmin, kmax):
-                            PV.values[var_shift + ijk] = 1.0
-                        else:
-                            PV.values[var_shift + ijk] = 0.0
-    # __
+            for i in xrange(imax):
+                for j in xrange(jmax):
+                    ijk = i * istride + j * jstride + gw
+                    ij = i * istride_2d + j
+                    # Sullivan
+                    self.s_flux[ij] = cpd * self.theta_flux*exner_c(Ref.p0_half[gw])/DV.values[temp_shift+ijk]
+                    # Bomex (entropy flux includes qt flux)
+                    # self.s_flux[ij] = entropyflux_from_thetaflux_qtflux(self.theta_flux, self.qt_flux[ij], Ref.p0_half[gw], DV.values[temp_shift+ijk], PV.values[qt_shift+ijk], DV.values[qv_shift+ijk])
+
+        # Windspeed (adopted from Sullivan, equivalent to Bomex)
+        cdef:
+            Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
+            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
+            double [:] windspeed = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
+        compute_windspeed(&Gr.dims, &PV.values[u_shift], &PV.values[v_shift], &windspeed[0],Ref.u0, Ref.v0,self.gustiness)
+
+       # Surface Values: friction velocity, obukhov lenght (adopted from Sullivan, since same Surface parameters prescribed)
+        with nogil:
+            for i in xrange(1,imax):
+                for j in xrange(1,jmax):
+                    ij = i * istride_2d + j
+                    self.friction_velocity[ij] = compute_ustar(windspeed[ij],self.buoyancy_flux,self.z0, Gr.dims.dx[2]/2.0)
+
+        # Get the shear stresses (adopted from Sullivan, since same Surface parameters prescribed)
+            for i in xrange(1,imax-1):
+                for j in xrange(1,jmax-1):
+                    ijk = i * istride + j * jstride + gw
+                    ij = i * istride_2d + j
+                    self.u_flux[ij] = -interp_2(self.friction_velocity[ij], self.friction_velocity[ij+istride_2d])**2/interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
+                    self.v_flux[ij] = -interp_2(self.friction_velocity[ij], self.friction_velocity[ij+1])**2/interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
 
 
-   # __
+        SurfaceBase.update(self, Gr, Ref, PV, DV, Pa, TS)
+        return
 
-    imax = Gr.dims.nlg[0]
-    jmax = Gr.dims.nlg[1]
-    kmax = Gr.dims.nlg[2]
-    istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
-    jstride = Gr.dims.nlg[2]
-    ijk_max = imax*istride + jmax*jstride + kmax
-    if np.isnan(PV.values[s_varshift:qt_varshift]).any():   # nans
-        print('nan in s')
-    else:
-        print('No nan in s')
-    if np.isnan(PV.values[qt_varshift:qt_varshift+ijk_max]).any():
-        print('nan in qt')
-    else:
-        print('No nan in qt')
-    if np.nanmin(PV.values[qt_varshift:qt_varshift+ijk_max]) < 0:
-        print('Init: qt < 0')
-    # __
 
-    if 'e' in PV.name_index:
-        e_varshift = PV.get_varshift(Gr, 'e')
-        for i in xrange(Gr.dims.nlg[0]):
-            ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
-            for j in xrange(Gr.dims.nlg[1]):
-                jshift = j * Gr.dims.nlg[2]
-                for k in xrange(Gr.dims.nlg[2]):
-                    ijk = ishift + jshift + k
-                    PV.values[e_varshift + ijk] = 0.0
+    cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        SurfaceBase.stats_io(self, Gr, NS, Pa)
+        return
 
-    Pa.root_print('finished Initialization Soares_moist')
 
-    return
+
+cdef class SurfaceSoares_moist(SurfaceBase):
+    def __init__(self, LatentHeat LH):
+        self.z0 = 0.16 #m (Roughness length)
+        self.gustiness = 0.001 #m/s, minimum surface windspeed for determination of u*
+
+        self.L_fp = LH.L_fp
+        self.Lambda_fp = LH.Lambda_fp
+        self.dry_case = False
+        return
+
+    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
+    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
+    @cython.cdivision(True)
+    cpdef initialize(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):     # Sullivan
+        SurfaceBase.initialize(self,Gr,Ref,NS,Pa)
+
+        ### Soares_moist
+        self.qt_flux = np.add(self.qt_flux,2.5e-5)
+        self.theta_flux = 6.0e-2 # K m/s 
+        self.theta_surface = 300.0 # K
+        self.qt_surface = 5.0e-3 # kg/kg
+        #
+        # # Bomex:
+        self.buoyancy_flux = g * ((self.theta_flux + (eps_vi-1.0)*(self.theta_surface*self.qt_flux[0]
+                                                                   + self.qt_surface *self.theta_flux))
+                              /(self.theta_surface*(1.0 + (eps_vi-1)*self.qt_surface)))
+        # # Sullivan:
+        # # T0 = Ref.p0_half[Gr.dims.gw] * Ref.alpha0_half[Gr.dims.gw]/Rd
+
+        return
+
+    @cython.boundscheck(False)  #Turn off numpy array index bounds checking
+    @cython.wraparound(False)   #Turn off numpy array wrap around indexing
+    @cython.cdivision(True)
+# # update adopted and modified from Sullivan + Bomex
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
+        # Since this case is completely dry, the computation of entropy flux from sensible heat flux is very simple
+
+        if Pa.sub_z_rank != 0:
+            return
+
+        cdef:
+            Py_ssize_t i, j, ij, ijk
+            Py_ssize_t gw = Gr.dims.gw
+            Py_ssize_t imax = Gr.dims.nlg[0]
+            Py_ssize_t jmax = Gr.dims.nlg[1]
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t istride_2d = Gr.dims.nlg[1]
+            Py_ssize_t temp_shift = DV.get_varshift(Gr, 'temperature')
+            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
+            Py_ssize_t qv_shift = DV.get_varshift(Gr,'qv')
+
+        # Scalar fluxes (adopted from Bomex)
+        with nogil:
+            for i in xrange(imax):
+                for j in xrange(jmax):
+                    ijk = i * istride + j * jstride + gw
+                    ij = i * istride_2d + j
+                    # Sullivan
+                    # self.s_flux[ij] = cpd * self.theta_flux*exner_c(Ref.p0_half[gw])/DV.values[temp_shift+ijk]
+                    # Bomex (entropy flux includes qt flux)
+                    self.s_flux[ij] = entropyflux_from_thetaflux_qtflux(self.theta_flux, self.qt_flux[ij], Ref.p0_half[gw],
+                                                                        DV.values[temp_shift+ijk], PV.values[qt_shift+ijk], DV.values[qv_shift+ijk])
+
+        # Windspeed (adopted from Sullivan, equivalent to Bomex)
+        cdef:
+            Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
+            Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
+            double [:] windspeed = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1],dtype=np.double,order='c')
+        compute_windspeed(&Gr.dims, &PV.values[u_shift], &PV.values[v_shift], &windspeed[0],Ref.u0, Ref.v0,self.gustiness)
+
+       # Surface Values: friction velocity, obukhov lenght (adopted from Sullivan, since same Surface parameters prescribed)
+       #  cdef :
+            # Py_ssize_t lmo_shift = DV.get_varshift_2d(Gr, 'obukhov_length')
+            # Py_ssize_t ustar_shift = DV.get_varshift_2d(Gr, 'friction_velocity')
+        with nogil:
+            for i in xrange(1,imax):
+                for j in xrange(1,jmax):
+                    ij = i * istride_2d + j
+                    self.friction_velocity[ij] = compute_ustar(windspeed[ij],self.buoyancy_flux,self.z0, Gr.dims.dx[2]/2.0)
+                    # self.obukhov_length[ij] = -self.friction_velocity[ij]*self.friction_velocity[ij]*self.friction_velocity[ij]/self.buoyancy_flux/vkb
+
+        # Get the shear stresses (adopted from Sullivan, since same Surface parameters prescribed)
+            for i in xrange(1,imax-1):
+                for j in xrange(1,jmax-1):
+                    ijk = i * istride + j * jstride + gw
+                    ij = i * istride_2d + j
+                    self.u_flux[ij] = -interp_2(self.friction_velocity[ij], self.friction_velocity[ij+istride_2d])**2/interp_2(windspeed[ij], windspeed[ij+istride_2d]) * (PV.values[u_shift + ijk] + Ref.u0)
+                    self.v_flux[ij] = -interp_2(self.friction_velocity[ij], self.friction_velocity[ij+1])**2/interp_2(windspeed[ij], windspeed[ij+1]) * (PV.values[v_shift + ijk] + Ref.v0)
+                    # PV.tendencies[u_shift + ijk] += self.u_flux[ij] * tendency_factor
+                    # PV.tendencies[v_shift + ijk] += self.v_flux[ij] * tendency_factor
+
+        SurfaceBase.update(self, Gr, Ref, PV, DV, Pa, TS)
+        return
+
+    cpdef stats_io(self, Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        SurfaceBase.stats_io(self, Gr, NS, Pa)
+        return
 
 cdef class SurfaceGabls(SurfaceBase):
     def __init__(self, namelist,  LatentHeat LH):
