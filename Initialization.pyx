@@ -379,7 +379,7 @@ def InitSoares(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     #First generate the reference profiles
     RS.Pg = 1000.0 * 100.0  #Pressure at ground
     RS.Tg = 300.0  #Temperature at ground
-    RS.qtg = 4.5e-3   #Total water mixing ratio at surface
+    RS.qtg = 0.0 #This was set to 4.5e-3 earlier, but Soares 2004 sets 5e-3   #Total water mixing ratio at surface
 
     RS.initialize(Gr, Th, NS, Pa)
 
@@ -397,29 +397,24 @@ def InitSoares(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
         Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
         Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
-        Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
         Py_ssize_t i,j,k
         Py_ssize_t ishift, jshift
         Py_ssize_t ijk, e_varshift
         double temp
-        double qt_
         double [:] thetal = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
         double [:] qt = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
         double [:] u = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
         Py_ssize_t count
 
         theta_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.1 # Yair check what is the correct perturbation
-        qt_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.025/1000.0
 
     for k in xrange(Gr.dims.nlg[2]):
 
         #Set Thetal and qt profile
         if Gr.zp_half[k] <= 1350.0:
             thetal[k] = 300.0
-            qt[k] = 5.0e-3 - 3.7e-4* Gr.zp_half[k]/1000.0
         else:
-            thetal[k] = 300.0 + 2.0 * (Gr.zp_half[k]-1350.0)/1000.0
-            qt[k] = 5.0e-3 - 3.7e-4 * 1.35 - 9.4e-4 * (Gr.zp_half[k]-1350.0)/1000.0
+            thetal[k] = 300.0 + 3.0 * (Gr.zp_half[k]-1350.0)/1000.0
         #Set u profile
         u[k] = 0.01
 
@@ -442,12 +437,9 @@ def InitSoares(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 PV.values[w_varshift + ijk] = 0.0
                 if Gr.zp_half[k] <= 1600.0:
                     temp = (thetal[k] + (theta_pert[count])) * exner_c(RS.p0_half[k])
-                    qt_ = qt[k]+qt_pert[count]
                 else:
                     temp = (thetal[k]) * exner_c(RS.p0_half[k])
-                    qt_ = qt[k]
-                PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],temp,qt_,0.0,0.0)
-                PV.values[qt_varshift + ijk] = qt_
+                PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],temp,0.0,0.0,0.0)
                 count += 1
 
     if 'e' in PV.name_index:
@@ -458,32 +450,25 @@ def InitSoares(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 jshift = j * Gr.dims.nlg[2]
                 for k in xrange(Gr.dims.nlg[2]):
                     ijk = ishift + jshift + k
-                    PV.values[e_varshift + ijk] = 1.0-Gr.zp_half[k]/3000.0
-
+                    PV.values[e_varshift + ijk] = 0.1*1.46*1.46*(1.0-Gr.zp_half[k]/1600.0)
 
     return
 
-
+# This case is based on (Soares et al, 2004): An EDMF parameterization for dry and shallow cumulus convection
 def InitSoares_moist(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat La):
     # Generate the reference profiles
     # RS.Pg = 1.015e5  #Pressure at ground (Bomex)
     RS.Pg = 1.0e5     #Pressure at ground (Soares)
-    # RS.Tg = 300.4  #Temperature at ground (Bomex)
     RS.Tg = 300.0     #Temperature at ground (Soares)
-    # RS.qtg = 0.02245   #Total water mixing ratio at surface (Bomex)
     RS.qtg = 5.0e-3     #Total water mixing ratio at surface: qt = 5 g/kg (Soares)
     RS.u0 = 0.01   # velocities removed in Galilean transformation (Soares: u = 0.01 m/s, IOP: 0.0 m/s)
     RS.v0 = 0.0   # (Soares: v = 0.0 m/s)
 
     RS.initialize(Gr, Th, NS, Pa)
-    try:
-        random_seed_factor = namelist['initialization']['random_seed_factor']
-    except:
-        random_seed_factor = 1
 
     #Get the variable number for each of the velocity components
-    np.random.seed(Pa.rank * random_seed_factor)
+    np.random.seed(Pa.rank)
     cdef:
         Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
         Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
@@ -511,7 +496,6 @@ def InitSoares_moist(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariab
             theta[k] = 300.0
         else:
             theta[k] = 300.0 + 2.0/1000.0 * (Gr.zpl_half[k] - 1350.0)
-        # theta[k] = 297.3 + 2.0/1000.0 * (Gr.zpl_half[k])
 
         # Initial qt profile (Soares)
         if Gr.zpl_half[k] <= 1350:
@@ -547,6 +531,15 @@ def InitSoares_moist(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariab
                 PV.values[qt_varshift + ijk] = qt_
                 count += 1
 
+    if 'e' in PV.name_index:
+        e_varshift = PV.get_varshift(Gr, 'e')
+        for i in xrange(Gr.dims.nlg[0]):
+            ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            for j in xrange(Gr.dims.nlg[1]):
+                jshift = j * Gr.dims.nlg[2]
+                for k in xrange(Gr.dims.nlg[2]):
+                    ijk = ishift + jshift + k
+                    PV.values[e_varshift + ijk] = 0.1*1.46*1.46*(1.0-Gr.zp_half[k]/1600.0)  
 
     # __ Initialize phi __
     try:
