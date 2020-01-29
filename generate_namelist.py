@@ -396,7 +396,7 @@ def Bomex():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['Cumulus','TKE']
+    namelist['stats_io']['auxiliary'] = ['Cumulus', 'Flux', 'TKE']
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
@@ -488,7 +488,7 @@ def lifecycle_Tan2018():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['Cumulus','TKE']
+    namelist['stats_io']['auxiliary'] = ['Cumulus', 'Flux', 'TKE']
     namelist['stats_io']['frequency'] = 60.0
 
     namelist['fields_io'] = {}
@@ -595,7 +595,7 @@ def Soares():
     # profile outputs
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['Flux']    # AuxiliaryStatistics
+    namelist['stats_io']['auxiliary'] = ['Flux', 'TKE']    # AuxiliaryStatistics
     namelist['stats_io']['frequency'] = 900.0
 
     # field outputs
@@ -715,14 +715,14 @@ def Soares_moist():
     # profile outputs
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['Flux']    # AuxiliaryStatistics
+    namelist['stats_io']['auxiliary'] = ['Flux', 'TKE']    # AuxiliaryStatistics
     namelist['stats_io']['frequency'] = 600.0
 
     # field outputs
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 1800.0
-    namelist['fields_io']['diagnostic_fields'] = ['temperature','viscosity']   # defines diagnostic variable output fields (progn. variables output in restart files?!)
+    namelist['fields_io']['diagnostic_fields'] = ['temperature','viscosity', 'buoyancy_frequency', 'buoyancy', 'thetali']
 
     # Conditional Statistics
     namelist['conditional_stats'] ={}
@@ -911,7 +911,7 @@ def DYCOMS_RF01():
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 3600.0
-    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity', 'buoyancy', 'thetali']
 
     namelist['conditional_stats'] ={}
     namelist['conditional_stats']['classes'] = ['Spectra']
@@ -994,13 +994,13 @@ def DYCOMS_RF02():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['DYCOMS', 'Flux']
+    namelist['stats_io']['auxiliary'] = ['DYCOMS', 'Flux', 'TKE']
     namelist['stats_io']['frequency'] = 60.0
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 3600.0
-    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity', 'buoyancy', 'thetali']
 
     namelist['visualization'] = {}
     namelist['visualization']['frequency'] = 1e6
@@ -1181,13 +1181,13 @@ def Rico():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['Cumulus']
+    namelist['stats_io']['auxiliary'] = ['Cumulus', 'Flux', 'TKE']
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 1800.0
-    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+    namelist['fields_io']['diagnostic_fields'] = ['ql', 'qr', 'temperature','buoyancy_frequency','viscosity', 'buoyancy', 'thetali']
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'Rico'
@@ -1760,13 +1760,13 @@ def TRMM_LBA():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['Cumulus']
+    namelist['stats_io']['auxiliary'] = ['Cumulus', 'Flux', 'TKE']
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 1800.0
-    namelist['fields_io']['diagnostic_fields'] = ['ql', 'temperature', 'buoyancy_frequency', 'viscosity', 'buoyancy' , 'thetali']
+    namelist['fields_io']['diagnostic_fields'] = ['ql','qr', 'qi','temperature', 'buoyancy_frequency', 'viscosity', 'buoyancy' , 'thetali']
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'TRMM_LBA'
@@ -1852,13 +1852,13 @@ def ARM_SGP():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['Cumulus']
+    namelist['stats_io']['auxiliary'] = ['Cumulus', 'Flux', 'TKE']
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 1800.0
-    namelist['fields_io']['diagnostic_fields'] = ['ql', 'temperature', 'buoyancy_frequency', 'viscosity']
+    namelist['fields_io']['diagnostic_fields'] = ['ql', 'temperature', 'buoyancy_frequency', 'viscosity', 'buoyancy', 'thetali']
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'ARM_SGP'
