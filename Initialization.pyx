@@ -199,9 +199,17 @@ def InitSullivanPatton(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVaria
     RS.v0 = 0.0
 
     RS.initialize(Gr, Th, NS, Pa)
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
 
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
     #Get the variable number for each of the velocity components
-    np.random.seed(Pa.rank)
+    np.random.seed(Pa.rank * random_seed_factor)
     cdef:
         Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
         Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
@@ -469,9 +477,13 @@ def InitSoares_moist(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariab
     RS.v0 = 0.0   # (Soares: v = 0.0 m/s)
 
     RS.initialize(Gr, Th, NS, Pa)
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
 
     #Get the variable number for each of the velocity components
-    np.random.seed(Pa.rank)
+    np.random.seed(Pa.rank * random_seed_factor)
     cdef:
         Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
         Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
@@ -612,9 +624,13 @@ def InitGabls(namelist,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
     RS.v0 = 0.0
 
     RS.initialize(Gr, Th, NS, Pa)
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
 
     #Get the variable number for each of the velocity components
-    np.random.seed(Pa.rank)
+    np.random.seed(Pa.rank * random_seed_factor)
     cdef:
         Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
         Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
@@ -776,8 +792,13 @@ def InitDYCOMS_RF01(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariable
 
             return t_2, ql_2
 
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
+
     #Generate initial perturbations (here we are generating more than we need)
-    np.random.seed(Pa.rank)
+    np.random.seed(Pa.rank * random_seed_factor)
     cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
     cdef double theta_pert_
 
@@ -904,8 +925,13 @@ def InitDYCOMS_RF02(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariable
 
             return t_2, ql_2
 
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
+
     #Generate initial perturbations (here we are generating more than we need)
-    np.random.seed(Pa.rank)
+    np.random.seed(Pa.rank * random_seed_factor)
     cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
     cdef double theta_pert_
 
@@ -954,9 +980,13 @@ def InitSmoke(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     RS.Tg = 288.0
 
     RS.initialize(Gr ,Th, NS, Pa)
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
 
     #Get the variable number for each of the velocity components
-    np.random.seed(Pa.rank)
+    np.random.seed(Pa.rank * random_seed_factor)
     cdef:
         Py_ssize_t u_varshift = PV.get_varshift(Gr, 'u')
         Py_ssize_t v_varshift = PV.get_varshift(Gr, 'v')
@@ -1035,9 +1065,13 @@ def InitRico(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     RS.qtg = eps_v * pvg/(RS.Pg - pvg)   #Total water mixing ratio at surface = qsat
 
     RS.initialize(Gr, Th, NS, Pa)
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
 
     #Get the variable number for each of the velocity components
-    np.random.seed(Pa.rank)
+    np.random.seed(Pa.rank * random_seed_factor)
     cdef:
         Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
         Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
@@ -1356,8 +1390,13 @@ def InitCGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
             return t_2, ql_2
 
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
+
     #Generate initial perturbations (here we are generating more than we need)
-    np.random.seed(Pa.rank)
+    np.random.seed(Pa.rank * random_seed_factor)
     cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
     cdef double theta_pert_
 
@@ -1474,8 +1513,12 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
             return t_2, ql_2
 
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
     #Generate initial perturbations (here we are generating more than we need)
-    np.random.seed(Pa.rank)
+    np.random.seed(Pa.rank * random_seed_factor)
     cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
     cdef double theta_pert_
 
@@ -1593,7 +1636,11 @@ def InitTRMM_LBA(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables 
     #Generate initial perturbations (here we are generating more than we need)
     #random fluctuations
     #I need to perturbed the temperature and only later calculate the entropy
-    np.random.seed(Pa.rank)
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
+    np.random.seed(Pa.rank * random_seed_factor)
     cdef double [:] T_pert = np.random.random_sample(Gr.dims.npg)
     cdef double T_pert_
     cdef double pv_star
@@ -1669,7 +1716,12 @@ def InitARM_SGP(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables P
     #Generate initial perturbations (here we are generating more than we need)
     #random fluctuations
     #I need to perturbed the temperature and only later calculate the entropy
-    np.random.seed(Pa.rank)
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
+
+    np.random.seed(Pa.rank * random_seed_factor)
     cdef double [:] T_pert = np.random.random_sample(Gr.dims.npg)
     cdef double T_pert_
     cdef double pv_star
@@ -1746,7 +1798,12 @@ def InitGATE_III(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables 
     #Generate initial perturbations (here we are generating more than we need)
     #random fluctuations
     #I need to perturbed the temperature and only later calculate the entropy
-    np.random.seed(Pa.rank)
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
+
+    np.random.seed(Pa.rank * random_seed_factor)
     cdef double [:] T_pert = np.random.random_sample(Gr.dims.npg)
     cdef double T_pert_
     cdef double pv_star
@@ -1835,8 +1892,12 @@ def InitWANGARA(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables P
     RS.u0 = 0.5 * (np.amax(u)+np.amin(u))
     RS.v0 = 0.5 * (np.amax(v)+np.amin(v))
 
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
     # it is not clear if there is any random perturbation in the Neggers paper
-    np.random.seed(Pa.rank)
+    np.random.seed(Pa.rank * random_seed_factor)
     cdef double [:] T_pert = np.random.random_sample(Gr.dims.npg)
     cdef double T_pert_
     cdef double pv_star
