@@ -113,6 +113,8 @@ def SullivanPatton():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -365,6 +367,8 @@ def Bomex():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -455,6 +459,8 @@ def lifecycle_Tan2018():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -557,11 +563,8 @@ def Soares():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
-    namelist['sgs']['Smagorinsky'] = {}
-    namelist['sgs']['Smagorinsky']['cs'] = 0.17
-    namelist['sgs']['UniformViscosity'] = {}
-    namelist['sgs']['UniformViscosity']['viscosity'] = 1.2
-    namelist['sgs']['UniformViscosity']['diffusivity'] = 3.6
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False      # seems to be set to False for all cases???
@@ -569,10 +572,10 @@ def Soares():
     # 2 = second_order_m
     # 32 = second_order_ml_m
     namelist['momentum_transport'] = {}
-    namelist['momentum_transport']['order'] = 2
+    namelist['momentum_transport']['order'] = 5
     # 2 = second_order_a
     namelist['scalar_transport'] = {}
-    namelist['scalar_transport']['order'] = 2
+    namelist['scalar_transport']['order'] = 5
 
     namelist['damping'] = {}
     namelist['damping']['scheme'] = 'Rayleigh'  # no more 'DampingToDomainMean' ???
@@ -680,14 +683,8 @@ def Soares_moist():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
-    namelist['sgs']['Smagorinsky'] = {}
-    namelist['sgs']['Smagorinsky']['cs'] = 0.17
-    namelist['sgs']['UniformViscosity'] = {}
-    namelist['sgs']['UniformViscosity']['viscosity'] = 1.2
-    namelist['sgs']['UniformViscosity']['diffusivity'] = 3.6
-    namelist['sgs']['TKE'] = {}
-    namelist['sgs']['TKE']['ck'] = 0.1
-    namelist['sgs']['TKE']['cn'] = 0.76
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False      # seems to be set to False for all cases???
@@ -695,10 +692,10 @@ def Soares_moist():
     # 2 = second_order_m
     # 32 = second_order_ml_m
     namelist['momentum_transport'] = {}
-    namelist['momentum_transport']['order'] = 4
+    namelist['momentum_transport']['order'] = 5
     # 2 = second_order_a
     namelist['scalar_transport'] = {}
-    namelist['scalar_transport']['order'] = 4
+    namelist['scalar_transport']['order'] = 5
 
     namelist['damping'] = {}
     namelist['damping']['scheme'] = 'Rayleigh'  # no more 'DampingToDomainMean' ???
@@ -795,8 +792,7 @@ def Gabls():
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
     namelist['sgs']['Smagorinsky'] ={}
-    namelist['sgs']['Smagorinsky']['cs'] = 0.17
-    namelist['sgs']['Smagorinsky']['prt'] = 1.0/3.0
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -880,6 +876,8 @@ def DYCOMS_RF01():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -967,6 +965,8 @@ def DYCOMS_RF02():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -1061,6 +1061,8 @@ def SMOKE():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -1155,6 +1157,8 @@ def Rico():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -1262,7 +1266,7 @@ def CGILS_S6(is_p2,is_ctl_omega):
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
     namelist['sgs']['Smagorinsky'] ={}
-    namelist['sgs']['Smagorinsky']['iles'] = False
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -1378,12 +1382,10 @@ def CGILS_S11(is_p2,is_ctl_omega):
     namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
     namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
 
-
-
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
     namelist['sgs']['Smagorinsky'] ={}
-    namelist['sgs']['Smagorinsky']['iles'] = False
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -1497,12 +1499,10 @@ def CGILS_S12(is_p2,is_ctl_omega):
     namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
     namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
 
-
-
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
     namelist['sgs']['Smagorinsky'] ={}
-    namelist['sgs']['Smagorinsky']['iles'] = False
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -1614,12 +1614,10 @@ def ZGILS(zgils_loc):
     namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
     namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
 
-
-
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
     namelist['sgs']['Smagorinsky'] ={}
-    namelist['sgs']['Smagorinsky']['iles'] = False
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
 
     namelist['diffusion'] = {}
@@ -1732,6 +1730,8 @@ def TRMM_LBA():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['tracers'] = {}
     namelist['tracers']['use_tracers'] = True
@@ -1822,6 +1822,8 @@ def ARM_SGP():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['tracers'] = {}
     namelist['tracers']['use_tracers'] = True
@@ -1913,6 +1915,9 @@ def GATE_III():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
+
     # yair - add tracer transport to the simulation
     namelist['tracers'] = {}
     namelist['tracers']['use_tracers'] = True
