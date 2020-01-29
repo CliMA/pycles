@@ -718,7 +718,7 @@ def Soares_moist():
     # profile outputs
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['Fluxes']    # AuxiliaryStatistics
+    namelist['stats_io']['auxiliary'] = ['Flux']    # AuxiliaryStatistics
     namelist['stats_io']['frequency'] = 600.0
 
     # field outputs
