@@ -822,6 +822,7 @@ cdef class Microphysics_T_Liquid:
                      DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         DV.add_variables('dqtdt_precip', 'kg/kg/s', r'w_{dqtdt_precip}', 'qt precipitation dendency', 'sym', Pa)
+        DV.add_variables('rain_rate', 'mm/h', r'w_{rain_rate}', 'rain_rate', 'sym', Pa)
         DV.add_variables('dsdt_precip', 'J/s', r'w_{dstdt_precip}', 's precipitation dendency', 'sym', Pa)
 
 
@@ -846,6 +847,7 @@ cdef class Microphysics_T_Liquid:
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
             Py_ssize_t t_shift = DV.get_varshift(Gr,'temperature')
             Py_ssize_t dqtdt_shift = DV.get_varshift(Gr,'dqtdt_precip')
+            Py_ssize_t rain_rate_shift = DV.get_varshift(Gr,'rain_rate')
             Py_ssize_t dsdt_shift = DV.get_varshift(Gr,'dsdt_precip')
             double lam, t, p0, rho0, qt, qv, pd, pv
             double lv
@@ -879,6 +881,7 @@ cdef class Microphysics_T_Liquid:
                             DV.values[dsdt_shift + ijk] = (sv_c(pv,t) - sd_c(pd,t) - lv/t ) * DV.values[dqtdt_shift + ijk]
                             PV.tendencies[qt_shift + ijk] += DV.values[dqtdt_shift + ijk]
                             PV.tendencies[s_shift + ijk] += DV.values[dsdt_shift + ijk]
+                            DV.values[rain_rate_shift + ijk] = -DV.values[dqtdt_shift + ijk] * rho0 * Gr.dzp_half[k] * 3.6 * 1e3
 
 
 
