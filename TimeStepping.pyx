@@ -145,7 +145,7 @@ cdef class TimeStepping:
     cpdef update_pressure_second(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
         cdef:
             Py_ssize_t i
-            Py_ssize_t press_shift = DV.get_varshift(Gr, 'density_dynamic_pressure')
+            Py_ssize_t press_shift = DV.get_varshift(Gr, 'density_perturbation_pressure')
 
             Py_ssize_t whor_shift = DV.get_varshift(Gr, 'wBudget_removeHorAve')
             Py_ssize_t whor_rk0_shift = DV.get_varshift(Gr, 'wBudget_removeHorAve_RK0')
@@ -206,7 +206,7 @@ cdef class TimeStepping:
     cpdef update_pressure_third(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
         cdef:
             Py_ssize_t i
-            Py_ssize_t press_shift = DV.get_varshift(Gr, 'density_dynamic_pressure')
+            Py_ssize_t press_shift = DV.get_varshift(Gr, 'density_perturbation_pressure')
 
             Py_ssize_t whor_shift = DV.get_varshift(Gr, 'wBudget_removeHorAve')
             Py_ssize_t whor_rk0_shift = DV.get_varshift(Gr, 'wBudget_removeHorAve_RK0')
@@ -292,7 +292,7 @@ cdef class TimeStepping:
     cpdef update_pressure_fourth(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV):
         cdef:
             Py_ssize_t i
-            Py_ssize_t press_shift = DV.get_varshift(Gr, 'density_dynamic_pressure')
+            Py_ssize_t press_shift = DV.get_varshift(Gr, 'density_perturbation_pressure')
 
             Py_ssize_t whor_shift = DV.get_varshift(Gr, 'wBudget_removeHorAve')
             Py_ssize_t whor_rk0_shift = DV.get_varshift(Gr, 'wBudget_removeHorAve_RK0')
