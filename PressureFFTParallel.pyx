@@ -158,7 +158,7 @@ cdef class PressureFFTParallel:
             double [:] dkr = np.empty((Gr.dims.nl[2]),dtype=np.double,order='c')
             double [:] dki = np.empty((Gr.dims.nl[2]),dtype=np.double,order='c')
             Py_ssize_t div_shift = DV.get_varshift(Gr,'divergence')
-            Py_ssize_t pres_shift = DV.get_varshift(Gr,'dynamic_pressure')
+            Py_ssize_t pres_shift = DV.get_varshift(Gr,'density_dynamic_pressure')
             Py_ssize_t p, pencil_i, pencil_j
             Py_ssize_t count = 0
             Py_ssize_t pencil_shift = 0 #self.Z_Pencil.n_pencil_map[self.Z_Pencil.rank - 1]

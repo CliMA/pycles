@@ -172,7 +172,7 @@ cdef class PressureFFTSerial:
 
         cdef:
             double [:,:,:] p = ifft2(div_fft,axes=(0,1)).real
-            Py_ssize_t pres_shift = DV.get_varshift(Gr,'dynamic_pressure')
+            Py_ssize_t pres_shift = DV.get_varshift(Gr,'density_dynamic_pressure')
 
 
         with nogil:

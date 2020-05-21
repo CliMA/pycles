@@ -455,7 +455,7 @@ class TKEStatistics:
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
             Py_ssize_t w_shift = PV.get_varshift(Gr, 'w')
             Py_ssize_t b_shift = DV.get_varshift(Gr,'buoyancy')
-            Py_ssize_t p_shift = DV.get_varshift(Gr, 'dynamic_pressure')
+            Py_ssize_t p_shift = DV.get_varshift(Gr, 'density_dynamic_pressure')
             Py_ssize_t visc_shift = DV.get_varshift(Gr, 'viscosity')
 
             double [:] uc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
