@@ -299,18 +299,21 @@ cdef class TimeStepping:
             Py_ssize_t whor_rk1_shift = DV.get_varshift(Gr, 'wBudget_removeHorAve_RK1')
             Py_ssize_t whor_rk2_shift = DV.get_varshift(Gr, 'wBudget_removeHorAve_RK2')
             Py_ssize_t whor_rk3_shift = DV.get_varshift(Gr, 'wBudget_removeHorAve_RK3')
+            Py_ssize_t whor_rk4_shift = DV.get_varshift(Gr, 'wBudget_removeHorAve_RK4')
 
             Py_ssize_t wpress_shift = DV.get_varshift(Gr, 'wBudget_PressureGradient')
             Py_ssize_t wpress_rk0_shift = DV.get_varshift(Gr, 'wBudget_PressureGradient_RK0')
             Py_ssize_t wpress_rk1_shift = DV.get_varshift(Gr, 'wBudget_PressureGradient_RK1')
             Py_ssize_t wpress_rk2_shift = DV.get_varshift(Gr, 'wBudget_PressureGradient_RK2')
             Py_ssize_t wpress_rk3_shift = DV.get_varshift(Gr, 'wBudget_PressureGradient_RK3')
+            Py_ssize_t wpress_rk4_shift = DV.get_varshift(Gr, 'wBudget_PressureGradient_RK4')
 
             double a1, a2, a3
 
         a1 = 0.386708617503269
         a2 = 0.096059710526147+a1*0.821920045606868
         a3 = 0.517231671970585+a2*0.379898148511597
+        a4 = 0.555629506348765*a3
 
         with nogil:
             if self.rk_step == 0:
@@ -352,8 +355,9 @@ cdef class TimeStepping:
                     DV.values[whor_shift+i] = (DV.values[whor_rk3_shift+i] + a1*DV.values[whor_rk2_shift+i]
                                                + a2*DV.values[whor_rk1_shift+i] + a3*DV.values[whor_rk0_shift+i] )
 
-                    DV.values[wpress_shift+i] = (DV.values[wpress_rk3_shift+i] + a1*DV.values[wpress_rk2_shift+i]
-                                               + a2*DV.values[wpress_rk1_shift+i] + a3*DV.values[wpress_rk0_shift+i] )
+                    DV.values[wpress_shift+i] = (DV.values[wpress_rk4_shift+i] + a1*DV.values[wpress_rk3_shift+i]
+                                               + a2*DV.values[wpress_rk2_shift+i] + a3*DV.values[wpress_rk1_shift+i]
+                                               + a4*DV.values[wpress_rk0_shift+i] )
 
         return
 

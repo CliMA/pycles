@@ -33,11 +33,13 @@ cdef class PressureSolver:
         DV.add_variables('wBudget_PressureGradient_RK1', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
         DV.add_variables('wBudget_PressureGradient_RK2', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
         DV.add_variables('wBudget_PressureGradient_RK3', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
+        DV.add_variables('wBudget_PressureGradient_RK4', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
         DV.add_variables('wBudget_removeHorAve', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
         DV.add_variables('wBudget_removeHorAve_RK0', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
         DV.add_variables('wBudget_removeHorAve_RK1', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
         DV.add_variables('wBudget_removeHorAve_RK2', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
         DV.add_variables('wBudget_removeHorAve_RK3', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
+        DV.add_variables('wBudget_removeHorAve_RK4', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
 
         self.divergence = np.zeros(Gr.dims.npl,dtype=np.double, order='c')
         #self.poisson_solver = PressureFFTSerial.PressureFFTSerial()
