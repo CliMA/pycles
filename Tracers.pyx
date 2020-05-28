@@ -435,8 +435,8 @@ cdef class UpdraftTracers:
                         u_half[ijk] = 0.5 * (PV.values[u_shift+ijk-istride] + PV.values[u_shift+ijk])
                         v_half[ijk] = 0.5 * (PV.values[v_shift+ijk-jstride] + PV.values[v_shift+ijk])
                         w_half[ijk] = 0.5 * (PV.values[w_shift+ijk-1] + PV.values[w_shift+ijk])
-                        wpz_half[ijk] = 0.5 * (PV.values[pz_shift+ijk-1] + PV.values[pz_shift+ijk])
-                        whor_half[ijk] = 0.5 * (PV.values[whor_shift+ijk-1] + PV.values[whor_shift+ijk])
+                        wpz_half[ijk] = 0.5 * (DV.values[pz_shift+ijk-1] + DV.values[pz_shift+ijk])
+                        whor_half[ijk] = 0.5 * (DV.values[whor_shift+ijk-1] + DV.values[whor_shift+ijk])
 
         tmp = Pa.HorizontalMean(Gr, &self.updraft_indicator[0])
         NS.write_profile('updraft_fraction', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
