@@ -25,7 +25,7 @@ cdef class PressureSolver:
 
     cpdef initialize(self,namelist, Grid.Grid Gr,ReferenceState.ReferenceState RS ,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI PM):
 
-        DV.add_variables('density_perturbation_pressure', 'm^2 s^-2', r'p', 'density dynamic pressure', 'sym', PM)
+        DV.add_variables('perturbation_pressure_potential', 'm^2 s^-2', r'p', 'density dynamic pressure', 'sym', PM)
         DV.add_variables('divergence', '1/s', r'd', '3d divergence', 'sym',PM)
 
         DV.add_variables('wBudget_PressureGradient', 'm/s, r'pgrad', 'pressure gradient', 'sym', PM)
@@ -58,7 +58,7 @@ cdef class PressureSolver:
             Py_ssize_t u_shift = PV.get_varshift(Gr,'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr,'v')
             Py_ssize_t w_shift = PV.get_varshift(Gr,'w')
-            Py_ssize_t pres_shift = DV.get_varshift(Gr,'density_perturbation_pressure')
+            Py_ssize_t pres_shift = DV.get_varshift(Gr,'perturbation_pressure_potential')
             Py_ssize_t div_shift = DV.get_varshift(Gr,'divergence')
 
             Py_ssize_t dpdz_shift = DV.get_varshift(Gr,'wBudget_PressureGradient')
@@ -84,7 +84,7 @@ cdef class PressureSolver:
         self.poisson_solver.solve(Gr, RS, DV, PM)
 
         #Update pressure boundary condition
-        p_nv = DV.name_index['density_perturbation_pressure']
+        p_nv = DV.name_index['perturbation_pressure_potential']
         DV.communicate_variable(Gr,PM,p_nv)
 
         #Apply pressure correction
@@ -96,7 +96,7 @@ cdef class PressureSolver:
 
         return
 
-cdef void second_order_pressure_correction(Grid.DimStruct *dims, double *p, double *u, double *v, double *w ,double *press_grad ):
+cdef void second_order_pressure_correction(Grid.DimStruct *dims, double *p, double *u, double *v, double *w ,double *dpdz ):
 
     cdef:
         Py_ssize_t imin = 0
@@ -122,7 +122,7 @@ cdef void second_order_pressure_correction(Grid.DimStruct *dims, double *p, doub
                 u[ijk] -=  (p[ijk + ip1] - p[ijk])*dims.dxi[0]
                 v[ijk] -=  (p[ijk + jp1] - p[ijk])*dims.dxi[1]
                 w[ijk] -=  (p[ijk + kp1] - p[ijk])*dims.dxi[2]  #(p[ijk + kp1] - p[ijk])*dims.dxi[2]
-                press_grad[ijk] = -(p[ijk + kp1] - p[ijk])*dims.dxi[2]
+                dpdz[ijk] = -(p[ijk + kp1] - p[ijk])*dims.dxi[2]
 
     return
 

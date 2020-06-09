@@ -205,9 +205,9 @@ cdef class UpdraftTracers:
         NS.add_profile('env_thetarho', Gr, Pa, units=r'K', nice_name=r'\theta_{\rho,e}',
                        desc=r'environment density potential temperature')
 
-        NS.add_profile('updraft_density_perturbation_pressure', Gr, Pa, units=r'm^2 s^-2 ', nice_name=r'updraft alpha0 * dynamic pressure',
-                      desc=r'updraft alpha0 * dynamic pressure')
-        NS.add_profile('updraft_wBudget_PressureGradient', Gr, Pa, units=r'm/s', nice_name=r'updraft average of pressure gradient force',
+        NS.add_profile('updraft_perturbation_pressure_potential', Gr, Pa, units=r'm^2 s^-2 ', nice_name=r'updraft alpha0 * perturbation pressure',
+                      desc=r'updraft alpha0 * perturbation pressure')
+        NS.add_profile('updraft_wBudget_PressureGradient', Gr, Pa, units=r'm/s', nice_name=r'updraft average of pressure gradient contribution',
                       desc=r'updraft average of pressure gradient force')
         NS.add_profile('updraft_wBudget_removeHorAve', Gr, Pa, units=r'm/s', nice_name=r'remove grid mean w',
                      desc=r'remove grid mean w')
@@ -375,7 +375,7 @@ cdef class UpdraftTracers:
             Py_ssize_t bvf_shift = DV.get_varshift(Gr, 'buoyancy_frequency')
             Py_ssize_t thr_shift = DV.get_varshift(Gr, 'theta_rho')
             Py_ssize_t qv_shift = DV.get_varshift(Gr, 'qv')
-            Py_ssize_t press_shift = DV.get_varshift(Gr, 'density_perturbation_pressure')
+            Py_ssize_t press_shift = DV.get_varshift(Gr, 'perturbation_pressure_potential')
             Py_ssize_t pz_shift = DV.get_varshift(Gr, 'wBudget_PressureGradient')
             Py_ssize_t whor_shift = DV.get_varshift(Gr, 'wBudget_removeHorAve')
             Py_ssize_t ql_shift, th_shift, qr_shift
@@ -458,7 +458,7 @@ cdef class UpdraftTracers:
         NS.write_profile('updraft_v2', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[press_shift], &self.updraft_indicator[0])
-        NS.write_profile('updraft_density_perturbation_pressure', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        NS.write_profile('updraft_perturbation_pressure_potential', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         tmp = Pa.HorizontalMeanConditional(Gr, &wpz_half[0], &self.updraft_indicator[0])
         NS.write_profile('updraft_wBudget_PressureGradient', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
