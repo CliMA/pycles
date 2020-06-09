@@ -165,15 +165,11 @@ cdef class TimeStepping:
         with nogil:
             if self.rk_step == 0:
                 if self.t % self.statIOdt == 0.0:
-                    DV.values[whor_rk0_shift:whor_rk0_shift+Gr.dims.npg] = 0.0
-                    DV.values[wpress_rk0_shift:wpress_rk0_shift+Gr.dims.npg] = 0.0
-                    DV.values[whor_rk1_shift:whor_rk1_shift+Gr.dims.npg] = 0.0
-                    DV.values[wpress_rk1_shift:wpress_rk1_shift+Gr.dims.npg] = 0.0
-                    # for i in xrange(Gr.dims.npg):
-                    #     DV.values[whor_rk0_shift+i] = 0.0
-                    #     DV.values[wpress_rk0_shift+i] = 0.0
-                    #     DV.values[whor_rk1_shift+i] = 0.0
-                    #     DV.values[wpress_rk1_shift+i] = 0.0
+                    for i in xrange(Gr.dims.npg):
+                        DV.values[whor_rk0_shift+i] = 0.0
+                        DV.values[wpress_rk0_shift+i] = 0.0
+                        DV.values[whor_rk1_shift+i] = 0.0
+                        DV.values[wpress_rk1_shift+i] = 0.0
 
                 for i in xrange(Gr.dims.npg):
                     DV.values[whor_rk0_shift+i] += DV.values[whor_shift+i]
@@ -231,19 +227,13 @@ cdef class TimeStepping:
         with nogil:
             if self.rk_step == 0:
                 if self.t % self.statIOdt == 0.0:
-                    DV.values[whor_rk0_shift:whor_rk0_shift+Gr.dims.npg] = 0.0
-                    DV.values[wpress_rk0_shift:wpress_rk0_shift+Gr.dims.npg] = 0.0
-                    DV.values[whor_rk1_shift:whor_rk1_shift+Gr.dims.npg] = 0.0
-                    DV.values[wpress_rk01_shift:wpress_rk1_shift+Gr.dims.npg] = 0.0
-                    DV.values[whor_rk2_shift:whor_rk2_shift+Gr.dims.npg] = 0.0
-                    DV.values[wpress_rk02_shift:wpress_rk2_shift+Gr.dims.npg] = 0.0
-                    # for i in xrange(Gr.dims.npg):
-                    #     DV.values[whor_rk0_shift+i] = 0.0
-                    #     DV.values[wpress_rk0_shift+i] = 0.0
-                    #     DV.values[whor_rk1_shift+i] = 0.0
-                    #     DV.values[wpress_rk1_shift+i] = 0.0
-                    #     DV.values[whor_rk2_shift+i] = 0.0
-                    #     DV.values[wpress_rk2_shift+i] = 0.0
+                    for i in xrange(Gr.dims.npg):
+                        DV.values[whor_rk0_shift+i] = 0.0
+                        DV.values[wpress_rk0_shift+i] = 0.0
+                        DV.values[whor_rk1_shift+i] = 0.0
+                        DV.values[wpress_rk1_shift+i] = 0.0
+                        DV.values[whor_rk2_shift+i] = 0.0
+                        DV.values[wpress_rk2_shift+i] = 0.0
 
                 for i in xrange(Gr.dims.npg):
                     DV.values[whor_rk0_shift+i] += DV.values[whor_shift+i]
@@ -334,23 +324,17 @@ cdef class TimeStepping:
         with nogil:
             if self.rk_step == 0:
                 if self.t % self.statIOdt == 0.0:
-                    DV.values[whor_rk0_shift:whor_rk0_shift+Gr.dims.npg] = 0.0
-                    DV.values[wpress_rk0_shift:wpress_rk0_shift+Gr.dims.npg] = 0.0
-                    DV.values[whor_rk1_shift:whor_rk1_shift+Gr.dims.npg] = 0.0
-                    DV.values[wpress_rk01_shift:wpress_rk1_shift+Gr.dims.npg] = 0.0
-                    DV.values[whor_rk2_shift:whor_rk2_shift+Gr.dims.npg] = 0.0
-                    DV.values[wpress_rk02_shift:wpress_rk2_shift+Gr.dims.npg] = 0.0
-                    DV.values[whor_rk3_shift:whor_rk3_shift+Gr.dims.npg] = 0.0
-                    DV.values[wpress_rk03_shift:wpress_rk3_shift+Gr.dims.npg] = 0.0
-                    DV.values[whor_rk4_shift:whor_rk4_shift+Gr.dims.npg] = 0.0
-                    DV.values[wpress_rk04_shift:wpress_rk4_shift+Gr.dims.npg] = 0.0
-                    # for i in xrange(Gr.dims.npg):
-                    #     DV.values[whor_rk0_shift+i] = 0.0
-                    #     DV.values[wpress_rk0_shift+i] = 0.0
-                    #     DV.values[whor_rk1_shift+i] = 0.0
-                    #     DV.values[wpress_rk1_shift+i] = 0.0
-                    #     DV.values[whor_rk2_shift+i] = 0.0
-                    #     DV.values[wpress_rk2_shift+i] = 0.0
+                    for i in xrange(Gr.dims.npg):
+                        DV.values[whor_rk0_shift+i] = 0.0
+                        DV.values[wpress_rk0_shift+i] = 0.0
+                        DV.values[whor_rk1_shift+i] = 0.0
+                        DV.values[wpress_rk1_shift+i] = 0.0
+                        DV.values[whor_rk2_shift+i] = 0.0
+                        DV.values[wpress_rk2_shift+i] = 0.0
+                        DV.values[whor_rk3_shift+i] = 0.0
+                        DV.values[whor_rk3_shift+i] = 0.0
+                        DV.values[wpress_rk4_shift+i] = 0.0
+                        DV.values[wpress_rk4_shift+i] = 0.0
 
                 for i in xrange(Gr.dims.npg):
                     DV.values[whor_rk0_shift+i] += DV.values[whor_shift+i]
