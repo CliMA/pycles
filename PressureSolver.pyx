@@ -28,8 +28,8 @@ cdef class PressureSolver:
         DV.add_variables('perturbation_pressure_potential', 'm^2 s^-2', r'p', 'density dynamic pressure', 'sym', PM)
         DV.add_variables('divergence', '1/s', r'd', '3d divergence', 'sym',PM)
 
-        DV.add_variables('wBudget_PressureGradient', 'm/s, r'pgrad', 'pressure gradient', 'sym', PM)
-        DV.add_variables('wBudget_PressureGradient_RK0', 'm/s, r'pgrad', 'pressure gradient', 'sym', PM)
+        DV.add_variables('wBudget_PressureGradient', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
+        DV.add_variables('wBudget_PressureGradient_RK0', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
         DV.add_variables('wBudget_PressureGradient_RK1', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
         DV.add_variables('wBudget_PressureGradient_RK2', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
         DV.add_variables('wBudget_PressureGradient_RK3', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
