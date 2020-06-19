@@ -176,6 +176,7 @@ class Simulation3d:
                 self.TS.update(self.Gr, self.PV, self.Pa)
                 PV_.Update_all_bcs(self.Gr, self.Pa)
                 self.Pr.update(self.Gr, self.Ref, self.DV, self.PV, self.Pa)
+                self.TS.update_pressure(self.Gr, self.PV, self.DV, self.Pa)
                 self.TS.adjust_timestep(self.Gr, self.PV, self.DV,self.Pa)
                 self.io()
                 #PV_.debug(self.Gr,self.Ref,self.StatsIO,self.Pa)
@@ -322,4 +323,3 @@ class Simulation3d:
         self.Aux.stats_io(self.Gr, self.Ref, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
         self.StatsIO.close_files(self.Pa)
         return
-
