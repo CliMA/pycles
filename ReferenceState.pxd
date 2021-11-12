@@ -1,5 +1,7 @@
 cimport Grid
 cimport Restart
+from NetCDFIO cimport NetCDFIO_Stats
+cimport ParallelMPI
 cdef class ReferenceState:
     cdef:
         public double [:] p0
@@ -8,6 +10,8 @@ cdef class ReferenceState:
         public double [:] alpha0_half
         public double [:] rho0
         public double [:] rho0_half
+        public double [:] thetali0
+        public double [:] thetali0_half
 
         public double [:] p0_global
         public double [:] p0_half_global
@@ -15,6 +19,8 @@ cdef class ReferenceState:
         public double [:] alpha0_half_global
         public double [:] rho0_global
         public double [:] rho0_half_global
+        public double [:] thetali0_global
+        public double [:] thetali0_half_global
 
         double sg
 
@@ -26,11 +32,6 @@ cdef class ReferenceState:
         double u0 #u velocity removed in Galilean transformation
         double v0 #v velocity removed in Galilean transformation
 
-        #These are initial condition profiles set in case initialization, stored for forcing
-        double [:] ic_rh
-        double [:] ic_thetal
-        double [:] ic_qt
-
     cpdef restart(self, Grid.Grid Gr, Restart.Restart Re)
-    cpdef init_from_restart(self, Grid.Grid Gr, Restart.Restart Re)
+    cpdef init_from_restart(self, Grid.Grid Gr, Restart.Restart Re, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa)
 

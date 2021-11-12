@@ -1,0 +1,147 @@
+Sender: LSF System <lsfadmin@eu-ms-006-27>
+Subject: Job 67478384: <python -u AlterMany.py> in cluster <euler> Done
+
+Job <python -u AlterMany.py> was submitted from host <eu-login-07> by user <presselk> in cluster <euler> at Tue Jul  3 18:41:16 2018.
+Job was executed on host(s) <eu-ms-006-27>, in queue <normal.24h>, as user <presselk> in cluster <euler> at Tue Jul  3 18:41:34 2018.
+</cluster/home/presselk> was used as the home directory.
+</cluster/home/presselk/2dcrm/pycles_refactor_altered/AlteredRestart> was used as the working directory.
+Started at Tue Jul  3 18:41:34 2018.
+Terminated at Tue Jul  3 19:07:43 2018.
+Results reported at Tue Jul  3 19:07:43 2018.
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+python -u AlterMany.py
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   284.46 sec.
+    Max Memory :                                 1771 MB
+    Average Memory :                             930.41 MB
+    Total Requested Memory :                     1024.00 MB
+    Delta Memory :                               -747.00 MB
+    Max Swap :                                   -
+    Max Processes :                              3
+    Max Threads :                                4
+    Run time :                                   1597 sec.
+    Turnaround time :                            1587 sec.
+
+The output (if any) follows:
+
+143.4375 /cluster/scratch/presselk/altered_restart/143.4375 /cluster/scratch/presselk/2dcrm/refac/rk3_s_subs_new/Output.1_00x_143.4375.1_00x_143.4375/Restart/8553600
+u
+v
+w
+s
+qt
+qr
+qs
+146.25 /cluster/scratch/presselk/altered_restart/146.25 /cluster/scratch/presselk/2dcrm/refac/rk3_s_subs_new/Output.1_00x_146.25.1_00x_146.25/Restart/8553600
+u
+v
+w
+s
+qt
+qr
+qs
+149.0625 /cluster/scratch/presselk/altered_restart/149.0625 /cluster/scratch/presselk/2dcrm/refac/rk3_s_subs_new/Output.1_00x_149.0625.1_00x_149.0625/Restart/8553600
+u
+v
+w
+s
+qt
+qr
+qs
+151.875 /cluster/scratch/presselk/altered_restart/151.875 /cluster/scratch/presselk/2dcrm/refac/rk3_s_subs_new/Output.1_00x_151.875.1_00x_151.875/Restart/8553600
+u
+v
+w
+s
+qt
+qr
+qs
+154.6875 /cluster/scratch/presselk/altered_restart/154.6875 /cluster/scratch/presselk/2dcrm/refac/rk3_s_subs_new/Output.1_00x_154.6875.1_00x_154.6875/Restart/8553600
+u
+v
+w
+s
+qt
+qr
+qs
+157.5 /cluster/scratch/presselk/altered_restart/157.5 /cluster/scratch/presselk/2dcrm/refac/rk3_s_subs_new/Output.1_00x_157.5.1_00x_157.5/Restart/8553600
+u
+v
+w
+s
+qt
+qr
+qs
+160.3125 /cluster/scratch/presselk/altered_restart/160.3125 /cluster/scratch/presselk/2dcrm/refac/rk3_s_subs_new/Output.1_00x_160.3125.1_00x_160.3125/Restart/8553600
+u
+v
+w
+s
+qt
+qr
+qs
+163.125 /cluster/scratch/presselk/altered_restart/163.125 /cluster/scratch/presselk/2dcrm/refac/rk3_s_subs_new/Output.1_00x_163.125.1_00x_163.125/Restart/8553600
+u
+v
+w
+s
+qt
+qr
+qs
+165.9375 /cluster/scratch/presselk/altered_restart/165.9375 /cluster/scratch/presselk/2dcrm/refac/rk3_s_subs_new/Output.1_00x_165.9375.1_00x_165.9375/Restart/8553600
+u
+v
+w
+s
+qt
+qr
+qs
+168.75 /cluster/scratch/presselk/altered_restart/168.75 /cluster/scratch/presselk/2dcrm/refac/rk3_s_subs_new/Output.1_00x_168.75.1_00x_168.75/Restart/8553600
+u
+v
+w
+s
+qt
+qr
+qs
+171.5625 /cluster/scratch/presselk/altered_restart/171.5625 /cluster/scratch/presselk/2dcrm/refac/rk3_s_subs_new/Output.1_00x_171.5625.1_00x_171.5625/Restart/8553600
+u
+v
+w
+s
+qt
+qr
+qs
+174.375 /cluster/scratch/presselk/altered_restart/174.375 /cluster/scratch/presselk/2dcrm/refac/rk3_s_subs_new/Output.1_00x_174.375.1_00x_174.375/Restart/8553600
+u
+v
+w
+s
+qt
+qr
+qs
+177.1875 /cluster/scratch/presselk/altered_restart/177.1875 /cluster/scratch/presselk/2dcrm/refac/rk3_s_subs_new/Output.1_00x_177.1875.1_00x_177.1875/Restart/8553600
+u
+v
+w
+s
+qt
+qr
+qs
+180.0 /cluster/scratch/presselk/altered_restart/180.0 /cluster/scratch/presselk/2dcrm/refac/rk3_s_subs_new/Output.1_00x_180.0.1_00x_180.0/Restart/8553600
+u
+v
+w
+s
+qt
+qr
+qs

@@ -14,7 +14,8 @@ from scipy.integrate import odeint
 include 'parameters.pxi'
 
 cdef extern from "thermodynamic_functions.h":
-    double qt_from_pv(double p0, double pv)
+    inline double qt_from_pv(double p0, double pv)
+    inline double thetali_c(double p0, double T, double qt, double ql, double qi, double L)
 
 cdef class ReferenceState:
     def __init__(self, Grid.Grid Gr ):
@@ -25,6 +26,8 @@ cdef class ReferenceState:
         self.alpha0_half = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
         self.rho0 = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
         self.rho0_half = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
+        self.thetali0 = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
+        self.thetali0_half = np.zeros(Gr.dims.nlg[2], dtype=np.double, order='c')
 
 
         self.p0_global = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
@@ -33,6 +36,8 @@ cdef class ReferenceState:
         self.alpha0_half_global = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
         self.rho0_global = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
         self.rho0_half_global = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
+        self.thetali0_global =  np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
+        self.thetali0_half_global =  np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
 
         return
 
@@ -56,8 +61,8 @@ cdef class ReferenceState:
             return -g / (Rd * T * (1.0 - self.qtg + eps_vi * (self.qtg - ql - qi)))
 
         # Construct arrays for integration points
-        z = np.array(Gr.z[Gr.dims.gw - 1:-Gr.dims.gw + 1])
-        z_half = np.append([0.0], np.array(Gr.z_half[Gr.dims.gw:-Gr.dims.gw]))
+        z = np.array(Gr.zp[Gr.dims.gw - 1:-Gr.dims.gw + 1])
+        z_half = np.append([0.0], np.array(Gr.zp_half[Gr.dims.gw:-Gr.dims.gw]))
 
         # We are integrating the log pressure so need to take the log of the
         # surface pressure
@@ -83,13 +88,14 @@ cdef class ReferenceState:
         self.p0_global = p
         self.p0_half_global = p_half
 
-
         cdef double[:] p_ = p
         cdef double[:] p_half_ = p_half
         cdef double[:] temperature = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
         cdef double[:] temperature_half = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
         cdef double[:] alpha = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
         cdef double[:] alpha_half = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
+        cdef double [:] thetali =  np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
+        cdef double [:] thetali_half = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
 
         cdef double[:] ql = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
         cdef double[:] qi = np.zeros(Gr.dims.ng[2], dtype=np.double, order='c')
@@ -104,10 +110,12 @@ cdef class ReferenceState:
             temperature[k], ql[k], qi[k] = Thermodynamics.eos(p_[k], self.sg, self.qtg)
             qv[k] = self.qtg - (ql[k] + qi[k])
             alpha[k] = Thermodynamics.alpha(p_[k], temperature[k], self.qtg, qv[k])
+            thetali[k] = thetali_c(p_[k], temperature[k], self.qtg, ql[k], qi[k], Thermodynamics.get_lh(temperature[k]))
 
             temperature_half[k], ql_half[k], qi_half[k] = Thermodynamics.eos(p_half_[k], self.sg, self.qtg)
             qv_half[k] = self.qtg - (ql_half[k] + qi_half[k])
             alpha_half[k] = Thermodynamics.alpha(p_half_[k], temperature_half[k], self.qtg, qv_half[k])
+            thetali_half[k] = thetali_c(p_half_[k], temperature_half[k], self.qtg, ql_half[k], qi_half[k], Thermodynamics.get_lh(temperature_half[k]))
 
         # Now do a sanity check to make sure that the Reference State entropy profile is uniform following
         # saturation adjustment
@@ -120,11 +128,13 @@ cdef class ReferenceState:
                 Pa.root_print('Kill Simulation Now!')
                 Pa.kill()
 
-
         self.alpha0_global = alpha
         self.alpha0_half_global = alpha_half
         self.rho0_global = 1.0/np.array(self.alpha0_global)
         self.rho0_half_global = 1.0/np.array(self.alpha0_half_global)
+
+        self.thetali0_global = thetali
+        self.thetali0_half_global = thetali_half
 
         # print(np.array(Gr.extract_local_ghosted(alpha_half,2)))
         self.alpha0_half = Gr.extract_local_ghosted(alpha_half, 2)
@@ -133,6 +143,11 @@ cdef class ReferenceState:
         self.p0_half = Gr.extract_local_ghosted(p_half, 2)
         self.rho0 = 1.0 / np.array(self.alpha0)
         self.rho0_half = 1.0 / np.array(self.alpha0_half)
+
+
+        self.thetali0 =  Gr.extract_local_ghosted(thetali, 2)
+        self.thetali0_half = Gr.extract_local_ghosted(thetali_half,2)
+
 
         # Write reference profiles to StatsIO
         # Output specific volume
@@ -222,7 +237,7 @@ cdef class ReferenceState:
         return
 
 
-    cpdef init_from_restart(self, Grid.Grid Gr, Restart.Restart Re):
+    cpdef init_from_restart(self, Grid.Grid Gr, Restart.Restart Re, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         self.Tg = Re.restart_data['Ref']['Tg']
         self.Pg = Re.restart_data['Ref']['Pg']
@@ -245,6 +260,29 @@ cdef class ReferenceState:
         self.rho0_global = 1.0 / Re.restart_data['Ref']['alpha0_global']
         self.rho0_half_global = 1.0 / Re.restart_data['Ref']['alpha0_half_global']
 
+        # Output pressure
+        units = r'Pa'
+        nice_name = r'p_{0}'
+        desc = r'reference state pressure at half level'
+        NS.add_reference_profile('p0', Gr, Pa, units=units, nice_name = nice_name, desc=desc)
+        NS.write_reference_profile('p0', self.p0_half[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        nice_name = r'p_{0}^{full}'
+        desc = r'reference state pressure at full level'
+        NS.add_reference_profile('p0_full', Gr, Pa, units=units, nice_name = nice_name, desc=desc, z_full=True)
+        NS.write_reference_profile('p0_full', self.p0[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        # Output densities
+        units = r'kgm^{-3}'
+        nice_name = r'\rho_{0}'
+        desc = r'reference state density at half level'
+        NS.add_reference_profile('rho0', Gr, Pa, units=units, nice_name = nice_name, desc=desc)
+        NS.write_reference_profile('rho0', 1.0 / np.array(self.alpha0_half[Gr.dims.gw:-Gr.dims.gw]), Pa)
+
+        nice_name = r'\rho_0^{full}'
+        desc = r'reference state density at full level'
+        NS.add_reference_profile('rho0_full', Gr, Pa, units=units, nice_name = nice_name, desc=desc, z_full=True)
+        NS.write_reference_profile('rho0_full', 1.0 / np.array(self.alpha0[Gr.dims.gw:-Gr.dims.gw]), Pa)
 
 
         return
