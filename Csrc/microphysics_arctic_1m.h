@@ -271,7 +271,7 @@ void autoconversion_snow(struct LookupStruct *LT, double (*lam_fp)(double), doub
         //                   *(db_ice*db_ice/3.0 + (1.0+ice_lam*db_ice)/(ice_lam*ice_lam))/density);
 
 
-	//*qsnow_tendency = fmax(0.0, 0.001 * exp(0.025 * (temperature - 273.16)) * (qi - 0.0001)); 
+    //*qsnow_tendency = fmax(0.0, 0.001 * exp(0.025 * (temperature - 273.16)) * (qi - 0.0001)); 
 
     }
 
@@ -568,7 +568,7 @@ void microphysics_sources(const struct DimStruct *dims, struct LookupStruct *LT,
                         //Don't adjust if we have reached the maximum iteration number
                         dt_ = fmax(dt_/rate, 1.0e-10);
                     }
-		    //Negative with precipitation formation
+            //Negative with precipitation formation
                     precip_rate_tmp += (-qrain_tendency_aut + ql_tendency_acc - qsnow_tendency_aut + qi_tendency_acc)*dt_;
                     evap_rate_tmp += (qrain_tendency_evp + qsnow_tendency_evp)*dt_;
                     melt_rate_tmp += qsnow_tendency_melt * dt_;

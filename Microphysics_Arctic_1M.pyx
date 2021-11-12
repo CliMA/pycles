@@ -108,9 +108,22 @@ cdef class Microphysics_Arctic_1M:
                 self.Lambda_fp = lambda_constant_Arctic
                 LH.Lambda_fp = lambda_constant_Arctic
                 Par.root_print('liquid only microphysics set Lambda = 1.0 ')
-            else:
+            elif namelist['microphysics']['phase_partitioning'] == 'Hu2010':
+                self.Lambda_fp = lambda_Hu2010
+                LH.Lambda_fp = lambda_Hu2010
+                Par.root_print('Using CALIPSO derived liquid fraction by Hu et al. 2015!')
+            elif namelist['microphysics']['phase_partitioning'] == 'arctic':
                 self.Lambda_fp = lambda_Arctic
                 LH.Lambda_fp = lambda_Arctic
+                Par.root_print('Using Arctic specific liquid fraction by Kaul et al. 2015!')
+            elif namelist['microphysics']['phase_partitioning'] == 'lambda_logistic':
+                self.Lambda_fp = lambda_logistic
+                LH.Lambda_fp = lambda_logistic
+                Par.root_print('Liquid fraction formulation not recognized! Using default logistic function as liquid fraction!')
+            else:
+                self.Lambda_fp = lambda_logistic
+                LH.Lambda_fp = lambda_logistic
+                Par.root_print('Liquid fraction formulation not recognized! Using default logistic function as liquid fraction!')
         except:
             self.Lambda_fp = lambda_Arctic
             LH.Lambda_fp = lambda_Arctic
@@ -122,6 +135,7 @@ cdef class Microphysics_Arctic_1M:
             self.evap_rain_option = namelist['microphysics']['Arctic_1M']['evap_rain_option']
         except:
             self.evap_rain_option = 2
+
 
         LH.L_fp = latent_heat_Arctic
 
@@ -181,7 +195,7 @@ cdef class Microphysics_Arctic_1M:
 
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th,
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th,
                  PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
                  TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
 
@@ -211,35 +225,35 @@ cdef class Microphysics_Arctic_1M:
 
         # Calculate sedimentation before anything else to get N0
 
-        get_rain_n0(&Gr.dims, &Ref.rho0_half[0], &PV.values[qrain_shift], &DV.values[nrain_shift])
-        get_snow_n0(&Gr.dims, &Ref.rho0_half[0], &PV.values[qsnow_shift], &DV.values[nsnow_shift])
+        get_rain_n0(&Gr.dims, &RS.rho0_half[0], &PV.values[qrain_shift], &DV.values[nrain_shift])
+        get_snow_n0(&Gr.dims, &RS.rho0_half[0], &PV.values[qsnow_shift], &DV.values[nsnow_shift])
 
         # Microphysics source terms
 
-        microphysics_sources(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &Ref.rho0_half[0],
-                             &Ref.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], self.ccn, self.n0_ice_input,
+        microphysics_sources(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.rho0_half[0],
+                             &RS.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], self.ccn, self.n0_ice_input,
                              &DV.values[ql_shift], &DV.values[qi_shift], &PV.values[qrain_shift], &DV.values[nrain_shift],
                              &PV.values[qsnow_shift], &DV.values[nsnow_shift], TS.dt,
                              &qrain_tend_micro[0], &PV.tendencies[qrain_shift],
                              &qsnow_tend_micro[0], &PV.tendencies[qsnow_shift], &self.precip_rate[0], &self.evap_rate[0],
                              &self.melt_rate[0], self.auto_rain_option, self.evap_rain_option)
 
-        sedimentation_velocity_rain(&Gr.dims, &Ref.rho0_half[0], &DV.values[nrain_shift], &PV.values[qrain_shift],
+        sedimentation_velocity_rain(&Gr.dims, &RS.rho0_half[0], &DV.values[nrain_shift], &PV.values[qrain_shift],
                                      &DV.values[wqrain_shift])
 
-        sedimentation_velocity_snow(&Gr.dims, &Ref.rho0_half[0], &DV.values[nsnow_shift], &PV.values[qsnow_shift],
+        sedimentation_velocity_snow(&Gr.dims, &RS.rho0_half[0], &DV.values[nsnow_shift], &PV.values[qsnow_shift],
                                      &DV.values[wqsnow_shift])
 
         qt_source_formation(&Gr.dims, &PV.tendencies[qt_shift], &qrain_tend_micro[0], &qsnow_tend_micro[0])
 
         # #Add entropy tendency due to microphysics (precipitation and evaporation only)
-        microphysics_wetbulb_temperature(&Gr.dims, &self.CC.LT.LookupStructC, &Ref.p0_half[0], &PV.values[s_shift],
+        microphysics_wetbulb_temperature(&Gr.dims, &self.CC.LT.LookupStructC, &RS.p0_half[0], &PV.values[s_shift],
                                           &PV.values[qt_shift], &DV.values[t_shift], &DV.values[tw_shift])
 
-        get_s_source_precip(&Gr.dims, Th, &Ref.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[qv_shift],
+        get_s_source_precip(&Gr.dims, Th, &RS.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[qv_shift],
                                &self.precip_rate[0], &PV.tendencies[s_shift])
 
-        get_s_source_evap(&Gr.dims, Th, &Ref.p0_half[0], &DV.values[t_shift], &DV.values[tw_shift], &PV.values[qt_shift], &DV.values[qv_shift],
+        get_s_source_evap(&Gr.dims, Th, &RS.p0_half[0], &DV.values[t_shift], &DV.values[tw_shift], &PV.values[qt_shift], &DV.values[qv_shift],
                              &self.evap_rate[0], &PV.tendencies[s_shift])
 
         get_s_source_melt(&Gr.dims, Th, &DV.values[t_shift], &self.melt_rate[0], &PV.tendencies[s_shift])

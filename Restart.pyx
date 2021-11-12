@@ -66,7 +66,6 @@ cdef class Restart:
         except:
             self.times_retained = []
 
-
         if not namelist['restart']['init_altered']:
             self.is_altered = False
             try:
@@ -87,8 +86,6 @@ cdef class Restart:
             except:
                 Pa.root_print('Could not find path to restart fields')
                 Pa.kill()
-
-
             #Check to make sure the path exists
             if not os.path.exists(self.fields_path):
                 Pa.root_print("fields path does not exits! : " + self.fields_path)

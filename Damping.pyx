@@ -17,7 +17,7 @@ cimport numpy as np
 from thermodynamic_functions cimport pd_c, pv_c
 from entropies cimport sv_c, sd_c
 from scipy.special import erf
-import cPickle
+import pickle as pickle
 cimport TimeStepping
 from scipy.interpolate import pchip
 from thermodynamic_functions cimport cpm_c
@@ -178,7 +178,7 @@ cdef class RayleighGCMMeanNudge:
 
         #Set up tendency damping using error function
         #fh = open(self.file, 'r')
-        #input_data_tv = cPickle.load(fh)
+        #input_data_tv = pickle.load(fh)
         #fh.close()
 
 
@@ -263,7 +263,7 @@ cdef class RayleighGCMMeanNudge:
        #     Pa.root_print('Updating Total Tendencies in damping!')
 
        #     fh = open(self.file, 'r')
-       #     input_data_tv = cPickle.load(fh)
+       #     input_data_tv = pickle.load(fh)
        #     fh.close()
 
             #zfull = input_data_tv['zfull'][self.t_indx,::-1]
@@ -459,7 +459,7 @@ cdef class RayleighGCMNew:
 
         #Set up tendency damping using error function
         #fh = open(self.file, 'r')
-        #input_data_tv = cPickle.load(fh)
+        #input_data_tv = pickle.load(fh)
         #fh.close()
 
         if self.griddata:
@@ -512,7 +512,7 @@ cdef class RayleighGCMNew:
        #     Pa.root_print('Updating Total Tendencies in damping!')
 
        #     fh = open(self.file, 'r')
-       #     input_data_tv = cPickle.load(fh)
+       #     input_data_tv = pickle.load(fh)
        #     fh.close()
 
             #zfull = input_data_tv['zfull'][self.t_indx,::-1]
@@ -647,7 +647,7 @@ cdef class RayleighGCMMean:
 
         #Set up tendency damping using error function
         fh = open(self.file, 'r')
-        input_data_tv = cPickle.load(fh)
+        input_data_tv = pickle.load(fh)
         fh.close()
 
 
@@ -726,7 +726,7 @@ cdef class RayleighGCMMean:
             Pa.root_print('Updating Total Tendencies in damping!')
 
             fh = open(self.file, 'r')
-            input_data_tv = cPickle.load(fh)
+            input_data_tv = pickle.load(fh)
             fh.close()
 
             #zfull = input_data_tv['zfull'][self.t_indx,::-1]
@@ -859,7 +859,7 @@ cdef class RayleighGCMVarying:
 
 
         fh = open(self.file, 'r')
-        input_data_tv = cPickle.load(fh)
+        input_data_tv = pickle.load(fh)
         fh.close()
 
 
@@ -893,19 +893,6 @@ cdef class RayleighGCMVarying:
         tend_flat[tend_flat < 0.0] = 0.0
         tend_flat = 1.0 - tend_flat
         self.tend_flat_half = tend_flat
-
-
-
-        #import pylab as plt
-        #plt.plot(self.tend_flat_half, np.array(Gr.zpl_half)/1000.0,'-ok')
-        #plt.plot(dt_tg_rad, zfull,'-ok')
-        #plt.grid()
-        #plt.savefig('sigmoid.pdf')
-        #plt.show()
-        #import sys; sys.exit()
-
-
-
         return
 
     cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
@@ -939,7 +926,7 @@ cdef class RayleighGCMVarying:
             Pa.root_print('Updating Total Tendencies in damping!')
 
             fh = open(self.file, 'r')
-            input_data_tv = cPickle.load(fh)
+            input_data_tv = pickle.load(fh)
             fh.close()
 
 

@@ -35,6 +35,12 @@ def main():
         namelist = SullivanPatton()
     elif case_name == 'Bomex':
         namelist = Bomex()
+    elif case_name == 'lifecycle_Tan2018':
+        namelist = lifecycle_Tan2018()
+    elif case_name == 'Soares':
+        namelist = Soares()
+    elif case_name == 'Soares_moist':
+        namelist = Soares_moist()
     elif case_name == 'Gabls':
         namelist = Gabls()
     elif case_name == 'DYCOMS_RF01':
@@ -55,6 +61,12 @@ def main():
         namelist = ZGILS(zgils_loc)
     elif case_name == 'GCMVarying':
         namelist = GCMVarying()
+    elif case_name == 'TRMM_LBA':
+        namelist = TRMM_LBA()
+    elif case_name == 'ARM_SGP':
+        namelist = ARM_SGP()
+    elif case_name == 'GATE_III':
+        namelist = GATE_III()
     else:
         print('Not a vaild case name')
         exit()
@@ -88,6 +100,12 @@ def SullivanPatton():
     namelist['time_stepping']['dt_max'] = 10.0
     namelist['time_stepping']['t_max'] = 7200.0
 
+    namelist['tracers'] = {}
+    namelist['tracers']['use_tracers'] = True
+    namelist['tracers']['scheme'] = 'UpdraftTracers'
+    namelist['tracers']['use_lcl_tracers'] = False
+    namelist['tracers']['timescale'] = 15.0
+
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['latentheat'] = 'constant'
 
@@ -97,6 +115,8 @@ def SullivanPatton():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -121,6 +141,7 @@ def SullivanPatton():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
@@ -203,6 +224,7 @@ def SaturatedBubble():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
 
     namelist['conditional_stats'] = {}
 
@@ -249,6 +271,12 @@ def StableBubble():
     namelist['time_stepping']['dt_max'] = 10.0
     namelist['time_stepping']['t_max'] = 1000.0
 
+    namelist['tracers'] = {}
+    namelist['tracers']['use_tracers'] = True
+    namelist['tracers']['scheme'] = 'UpdraftTracers'
+    namelist['tracers']['use_lcl_tracers'] = False
+    namelist['tracers']['timescale'] = 15.0
+
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['latentheat'] = 'constant'
 
@@ -282,6 +310,7 @@ def StableBubble():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
 
     namelist['conditional_stats'] = {} 
 
@@ -331,12 +360,20 @@ def Bomex():
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['latentheat'] = 'constant'
 
+    namelist['tracers'] = {}
+    namelist['tracers']['use_tracers'] = True
+    namelist['tracers']['scheme'] = 'UpdraftTracers'
+    namelist['tracers']['use_lcl_tracers'] = False
+    namelist['tracers']['timescale'] = 15.0
+
     namelist['microphysics'] = {}
     namelist['microphysics']['scheme'] = 'None_SA'
     namelist['microphysics']['phase_partitioning'] = 'liquid_only'
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -361,10 +398,11 @@ def Bomex():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['Cumulus','TKE']
+    namelist['stats_io']['auxiliary'] = ['Cumulus', 'Flux', 'TKE']
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
@@ -383,6 +421,347 @@ def Bomex():
 
     namelist['initialization'] = {}
     namelist['initialization']['random_seed_factor'] = 1
+
+    namelist['tracers'] = {}
+    namelist['tracers']['use_tracers'] = True
+    namelist['tracers']['scheme'] = 'UpdraftTracers'
+    namelist['tracers']['use_lcl_tracers'] = False
+    namelist['tracers']['timescale'] = 15.0
+
+    return namelist
+
+def lifecycle_Tan2018():
+
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 3
+    namelist['grid']['nx'] = 256
+    namelist['grid']['ny'] = 256
+    namelist['grid']['nz'] = 75
+    namelist['grid']['gw'] = 3
+    namelist['grid']['dx'] = 50.0
+    namelist['grid']['dy'] = 50.0
+    namelist['grid']['dz'] = 100 / 2.5
+
+    namelist['mpi'] = {}
+    namelist['mpi']['nprocx'] = 1
+    namelist['mpi']['nprocy'] = 1
+    namelist['mpi']['nprocz'] = 1
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['ts_type'] = 3
+    namelist['time_stepping']['cfl_limit'] = 0.7
+    namelist['time_stepping']['dt_initial'] = 10.0
+    namelist['time_stepping']['dt_max'] = 10.0
+    namelist['time_stepping']['t_max'] = 6*3600.0
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['latentheat'] = 'constant'
+
+    namelist['microphysics'] = {}
+    namelist['microphysics']['scheme'] = 'None_SA'
+    namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+
+    namelist['sgs'] = {}
+    namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
+
+    namelist['diffusion'] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
+
+    namelist['momentum_transport'] = {}
+    namelist['momentum_transport']['order'] = 7
+
+    namelist['scalar_transport'] = {}
+    namelist['scalar_transport']['order'] = 7
+
+    namelist['damping'] = {}
+    namelist['damping']['scheme'] = 'Rayleigh'
+    namelist['damping']['Rayleigh'] = {}
+    namelist['damping']['Rayleigh']['gamma_r'] = 0.2
+    namelist['damping']['Rayleigh']['z_d'] = 600
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['restart'] = {}
+    namelist['restart']['output'] = True
+    namelist['restart']['init_from'] = False
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['auxiliary'] = ['Cumulus', 'Flux', 'TKE']
+    namelist['stats_io']['frequency'] = 60.0
+
+    namelist['fields_io'] = {}
+    namelist['fields_io']['fields_dir'] = 'fields'
+    namelist['fields_io']['frequency'] = 1800.0
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+
+    namelist['conditional_stats'] ={}
+    namelist['conditional_stats']['classes'] = ['Spectra']
+    namelist['conditional_stats']['frequency'] = 600.0
+    namelist['conditional_stats']['stats_dir'] = 'cond_stats'
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'lifecycle_Tan2018'
+    namelist['meta']['casename'] = 'lifecycle_Tan2018'
+
+    namelist['initialization'] = {}
+    namelist['initialization']['random_seed_factor'] = 1
+
+    namelist['tracers'] = {}
+    namelist['tracers']['use_tracers'] = True
+    namelist['tracers']['timescale'] = 15.0
+    namelist['tracers']['scheme'] = 'UpdraftTracers'
+    namelist['tracers']['use_lcl_tracers'] = False
+
+    return namelist
+
+def Soares():
+    # adopted from: "An eddy-diffusivity/mass-flux parametrization for dry and shallow cumulus convection",
+    # By P. M. M. SOARES, P. M. A. MIRANDA, A. P. SIEBESMA and J. TEIXEIRA, Q. J. R. Meteorol. Soc. (2004)
+    # modifications: qt initial profile and flux set to zero, since no dry thermodynamics without condensation given
+
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 3
+    # Soares (2004): domain size = 6400 x 6400 m, domain height = 3000 (?) m; dx = ?, dy = ?, dz = 20 m
+    # Nieuwstadt: domain size = ?, domain height = 2400m; dx = dy = 60 m, dz = 50-60 m
+    # IOP Paper, old code: domain size = 6400 x 6400 m, domain height = 3750 m
+    namelist['grid']['nx'] = 8#256    # IOP
+    namelist['grid']['ny'] = 8#256    # IOP
+    namelist['grid']['nz'] = 150    # IOP
+    namelist['grid']['gw'] = 3      # for 2nd order
+    namelist['grid']['dx'] = 25.0   # IOP
+    namelist['grid']['dy'] = 25.0   # IOP
+    namelist['grid']['dz'] = 25.0   # IOP
+
+    namelist['mpi'] = {}
+    namelist['mpi']['nprocx'] = 1
+    namelist['mpi']['nprocy'] = 1
+    namelist['mpi']['nprocz'] = 1
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['ts_type'] = 3    # seems to be 3 in all cases???
+    namelist['time_stepping']['cfl_limit'] = 0.3    # default: 0.7; IOP: 0.3
+    namelist['time_stepping']['dt_initial'] = 10.0
+    namelist['time_stepping']['dt_max'] = 10.0
+    namelist['time_stepping']['t_max'] = 8*3600.0
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['latentheat'] = 'constant'       # 'constant' or 'variable', for Clausius Clapeyron calculation
+
+    namelist['tracers'] = {}
+    namelist['tracers']['use_tracers'] = True
+    namelist['tracers']['scheme'] = 'UpdraftTracers'
+    namelist['tracers']['use_lcl_tracers'] = False
+    namelist['tracers']['timescale'] = 15.0
+
+    namelist['microphysics'] = {}
+    namelist['microphysics']['scheme'] = 'None_Dry'     # Bomex: 'None_SA'; options: 'None_Dry' (no qt as Progn. Var.), 'None_SA', 'SB_Liquid'
+    namelist['microphysics']['phase_partitioning'] = 'liquid_only'  # seems to be this in all cases???
+
+    namelist['sgs'] = {}
+    namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
+
+    namelist['diffusion'] = {}
+    namelist['diffusion']['qt_entropy_source'] = False      # seems to be set to False for all cases???
+
+    namelist['momentum_transport'] = {}
+    namelist['momentum_transport']['order'] = 5
+    # 2 = second_order_a
+    namelist['scalar_transport'] = {}
+    namelist['scalar_transport']['order'] = 7
+
+    namelist['damping'] = {}
+    namelist['damping']['scheme'] = 'Rayleigh'  # no more 'DampingToDomainMean' ???
+    namelist['damping']['Rayleigh'] = {}
+    namelist['damping']['Rayleigh']['gamma_r'] = 0.02
+    namelist['damping']['Rayleigh']['z_d'] = 800.0  # ??? depth of damping layer?
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['restart'] = {}
+    namelist['restart']['output'] = True
+    namelist['restart']['init_from'] = False
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
+
+    # profile outputs
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['auxiliary'] = ['DYCOMS', 'Flux','TKE']
+    namelist['stats_io']['frequency'] = 60.0
+
+    # field outputs
+    namelist['fields_io'] = {}
+    namelist['fields_io']['fields_dir'] = 'fields'
+    namelist['fields_io']['frequency'] = 3600.0
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+
+    # Conditional Statistics
+    namelist['conditional_stats'] ={}
+    namelist['conditional_stats']['classes'] = ['Spectra']
+    namelist['conditional_stats']['frequency'] = 600.0
+    namelist['conditional_stats']['stats_dir'] = 'cond_stats'
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'Soares'
+    namelist['meta']['casename'] = 'Soares'
+
+    namelist['restart'] = {}
+    namelist['restart']['output'] = False
+    namelist['restart']['init_from'] = False
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
+
+    namelist['visualization'] = {}
+    namelist['visualization']['frequency'] = 1800.0
+
+    namelist['stochastic_noise'] = {}
+    namelist['stochastic_noise']['flag'] = True
+    namelist['stochastic_noise']['amplitude'] = 0.05
+
+    namelist['tracers'] = {}
+    namelist['tracers']['use_tracers'] = True
+    namelist['tracers']['scheme'] = 'UpdraftTracers'
+    namelist['tracers']['use_lcl_tracers'] = False
+    namelist['tracers']['timescale'] = 15.0
+
+    return namelist
+
+
+
+def Soares_moist():
+    # adopted from: "An eddy-diffusivity/mass-flux parametrization for dry and shallow cumulus convection",
+    # By P. M. M. SOARES, P. M. A. MIRANDA, A. P. SIEBESMA and J. TEIXEIRA, Q. J. R. Meteorol. Soc. (2004)
+    # modifications: qt initial profile and flux set to zero, since no dry thermodynamics without condensation given
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 3
+    # Soares (2004): domain size = 6400 x 6400 m, domain height = 3000 (?) m; dx = ?, dy = ?, dz = 20 m
+    # Nieuwstadt: domain size = ?, domain height = 2400m; dx = dy = 60 m, dz = 50-60 m
+    # IOP Paper, old code: domain size = 6400 x 6400 m, domain height = 3750 m
+    namelist['grid']['nx'] = 256    # IOP
+    namelist['grid']['ny'] = 256    # IOP
+    namelist['grid']['nz'] = 150    # IOP
+    namelist['grid']['gw'] = 3      # for 2nd order
+    namelist['grid']['dx'] = 25.0   # IOP
+    namelist['grid']['dy'] = 25.0   # IOP
+    namelist['grid']['dz'] = 25.0   # IOP
+
+    namelist['mpi'] = {}
+    namelist['mpi']['nprocx'] = 1
+    namelist['mpi']['nprocy'] = 1
+    namelist['mpi']['nprocz'] = 1
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['ts_type'] = 3    # seems to be 3 in all cases???
+    namelist['time_stepping']['cfl_limit'] = 0.3    # default: 0.7; IOP: 0.3
+    namelist['time_stepping']['dt_initial'] = 10.0
+    namelist['time_stepping']['dt_max'] = 10.0
+    namelist['time_stepping']['t_max'] = 8*3600.0
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['latentheat'] = 'constant'       # 'constant' or 'variable', for Clausius Clapeyron calculation
+
+    namelist['tracers'] = {}
+    namelist['tracers']['use_tracers'] = True
+    namelist['tracers']['scheme'] = 'UpdraftTracers'
+    namelist['tracers']['use_lcl_tracers'] = False
+    namelist['tracers']['timescale'] = 15.0
+
+    namelist['microphysics'] = {}
+    namelist['microphysics']['scheme'] = 'None_SA'     # DCBL: 'None_Dry', Bomex: 'None_SA'; options: 'None_Dry' (no qt as Progn. Var.), 'None_SA', 'SB_Liquid'
+    namelist['microphysics']['phase_partitioning'] = 'liquid_only'  # seems to be this in all cases???
+
+    namelist['sgs'] = {}
+    namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
+
+    namelist['diffusion'] = {}
+    namelist['diffusion']['qt_entropy_source'] = False      # seems to be set to False for all cases???
+
+    namelist['momentum_transport'] = {}
+    namelist['momentum_transport']['order'] = 5
+    # 2 = second_order_a
+    namelist['scalar_transport'] = {}
+    namelist['scalar_transport']['order'] = 7
+
+    namelist['damping'] = {}
+    namelist['damping']['scheme'] = 'Rayleigh'  # no more 'DampingToDomainMean' ???
+    namelist['damping']['Rayleigh'] = {}
+    namelist['damping']['Rayleigh']['gamma_r'] = 0.02
+    namelist['damping']['Rayleigh']['z_d'] = 800.0  # ??? depth of damping layer?
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['restart'] = {}
+    namelist['restart']['output'] = True
+    namelist['restart']['init_from'] = False
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
+
+    # profile outputs
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['auxiliary'] = ['Flux', 'TKE']    # AuxiliaryStatistics
+    namelist['stats_io']['frequency'] = 600.0
+
+    # field outputs
+    namelist['fields_io'] = {}
+    namelist['fields_io']['fields_dir'] = 'fields'
+    namelist['fields_io']['frequency'] = 3600.0
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+
+    namelist['visualization'] = {}
+    namelist['visualization']['frequency'] = 1e6
+
+    # Conditional Statistics
+    namelist['conditional_stats'] ={}
+    namelist['conditional_stats']['classes'] = ['Spectra']
+    namelist['conditional_stats']['frequency'] = 600.0
+    namelist['conditional_stats']['stats_dir'] = 'cond_stats'
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'Soares_moist'
+    namelist['meta']['casename'] = 'Soares_moist'
+
+    namelist['restart'] = {}
+    namelist['restart']['output'] = False
+    namelist['restart']['init_from'] = False
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
+
+    namelist['visualization'] = {}
+    namelist['visualization']['frequency'] = 1800.0
+
+    namelist['tracers'] = {}
+    namelist['tracers']['use_tracers'] = True
+    namelist['tracers']['scheme'] = 'UpdraftTracers'
+    namelist['tracers']['use_lcl_tracers'] = False
+    namelist['tracers']['timescale'] = 15.0
+
+    namelist['ClausiusClapeyron'] = {}
+    namelist['ClausiusClapeyron']['temperature_min'] = 100.15
+    namelist['ClausiusClapeyron']['temperature_max'] = 500.0
 
     return namelist
 
@@ -423,8 +802,7 @@ def Gabls():
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
     namelist['sgs']['Smagorinsky'] ={}
-    namelist['sgs']['Smagorinsky']['cs'] = 0.17
-    namelist['sgs']['Smagorinsky']['prt'] = 1.0/3.0
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -449,6 +827,7 @@ def Gabls():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
@@ -508,6 +887,8 @@ def DYCOMS_RF01():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -517,6 +898,7 @@ def DYCOMS_RF01():
 
     namelist['scalar_transport'] = {}
     namelist['scalar_transport']['order'] = 7
+    namelist['scalar_transport']['order_sedimentation'] = 1
 
     namelist['damping'] = {}
     namelist['damping']['scheme'] = 'Rayleigh'
@@ -532,16 +914,17 @@ def DYCOMS_RF01():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['DYCOMS', 'Flux','TKE']
-    namelist['stats_io']['frequency'] = 60.0
+    namelist['stats_io']['auxiliary'] = ['DYCOMS', 'Flux','TKE', 'Cumulus']
+    namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 3600.0
-    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity', 'buoyancy', 'thetali']
 
     namelist['conditional_stats'] ={}
     namelist['conditional_stats']['classes'] = ['Spectra']
@@ -595,6 +978,8 @@ def DYCOMS_RF02():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -619,16 +1004,17 @@ def DYCOMS_RF02():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['DYCOMS', 'Flux']
+    namelist['stats_io']['auxiliary'] = ['DYCOMS', 'Flux', 'TKE']
     namelist['stats_io']['frequency'] = 60.0
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 3600.0
-    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity', 'buoyancy', 'thetali']
 
     namelist['visualization'] = {}
     namelist['visualization']['frequency'] = 1e6
@@ -689,6 +1075,8 @@ def SMOKE():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -714,6 +1102,7 @@ def SMOKE():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
@@ -775,10 +1164,16 @@ def Rico():
     namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
     namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
 
-
+    namelist['tracers'] = {}
+    namelist['tracers']['use_tracers'] = True
+    namelist['tracers']['scheme'] = 'UpdraftTracers'
+    namelist['tracers']['use_lcl_tracers'] = False
+    namelist['tracers']['timescale'] = 15.0
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -801,13 +1196,13 @@ def Rico():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['Cumulus']
+    namelist['stats_io']['auxiliary'] = ['Cumulus', 'Flux', 'TKE']
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 1800.0
-    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+    namelist['fields_io']['diagnostic_fields'] = ['ql', 'qr', 'temperature','buoyancy_frequency','viscosity', 'buoyancy', 'thetali']
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'Rico'
@@ -818,17 +1213,13 @@ def Rico():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
 
     namelist['conditional_stats'] ={}
     namelist['conditional_stats']['classes'] = ['Spectra']
     namelist['conditional_stats']['frequency'] = 600.0
     namelist['conditional_stats']['stats_dir'] = 'cond_stats'
-
-
     return namelist
-
-
-
 
 def CGILS_S6(is_p2,is_ctl_omega):
 
@@ -886,7 +1277,7 @@ def CGILS_S6(is_p2,is_ctl_omega):
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
     namelist['sgs']['Smagorinsky'] ={}
-    namelist['sgs']['Smagorinsky']['iles'] = False
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -941,6 +1332,7 @@ def CGILS_S6(is_p2,is_ctl_omega):
     namelist['restart']['frequency'] = 600.0
     namelist['restart']['delete_old'] = True
     namelist['restart']['times_retained'] = range(86400, 86400*11, 86400)
+    namelist['restart']['init_altered'] = False
 
     namelist['conditional_stats'] ={}
     namelist['conditional_stats']['classes'] = ['Spectra']
@@ -1002,12 +1394,10 @@ def CGILS_S11(is_p2,is_ctl_omega):
     namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
     namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
 
-
-
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
     namelist['sgs']['Smagorinsky'] ={}
-    namelist['sgs']['Smagorinsky']['iles'] = False
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -1062,6 +1452,7 @@ def CGILS_S11(is_p2,is_ctl_omega):
     namelist['restart']['frequency'] = 600.0
     namelist['restart']['delete_old'] = True
     namelist['restart']['times_retained'] = range(86400, 86400*11, 86400)
+    namelist['restart']['init_altered'] = False
 
     namelist['conditional_stats'] ={}
     namelist['conditional_stats']['classes'] = ['Spectra']
@@ -1121,12 +1512,10 @@ def CGILS_S12(is_p2,is_ctl_omega):
     namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
     namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
 
-
-
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
     namelist['sgs']['Smagorinsky'] ={}
-    namelist['sgs']['Smagorinsky']['iles'] = False
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -1181,6 +1570,7 @@ def CGILS_S12(is_p2,is_ctl_omega):
     namelist['restart']['frequency'] = 600.0
     namelist['restart']['delete_old'] = True
     namelist['restart']['times_retained'] = range(86400, 86400*11, 86400)
+    namelist['restart']['init_altered'] = False
 
     namelist['conditional_stats'] ={}
     namelist['conditional_stats']['classes'] = ['Spectra']
@@ -1238,12 +1628,10 @@ def ZGILS(zgils_loc):
     namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
     namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
 
-
-
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
     namelist['sgs']['Smagorinsky'] ={}
-    namelist['sgs']['Smagorinsky']['iles'] = False
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
 
     namelist['diffusion'] = {}
@@ -1302,6 +1690,7 @@ def ZGILS(zgils_loc):
     namelist['restart']['frequency'] = 600.0
     namelist['restart']['delete_old'] = True
     namelist['restart']['times_retained'] = range(86400, 86400*21, 86400)
+    namelist['restart']['init_altered'] = False
 
     namelist['conditional_stats'] ={}
     namelist['conditional_stats']['classes'] = ['Spectra']
@@ -1386,6 +1775,7 @@ def GCMVarying():
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
     namelist['restart']['delete_old'] = True
+    namelist['restart']['init_altered'] = False
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = "stats"
@@ -1403,6 +1793,294 @@ def GCMVarying():
 
     return namelist
 
+def TRMM_LBA():
+    # adopted from: "Daytime convective development over land- A model intercomparison based on LBA observations",
+    # By Grabowski et al (2004)  Q. J. R. Meteorol. Soc. 132 317-344
+    # modifications: we use less random perturbations than the original paper, our simulation does not change domain size in time
+    # and has higher resolution in the BL when deep convection takes place
+
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 3
+    namelist['grid']['nx'] = 200
+    namelist['grid']['ny'] = 200
+    namelist['grid']['nz'] = 220
+    namelist['grid']['gw'] = 3
+    namelist['grid']['dx'] = 100.0
+    namelist['grid']['dy'] = 100.0
+    namelist['grid']['dz'] = 100.0
+    namelist['grid']['stretch'] = True
+
+    namelist['mpi'] = {}
+    namelist['mpi']['nprocx'] = 1
+    namelist['mpi']['nprocy'] = 1
+    namelist['mpi']['nprocz'] = 1
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['ts_type'] = 3
+    namelist['time_stepping']['cfl_limit'] = 0.7
+    namelist['time_stepping']['dt_initial'] = 1.0
+    namelist['time_stepping']['dt_max'] = 10.0
+    namelist['time_stepping']['t_max'] = 3600.0 * 6.0
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['latentheat'] = 'constant'
+
+    namelist['microphysics'] = {}
+    namelist['microphysics']['scheme'] = 'Arctic_1M' #T_Liquid'
+    namelist['microphysics']['phase_partitioning'] = 'liquid_only' # liquid_ice
+
+    #namelist['microphysics']['cloud_sedimentation'] = False
+    #namelist['microphysics']['ccn'] = 70.0e6
+    #namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
+    #namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
+
+    namelist['sgs'] = {}
+    namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
+
+    namelist['tracers'] = {}
+    namelist['tracers']['use_tracers'] = True
+    namelist['tracers']['scheme'] = 'UpdraftTracers'
+    namelist['tracers']['use_lcl_tracers'] = False
+    namelist['tracers']['timescale'] = 60.0
+
+    namelist['diffusion'] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
+
+    namelist['momentum_transport'] = {}
+    namelist['momentum_transport']['order'] = 5 # the WENO order of the momentum advection scheme
+
+    namelist['scalar_transport'] = {}
+    namelist['scalar_transport']['order'] = 5 # the WENO order of the scaler advection scheme
+    namelist['scalar_transport']['order_sedimentation'] = 1
+
+    namelist['damping'] = {}
+    namelist['damping']['scheme'] = 'Rayleigh'
+    namelist['damping']['Rayleigh'] = {}
+    namelist['damping']['Rayleigh']['gamma_r'] = 0.2
+    namelist['damping']['Rayleigh']['z_d'] = 4000
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['auxiliary'] = ['Cumulus', 'Flux', 'TKE']
+    namelist['stats_io']['frequency'] = 100.0
+
+    namelist['fields_io'] = {}
+    namelist['fields_io']['fields_dir'] = 'fields'
+    namelist['fields_io']['frequency'] = 1800.0
+    namelist['fields_io']['diagnostic_fields'] = ['ql','qr', 'qi','temperature', 'buoyancy_frequency', 'viscosity', 'buoyancy' , 'thetali']
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'TRMM_LBA'
+    namelist['meta']['casename'] = 'TRMM_LBA'
+
+    namelist['restart'] = {}
+    namelist['restart']['output'] = True
+    namelist['restart']['init_from'] = False
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
+
+    namelist['conditional_stats'] = {}
+    namelist['conditional_stats']['classes'] = ['Spectra']
+    namelist['conditional_stats']['frequency'] = 600.0
+    namelist['conditional_stats']['stats_dir'] = 'cond_stats'
+
+    return namelist
+
+
+def ARM_SGP():
+    # adopted from: "Large-eddy simulation of the diurnal cycle of shallow cumulus convection over land",
+    # By Brown et al. (2002)  Q. J. R. Meteorol. Soc. 128, 1075-1093
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 3
+    namelist['grid']['nx'] = 8# 100
+    namelist['grid']['ny'] = 8# 100
+    namelist['grid']['nz'] = 110
+    namelist['grid']['gw'] = 3
+    namelist['grid']['dx'] = 64.0
+    namelist['grid']['dy'] = 64.0
+    namelist['grid']['dz'] = 40.0
+
+    namelist['mpi'] = {}
+    namelist['mpi']['nprocx'] = 1 #6
+    namelist['mpi']['nprocy'] = 1 #4
+    namelist['mpi']['nprocz'] = 1
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['ts_type'] = 3
+    namelist['time_stepping']['cfl_limit'] = 0.7
+    namelist['time_stepping']['dt_initial'] = 1.0
+    namelist['time_stepping']['dt_max'] = 10.0
+    namelist['time_stepping']['t_max'] = 3600.0 * 14.5
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['latentheat'] = 'constant'
+
+    namelist['microphysics'] = {}
+    namelist['microphysics']['scheme'] = 'None_SA'
+    namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+
+    namelist['sgs'] = {}
+    namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
+
+    namelist['tracers'] = {}
+    namelist['tracers']['use_tracers'] = True
+    namelist['tracers']['scheme'] = 'UpdraftTracers'
+    namelist['tracers']['use_lcl_tracers'] = False
+    namelist['tracers']['timescale'] = 15.0
+
+    namelist['diffusion'] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
+
+    namelist['momentum_transport'] = {}
+    namelist['momentum_transport']['order'] = 5 # the WENO order of the momentum advection scheme
+
+    namelist['scalar_transport'] = {}
+    namelist['scalar_transport']['order'] = 5 # the WENO order of the scaler advection scheme
+    namelist['scalar_transport']['order_sedimentation'] = 1
+
+    namelist['damping'] = {} # I used the Bomex values here
+    namelist['damping']['scheme'] = 'Rayleigh'
+    namelist['damping']['Rayleigh'] = {}
+    namelist['damping']['Rayleigh']['gamma_r'] = 0.2
+    namelist['damping']['Rayleigh']['z_d'] = 900
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['auxiliary'] = ['Cumulus', 'Flux', 'TKE']
+    namelist['stats_io']['frequency'] = 100.0
+
+    namelist['fields_io'] = {}
+    namelist['fields_io']['fields_dir'] = 'fields'
+    namelist['fields_io']['frequency'] = 1800.0
+    namelist['fields_io']['diagnostic_fields'] = ['ql', 'temperature', 'buoyancy_frequency', 'viscosity', 'buoyancy', 'thetali']
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'ARM_SGP'
+    namelist['meta']['casename'] = 'ARM_SGP'
+
+    namelist['restart'] = {}
+    namelist['restart']['output'] = True
+    namelist['restart']['init_from'] = False
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
+
+    namelist['conditional_stats'] = {}
+    namelist['conditional_stats']['classes'] = ['Spectra']
+    namelist['conditional_stats']['frequency'] = 600.0
+    namelist['conditional_stats']['stats_dir'] = 'cond_stats'
+
+    return namelist
+
+
+def GATE_III():
+    # adopted from: "Large eddy simulation of Maritime Deep Tropical Convection",
+    # By Khairoutdinov et al (2009)  JAMES, vol. 1, article #15
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 3
+    namelist['grid']['nx'] = 2048
+    namelist['grid']['ny'] = 2048
+    namelist['grid']['nz'] = 220
+    namelist['grid']['gw'] = 3
+    namelist['grid']['dx'] = 100.0
+    namelist['grid']['dy'] = 100.0
+    namelist['grid']['dz'] = 100.0
+    namelist['grid']['stretch'] = True
+
+    namelist['mpi'] = {}
+    namelist['mpi']['nprocx'] = 1
+    namelist['mpi']['nprocy'] = 1
+    namelist['mpi']['nprocz'] = 1
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['ts_type'] = 3
+    namelist['time_stepping']['cfl_limit'] = 0.7
+    namelist['time_stepping']['dt_initial'] = 1.0
+    namelist['time_stepping']['dt_max'] = 2.0
+    namelist['time_stepping']['t_max'] = 3600.0 * 24.0
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['latentheat'] = 'constant'
+
+    namelist['microphysics'] = {}
+    namelist['microphysics']['scheme'] = 'Arctic_1M'  # T_Liquid'
+    namelist['microphysics']['phase_partitioning'] = 'liquid_only'  # liquid_ice
+
+    namelist['sgs'] = {}
+    namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
+
+    # yair - add tracer transport to the simulation
+    namelist['tracers'] = {}
+    namelist['tracers']['use_tracers'] = True
+    namelist['tracers']['scheme'] = 'UpdraftTracers'
+    namelist['tracers']['use_lcl_tracers'] = False
+    namelist['tracers']['timescale'] = 60.0
+
+    namelist['diffusion'] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
+
+    namelist['momentum_transport'] = {}
+    namelist['momentum_transport']['order'] = 5 # the WENO order of the momentum advection scheme
+
+    namelist['scalar_transport'] = {}
+    namelist['scalar_transport']['order'] = 5 # the WENO order of the scaler advection scheme
+    namelist['scalar_transport']['order_sedimentation'] = 1
+
+    namelist['damping'] = {}
+    namelist['damping']['scheme'] = 'Rayleigh'
+    namelist['damping']['Rayleigh'] = {}
+    namelist['damping']['Rayleigh']['gamma_r'] = 0.2
+    namelist['damping']['Rayleigh']['z_d'] = 7000
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['auxiliary'] = ['Cumulus']
+    namelist['stats_io']['frequency'] = 100.0
+
+    namelist['fields_io'] = {}
+    namelist['fields_io']['fields_dir'] = 'fields'
+    namelist['fields_io']['frequency'] = 1800.0
+    namelist['fields_io']['diagnostic_fields'] = ['ql', 'temperature', 'buoyancy_frequency', 'viscosity']
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'GATE_III'
+    namelist['meta']['casename'] = 'GATE_III'
+
+    namelist['restart'] = {}
+    namelist['restart']['output'] = True
+    namelist['restart']['init_from'] = False
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
+
+    namelist['conditional_stats'] = {}
+    namelist['conditional_stats']['classes'] = ['Spectra']
+    namelist['conditional_stats']['frequency'] = 600.0
+    namelist['conditional_stats']['stats_dir'] = 'cond_stats'
+
+    return namelist
 
 def write_file(namelist, new_uuid = True):
 

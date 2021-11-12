@@ -285,7 +285,6 @@ cdef class TimeStepping:
                             w = fmax(fabs( DV.values[DV.sedv_index[isedv]*Gr.dims.npg + ijk ] + PV.values[w_shift+ijk]), w)
 
                         cfl_max_local = fmax(cfl_max_local, self.dt * (fabs(PV.values[u_shift + ijk])*dxi[0] + fabs(PV.values[v_shift+ijk])*dxi[1] + w*(1.0/Gr.dzpl[k])))
-                        #cfl_max_local = fmax(cfl_max_local, self.dt * (fabs(PV.values[u_shift + ijk])*dxi[0] + fabs(PV.values[v_shift+ijk])*dxi[1] + w*dxi[2]))
 
         mpi.MPI_Allreduce(&cfl_max_local,&self.cfl_max,1,
                           mpi.MPI_DOUBLE,mpi.MPI_MAX,Pa.comm_world)
@@ -293,7 +292,7 @@ cdef class TimeStepping:
         self.cfl_max += 1e-11
 
         if self.cfl_max < 0.0:
-            Pa.root_print('CFL_MAX = '+ str(self.cfl_max)+ " killing simulation!")
+            Pa.root_print('CFL_MAX = '+ str(self.cfl_max)+ " killing simulation!!!")
             Pa.kill()
         return
 

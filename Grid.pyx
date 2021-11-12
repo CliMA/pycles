@@ -35,7 +35,7 @@ cdef class Grid:
         self.dims.dxi[2] = 1.0/self.dims.dx[2]
 
         #Get the grid dimensions and ghost points
-        self.dims.gw = namelist['grid']['gw']
+        self.dims.gw   = namelist['grid']['gw']
         self.dims.n[0] = namelist['grid']['nx']
         self.dims.n[1] = namelist['grid']['ny']
         self.dims.n[2] = namelist['grid']['nz']
@@ -155,7 +155,6 @@ cdef class Grid:
 
 
         cdef double zp_max = self.dims.n[2] * self.dims.dx[2]
-
         if self.stretch:
             beta =  1.0/ self.stretch_scale
             self.dims.dx[2] = (1.0/beta) * np.log(zp_max * (np.exp(beta)-1) + 1)/self.dims.n[2]

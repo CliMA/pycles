@@ -16,8 +16,11 @@ import cython
 cimport numpy as np
 import numpy as np
 from libc.math cimport sqrt
-from thermodynamic_functions cimport thetas_c
 include "parameters.pxi"
+
+cdef extern from "thermodynamic_functions.h":
+    double thetas_c(const double s, const double qt) nogil
+
 
 class AuxiliaryStatistics:
     def __init__(self, namelist):
@@ -82,6 +85,8 @@ class CumulusStatistics:
             NS.add_profile('fraction_'+cond,Gr,Pa)
             NS.add_profile('w_'+cond,Gr,Pa)
             NS.add_profile('w2_'+cond,Gr,Pa)
+            NS.add_profile('dyn_pressure_'+cond,Gr,Pa)
+            NS.add_profile('buoyancy_'+cond,Gr,Pa)
             for scalar in scalars:
                 NS.add_profile(scalar+'_'+cond,Gr,Pa)
                 NS.add_profile(scalar+'2_'+cond,Gr,Pa)
@@ -140,6 +145,20 @@ class CumulusStatistics:
         NS.write_profile('w_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
         tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &PV.values[shift], &PV.values[shift], &coremask[0])
         NS.write_profile('w2_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        #-dynamic_pressure --Jia
+        shift = DV.get_varshift(Gr, 'dynamic_pressure')
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &cloudmask[0])
+        NS.write_profile('dyn_pressure_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &coremask[0])
+        NS.write_profile('dyn_pressure_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+        #-buoyancy --Jia
+        shift = DV.get_varshift(Gr, 'buoyancy')
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &cloudmask[0])
+        NS.write_profile('buoyancy_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &coremask[0])
+        NS.write_profile('buoyancy_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         #-qt
         shift = PV.get_varshift(Gr, 'qt')
@@ -879,7 +898,5 @@ class FluxStatistics:
         NS.write_profile('sgs_x_flux_qt', qt_xsgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.write_profile('sgs_y_flux_qt', qt_ysgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.write_profile('sgs_z_flux_qt', qt_zsgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
-
-
 
         return

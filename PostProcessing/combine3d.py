@@ -36,6 +36,9 @@ def main():
         n_0 = dims['n_0'][0]
         n_1 = dims['n_1'][0]
         n_2 = dims['n_2'][0]
+        x = dims['x'][:]
+        y = dims['y'][:]
+        z = dims['z'][:]
 
 
 	x = dims['x'][:]
@@ -90,7 +93,6 @@ def create_file(fname, nx, ny, nz, x, y, z):
     fieldgrp.createDimension('nx', nx)
     fieldgrp.createDimension('ny', ny)
     fieldgrp.createDimension('nz', nz)
-
 
 
     #print x, y, z, 

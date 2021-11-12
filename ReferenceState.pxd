@@ -22,6 +22,7 @@ cdef class ReferenceState:
         public double [:] thetali0_global
         public double [:] thetali0_half_global
 
+
         double sg
 
     cdef public:

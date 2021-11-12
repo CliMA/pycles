@@ -46,8 +46,8 @@ class cfreader:
         op_grp = rt_grp[self.op_grp]
         var_handle = op_grp.variables[var]
         assert (('time','lev') == var_handle.dimensions or ('lev',) == var_handle.dimensions)
-        
-	if instant:
+
+        if instant:
             data = var_handle[t_idx, :]
         else:
             data = np.mean(var_handle[:, :], axis=0)
@@ -65,8 +65,8 @@ class cfreader:
 
         var_handle =  op_grp.variables[var]
         assert(('time',) == var_handle.dimensions)
-        
-	if instant:
+
+        if instant:
             data = var_handle[t_idx]
         else:
             data = np.mean(var_handle[:], axis=0)
@@ -78,7 +78,7 @@ class cfreader:
 
     def get_interp_profile(self, var, z, zero_bottom=False, filter=True, instant=False, t_idx=0):
         '''
-        
+
         :param var: name of variable in fms data
         :param z: interpolation points
         :param zero_bottom: bool to specify if bottom boundary is set to zero if not then take value of one point above

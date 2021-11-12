@@ -154,10 +154,4 @@ cdef class ScalarAdvection:
                     tmp_interp[k] = 0.5*(tmp[k-1]+tmp[k])
                 NS.write_profile(PV.index_name[i] + '_flux_z', tmp_interp[Gr.dims.gw:-Gr.dims.gw], Pa)
                 scalar_count += 1
-
-
-            #print PV.index_name[i], np.amax(tmp_interp[Gr.dims.gw:-Gr.dims.gw]), np.min(tmp_interp[Gr.dims.gw:-Gr.dims.gw])
-
-
-
         return

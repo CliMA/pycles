@@ -114,7 +114,6 @@ cdef class ThermodynamicsSA:
         DV.add_variables('theta_rho', 'K', r'\theta_{\rho}', 'density potential temperature', 'sym', Pa)
         DV.add_variables('thetali', 'K', r'\theta_l', r'liqiud water potential temperature', 'sym', Pa)
 
-
         # Add statistical output
         NS.add_profile('thetas_mean', Gr, Pa)
         NS.add_profile('thetas_mean2', Gr, Pa)
