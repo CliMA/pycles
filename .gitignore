@@ -17,3 +17,7 @@ _static/
 _templates/
 *.png
 *.mod
+1_00x_157.5.in.restart_4x
+*.ipynb
+AlteredRestart/lsf.o67478384
+Output/

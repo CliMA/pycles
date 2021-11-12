@@ -345,4 +345,3 @@ class Simulation3d:
         self.StatsIO.close_files(self.Pa)
         self.Pa.root_print('Finished Forcing Initial io')
         return
-

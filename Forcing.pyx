@@ -58,8 +58,6 @@ cdef class Forcing:
             self.scheme = ForcingZGILS(namelist, LH, Pa)
         elif casename == 'GCMVarying':
             self.scheme = ForcingGCMVarying.ForcingGCMVarying(namelist, LH, Pa)
-        elif casename == 'GCMMean':
-            self.scheme = ForcingGCMFixed.ForcingGCMMean(namelist, LH, Pa)
         elif casename == 'GCMNew':
             self.scheme = ForcingGCMFixed.ForcingGCMNew(namelist, LH, Pa)
         elif casename == 'TRMM_LBA':
