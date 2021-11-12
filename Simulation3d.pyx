@@ -323,4 +323,3 @@ class Simulation3d:
         self.Aux.stats_io(self.Gr, self.RS, self.PV, self.DV, self.MA, self.MD, self.StatsIO, self.Pa)
         self.StatsIO.close_files(self.Pa)
         return
-
