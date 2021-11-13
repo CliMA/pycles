@@ -270,36 +270,6 @@ cdef class RayleighGCMNew:
         u_mean = Pa.HorizontalMean(Gr, & PV.values[u_shift])
         v_shift = PV.get_varshift(Gr, 'v')
         v_mean = Pa.HorizontalMean(Gr, & PV.values[v_shift])
-
-        # if 's' in PV.name_index:
-        #     s_shift = PV.get_varshift(Gr, 's')
-        # else:
-        #     s_shift = PV.get_varshift(Gr, 'thli')
-        #
-        # with nogil:
-        #     for i in xrange(gw,imax):
-        #         ishift = i * istride
-        #         for j in xrange(gw,jmax):
-        #             jshift = j * jstride
-        #             for k in xrange(gw,kmax):
-        #
-        #                 weight = self.tend_flat_half[k]
-        #
-        #                 ijk = ishift + jshift + k
-        #                 p0 = RS.p0_half[k]
-        #                 rho0 = RS.rho0_half[k]
-        #                 qt = PV.values[qt_shift + ijk]
-        #                 qv = qt - DV.values[ql_shift + ijk]
-        #                 pd = pd_c(p0,qt,qv)
-        #                 pv = pv_c(p0,qt,qv)
-        #                 t  = DV.values[t_shift + ijk]
-        #                 PV.tendencies[s_shift + ijk] =   (weight)*PV.tendencies[s_shift + ijk]
-        #                 #PV.tendencies[s_shift + ijk] += (sv_c(pv,t) - sd_c(pd,t)) * (self.dt_qg_total[k]* (1.0 -weight) ) + (1.0 - weight) * (cpm_c(qt) * (self.dt_tg_total[k]))/t
-        #                 #PV.tendencies[qt_shift + ijk] = self.dt_qg_total[k]* (1.0 - weight) + PV.tendencies[qt_shift + ijk] *(weight)
-        #                 PV.tendencies[qt_shift + ijk] = PV.tendencies[qt_shift + ijk] *(weight)
-        #                 PV.tendencies[u_shift + ijk] = (weight) * PV.tendencies[u_shift + ijk]
-        #                 PV.tendencies[v_shift + ijk] = (weight) * PV.tendencies[v_shift + ijk]
-
         return
 
 cdef class RayleighGCMMean:
