@@ -292,7 +292,7 @@ cdef class NetCDFIO_Fields:
             except:
                 pass
 
-            shutil.copyfile( os.path.join('./', namelist['meta']['simname'] + '.in'),  # 111018[ZS]
+            shutil.copyfile( os.path.join('./input/', namelist['meta']['simname'] + '.in'), 
                              os.path.join( outpath, namelist['meta']['simname'] + '.in'))
         return
 
