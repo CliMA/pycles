@@ -598,7 +598,7 @@ cdef class NetCDFIO_CondStats:
 
         if Pa.rank == 0:
             shutil.copyfile(
-                os.path.join( './', namelist['meta']['simname'] + '.in'), # 111018[ZS]
+                os.path.join( './input/', namelist['meta']['simname'] + '.in'),
                 os.path.join( outpath, namelist['meta']['simname'] + '.in'))
         return
 
