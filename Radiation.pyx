@@ -59,8 +59,6 @@ def RadiationFactory(namelist, LatentHeat LH, ParallelMPI.ParallelMPI Pa):
             return RadiationRRTM(namelist,LH, Pa)
         elif casename == 'ZGILS':
             return RadiationRRTM(namelist, LH, Pa)
-        elif casename == 'GCMFixed':
-            return RadiationGCMGrey(namelist, LH, Pa)
         elif casename == 'GCMNew':
             return RadiationNone()
         elif casename == 'GCMVarying':
