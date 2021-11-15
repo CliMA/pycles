@@ -1891,42 +1891,6 @@ cdef apply_subsidence_temperature(Grid.DimStruct *dims, double *rho0, double *rh
                     tendencies[ijk] -= tend
     return
 
-
-
-cdef apply_subsidence_temperature_thli(Grid.DimStruct *dims, double *rho0, double *p0_half, double *rho0_half, double *subsidence, double *qt, double* values,  double *tendencies):
-
-    cdef:
-        Py_ssize_t imin = dims.gw
-        Py_ssize_t jmin = dims.gw
-        Py_ssize_t kmin = dims.gw
-        Py_ssize_t imax = dims.nlg[0] -dims.gw
-        Py_ssize_t jmax = dims.nlg[1] -dims.gw
-        Py_ssize_t kmax = dims.nlg[2] -dims.gw -1
-        Py_ssize_t istride = dims.nlg[1] * dims.nlg[2]
-        Py_ssize_t jstride = dims.nlg[2]
-        Py_ssize_t ishift, jshift, ijk, i,j,k
-        double dxi = dims.dxi[2]
-        double tend
-    with nogil:
-        for i in xrange(imin,imax):
-            ishift = i*istride
-            for j in xrange(jmin,jmax):
-                jshift = j*jstride
-                for k in xrange(kmin,kmax):
-                    ijk = ishift + jshift + k
-                    if(subsidence[k] < 0):
-                        tend = (values[ijk+1] - values[ijk]) * dxi * subsidence[k] * dims.imetl[k]
-                    else:
-                        tend = (values[ijk] - values[ijk-1]) * dxi * subsidence[k] * dims.imetl[k-1]
-                    #+ g / values[ijk] * subsidence[k]
-                    tendencies[ijk] -= tend / exner_c(p0_half[k])
-                for k in xrange(kmax, dims.nlg[2]):
-                    ijk = ishift + jshift + k
-                    tendencies[ijk] -= tend / exner_c(p0_half[k])
-
-    return
-
-
 from scipy.interpolate import pchip, interp1d
 def interp_pchip(z_out, z_in, v_in, pchip_type=True):
     if pchip_type:
