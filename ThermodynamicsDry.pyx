@@ -27,8 +27,6 @@ cdef extern from "thermodynamics_dry.h":
     inline double alpha_c(double p0, double T, double qt, double qv) nogil
     void eos_update(Grid.DimStruct *dims, double *pd, double *s, double *T,
                     double *alpha)
-    void eos_update_thli(Grid.DimStruct *dims, double *pd, double *thli, double *T, double *s,
-                    double *alpha)
     void buoyancy_update(Grid.DimStruct *dims, double *alpha0, double *alpha,double *buoyancy,
                          double *wt)
     void bvf_dry(Grid.DimStruct* dims,  double* p0, double* T, double* theta, double* bvf)
