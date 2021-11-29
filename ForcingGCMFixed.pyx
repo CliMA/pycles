@@ -22,7 +22,6 @@ from Thermodynamics cimport LatentHeat, ClausiusClapeyron
 import pickle as pickle
 from scipy.interpolate import pchip
 
-from fms_forcing_reader import reader
 from cfsites_forcing_reader import cfreader
 from cfgrid_forcing_reader import cfreader_grid
 

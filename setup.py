@@ -42,7 +42,7 @@ elif 'euler' in platform.node():
     f_compiler = 'gfortran'
 elif platform.machine()  == 'x86_64':
     #Compile flags for fram @ Caltech
-    library_dirs = string.split(os.environ['LD_LIBRARY_PATH'],':')
+    library_dirs = str.split(os.environ['LD_LIBRARY_PATH'],':')
     libraries = []
     libraries.append('mpi')
     libraries.append('gfortran')

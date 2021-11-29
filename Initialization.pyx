@@ -23,7 +23,6 @@ from libc.math cimport sqrt, fmin, cos, exp, fabs
 include 'parameters.pxi'
 import pickle as pickle
 from scipy import interpolate
-from fms_forcing_reader import reader
 from cfsites_forcing_reader import cfreader
 from cfgrid_forcing_reader import cfreader_grid
 

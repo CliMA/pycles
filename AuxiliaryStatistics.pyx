@@ -146,20 +146,6 @@ class CumulusStatistics:
         tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &PV.values[shift], &PV.values[shift], &coremask[0])
         NS.write_profile('w2_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
-        #-dynamic_pressure --Jia
-        shift = DV.get_varshift(Gr, 'dynamic_pressure')
-        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &cloudmask[0])
-        NS.write_profile('dyn_pressure_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &coremask[0])
-        NS.write_profile('dyn_pressure_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-
-        #-buoyancy --Jia
-        shift = DV.get_varshift(Gr, 'buoyancy')
-        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &cloudmask[0])
-        NS.write_profile('buoyancy_cloud', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[shift], &coremask[0])
-        NS.write_profile('buoyancy_core', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-
         #-qt
         shift = PV.get_varshift(Gr, 'qt')
         tmp = Pa.HorizontalMeanConditional(Gr, &PV.values[shift], &cloudmask[0])

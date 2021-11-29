@@ -28,7 +28,6 @@ import math
 from scipy.interpolate import pchip
 import pickle as pickle
 import cython
-from fms_forcing_reader import reader
 from cfsites_forcing_reader import cfreader
 from cfgrid_forcing_reader import cfreader_grid
 
@@ -545,8 +544,6 @@ cdef class RadiationRRTM(RadiationBase):
             self.Tg_adiabat = 295.0
             self.Pg_adiabat = 1000.0e2
             self.RH_adiabat = 0.3
-        elif casename == 'GCMMean':
-            self.profile_name = 'gcm_mean'
         elif casename == 'GCMNew' or casename=='GCMVarying':
             self.read_file = True
             self.file = str(namelist['gcm']['file'])

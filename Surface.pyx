@@ -24,7 +24,6 @@ import numpy as np
 import pickle as pickle
 include "parameters.pxi"
 
-from fms_forcing_reader import reader
 from cfsites_forcing_reader import cfreader
 from cfgrid_forcing_reader import cfreader_grid
 

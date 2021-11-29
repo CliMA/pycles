@@ -21,7 +21,6 @@ import pickle as pickle
 cimport TimeStepping
 from scipy.interpolate import pchip
 from thermodynamic_functions cimport cpm_c
-from fms_forcing_reader import reader
 from cfsites_forcing_reader import cfreader
 from cfgrid_forcing_reader import cfreader_grid
 include 'parameters.pxi'

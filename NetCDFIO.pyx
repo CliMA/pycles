@@ -64,7 +64,7 @@ cdef class NetCDFIO_Stats:
 
         if Pa.rank == 0:
             shutil.copyfile(
-                os.path.join( './input/', namelist['meta']['simname'] + '.in'),
+                os.path.join( './', namelist['meta']['simname'] + '.in'),
                 os.path.join( outpath, namelist['meta']['simname'] + '.in'))
             self.setup_stats_file(Gr, Pa)
         return
@@ -292,7 +292,7 @@ cdef class NetCDFIO_Fields:
             except:
                 pass
 
-            shutil.copyfile( os.path.join('./input/', namelist['meta']['simname'] + '.in'), 
+            shutil.copyfile( os.path.join('./', namelist['meta']['simname'] + '.in'),
                              os.path.join( outpath, namelist['meta']['simname'] + '.in'))
         return
 
@@ -598,7 +598,7 @@ cdef class NetCDFIO_CondStats:
 
         if Pa.rank == 0:
             shutil.copyfile(
-                os.path.join( './input/', namelist['meta']['simname'] + '.in'),
+                os.path.join( './', namelist['meta']['simname'] + '.in'),
                 os.path.join( outpath, namelist['meta']['simname'] + '.in'))
         return
 
