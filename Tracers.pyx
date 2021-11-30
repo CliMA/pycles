@@ -504,28 +504,6 @@ cdef class UpdraftTracers:
         tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[b_shift], &DV.values[b_shift], &self.updraft_indicator[0])
         NS.write_profile('updraft_b2', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
-        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[p_shift], &self.updraft_indicator[0])
-        NS.write_profile('updraft_dyn_pressure', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-
-        with nogil:
-            for i in range(Gr.dims.nlg[0]):
-                ishift = i * istride
-                for j in range(Gr.dims.nlg[1]):
-                    jshift = j * jstride
-                    for k in range(kmin,kmax):
-                        ijk = ishift + jshift + k
-                        dpalphadz[ijk] = 0.5*(RS.alpha0_half[k+1]*DV.values[p_shift+ijk+1]-RS.alpha0_half[k-1]*DV.values[p_shift+ijk-1])*Gr.dims.dxi[2]
-        tmp = Pa.HorizontalMeanConditional(Gr, &dpalphadz[0], &self.updraft_indicator[0])
-        NS.write_profile('updraft_ddz_p_alpha', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &w_half[0], &DV.values[p_shift], &self.updraft_indicator[0])
-        NS.write_profile('updraft_w_dyn_pressure', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &u_half[0], &DV.values[p_shift], &self.updraft_indicator[0])
-        NS.write_profile('updraft_u_dyn_pressure', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &v_half[0], &DV.values[p_shift], &self.updraft_indicator[0])
-        NS.write_profile('updraft_v_dyn_pressure', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-
-
         tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[alpha_shift], &self.updraft_indicator[0])
         NS.write_profile('updraft_alpha', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 #        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[alpha_shift], &self.env_indicator[0])
