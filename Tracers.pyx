@@ -394,7 +394,6 @@ cdef class UpdraftTracers:
             Py_ssize_t bvf_shift = DV.get_varshift(Gr, 'buoyancy_frequency')
             Py_ssize_t thr_shift = DV.get_varshift(Gr, 'theta_rho')
             Py_ssize_t qv_shift = DV.get_varshift(Gr, 'qv')
-            Py_ssize_t p_shift = DV.get_varshift(Gr, 'dynamic_pressure')
             Py_ssize_t alpha_shift = DV.get_varshift(Gr, 'alpha')
             Py_ssize_t press_shift = DV.get_varshift(Gr, 'perturbation_pressure_potential')
             Py_ssize_t pz_shift = DV.get_varshift(Gr, 'wBudget_PressureGradient')
