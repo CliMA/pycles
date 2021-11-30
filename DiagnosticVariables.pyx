@@ -143,7 +143,6 @@ cdef class DiagnosticVariables:
         #Add prognostic variables to Statistics IO
         Pa.root_print('Setting up statistical output files for Prognostic Variables')
         for var_name in self.name_index.keys():
-            print var_name
             #Add mean profile
             NS.add_profile(var_name+'_mean',Gr,Pa)
             #Add mean of squares profile
@@ -203,22 +202,22 @@ cdef class DiagnosticVariables:
             NS.write_ts(var_name + '_mean',tmp2,Pa)
 
         return
-        
+
     cpdef debug_large(self, Grid.Grid Gr, ReferenceState.ReferenceState RS ,NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa,  str message):
-        
+
         cdef:
             Py_ssize_t var_shift
 
-        names = [ 'temperature', 'ql', 'qi'] 
+        names = [ 'temperature', 'ql', 'qi']
         for var_name in names: #self.name_index.keys():
             var_shift = self.get_varshift(Gr,var_name)
 
             v_max = np.amax(Pa.HorizontalMaximum(Gr,&self.values[var_shift])[Gr.dims.gw:-Gr.dims.gw])
             v_min = np.amin(Pa.HorizontalMinimum(Gr,&self.values[var_shift])[Gr.dims.gw:-Gr.dims.gw])
 
-            
+
             if np.abs(v_max) > 1e6 or np.abs(v_min) > 1e6 or np.isnan(v_max) or np.isnan(v_min): 
                  Pa.root_print('Large DV Value At ' +  str(message) + ' in ' + var_name + ':  ' + str(v_max) + ' ' + str(v_min))
-                 Pa.kill() 
-        
-        return 
+                 Pa.kill()
+
+        return
