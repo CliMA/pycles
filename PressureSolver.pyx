@@ -25,8 +25,21 @@ cdef class PressureSolver:
 
     cpdef initialize(self,namelist, Grid.Grid Gr,ReferenceState.ReferenceState RS ,DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI PM):
 
-        DV.add_variables('dynamic_pressure', 'Pa', r'p', 'dynamic pressure', 'sym', PM)
+        DV.add_variables('perturbation_pressure_potential', 'm^2 s^-2', r'p', 'density dynamic pressure', 'sym', PM)
         DV.add_variables('divergence', '1/s', r'd', '3d divergence', 'sym',PM)
+
+        DV.add_variables('wBudget_PressureGradient', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
+        DV.add_variables('wBudget_PressureGradient_RK0', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
+        DV.add_variables('wBudget_PressureGradient_RK1', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
+        DV.add_variables('wBudget_PressureGradient_RK2', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
+        DV.add_variables('wBudget_PressureGradient_RK3', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
+        DV.add_variables('wBudget_PressureGradient_RK4', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
+        DV.add_variables('wBudget_removeHorAve', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
+        DV.add_variables('wBudget_removeHorAve_RK0', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
+        DV.add_variables('wBudget_removeHorAve_RK1', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
+        DV.add_variables('wBudget_removeHorAve_RK2', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
+        DV.add_variables('wBudget_removeHorAve_RK3', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
+        DV.add_variables('wBudget_removeHorAve_RK4', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
 
         self.divergence = np.zeros(Gr.dims.npl,dtype=np.double, order='c')
         #self.poisson_solver = PressureFFTSerial.PressureFFTSerial()
@@ -45,13 +58,16 @@ cdef class PressureSolver:
             Py_ssize_t u_shift = PV.get_varshift(Gr,'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr,'v')
             Py_ssize_t w_shift = PV.get_varshift(Gr,'w')
-            Py_ssize_t pres_shift = DV.get_varshift(Gr,'dynamic_pressure')
+            Py_ssize_t pres_shift = DV.get_varshift(Gr,'perturbation_pressure_potential')
             Py_ssize_t div_shift = DV.get_varshift(Gr,'divergence')
+
+            Py_ssize_t dpdz_shift = DV.get_varshift(Gr,'wBudget_PressureGradient')
+            Py_ssize_t whor_shift = DV.get_varshift(Gr,'wBudget_removeHorAve')
 
 
         #Remove mean u3
         cdef double [:] u3_mean = PM.HorizontalMean(Gr,&PV.values[w_shift])
-        remove_mean_u3(&Gr.dims,&u3_mean[0],&PV.values[w_shift])
+        remove_mean_u3(&Gr.dims,&u3_mean[0],&PV.values[w_shift],&DV.values[whor_shift])
 
         #Zero the divergence array [Perhaps we can replace this with a C-Call to Memset]
         with nogil:
@@ -68,12 +84,12 @@ cdef class PressureSolver:
         self.poisson_solver.solve(Gr, RS, DV, PM)
 
         #Update pressure boundary condition
-        p_nv = DV.name_index['dynamic_pressure']
+        p_nv = DV.name_index['perturbation_pressure_potential']
         DV.communicate_variable(Gr,PM,p_nv)
 
         #Apply pressure correction
         second_order_pressure_correction(&Gr.dims,&DV.values[pres_shift],
-                                         &PV.values[u_shift],&PV.values[v_shift],&PV.values[w_shift])
+                                         &PV.values[u_shift],&PV.values[v_shift],&PV.values[w_shift],&DV.values[dpdz_shift])
 
 
         #Zero the divergence array [Perhaps we can replace this with a C-Call to Memset]
@@ -92,7 +108,7 @@ cdef class PressureSolver:
 
         return
 
-cdef void second_order_pressure_correction(Grid.DimStruct *dims, double *p, double *u, double *v, double *w ):
+cdef void second_order_pressure_correction(Grid.DimStruct *dims, double *p, double *u, double *v, double *w ,double *dpdz ):
 
     cdef:
         Py_ssize_t imin = 0
@@ -118,12 +134,12 @@ cdef void second_order_pressure_correction(Grid.DimStruct *dims, double *p, doub
                 u[ijk] -=  (p[ijk + ip1] - p[ijk])*dims.dxi[0]
                 v[ijk] -=  (p[ijk + jp1] - p[ijk])*dims.dxi[1]
                 w[ijk] -=  (p[ijk + kp1] - p[ijk])*dims.dxi[2] * dims.imetl[k] #(p[ijk + kp1] - p[ijk])*dims.dxi[2]
-
+                dpdz[ijk] = -(p[ijk + kp1] - p[ijk])*dims.dxi[2] * dims.imetl[k]
 
     return
 
 
-cdef void remove_mean_u3(Grid.DimStruct *dims, double *u3_mean, double *velocity):
+cdef void remove_mean_u3(Grid.DimStruct *dims, double *u3_mean, double *velocity, double *whor):
 
     cdef:
         Py_ssize_t imin = 0
@@ -145,6 +161,7 @@ cdef void remove_mean_u3(Grid.DimStruct *dims, double *u3_mean, double *velocity
                 for k in xrange(kmin,kmax):
                      ijk = ishift + jshift + k
                      velocity[ijk] = velocity[ijk] - u3_mean[k]
+                     whor[ijk] = -u3_mean[k]
 
     return
 

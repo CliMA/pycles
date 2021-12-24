@@ -13,6 +13,7 @@ cdef class TimeStepping:
         public double dt_max
         public double dt_initial
         public double t_max
+        public double statIOdt
         double [:,:] value_copies
         double [:,:] tendency_copies
         public Py_ssize_t rk_step
@@ -25,9 +26,13 @@ cdef class TimeStepping:
 
     cpdef initialize(self, namelist, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa)
     cpdef update(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa)
+    cpdef update_pressure(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
     cpdef update_second(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV)
     cpdef update_third(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV)
     cpdef update_fourth(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV)
+    cpdef update_pressure_second(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV)
+    cpdef update_pressure_third(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV)
+    cpdef update_pressure_fourth(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV)
 
     cpdef adjust_timestep(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
     cdef void compute_cfl_max(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Pa)
