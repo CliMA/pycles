@@ -133,8 +133,8 @@ cdef void second_order_pressure_correction(Grid.DimStruct *dims, double *p, doub
                 ijk = ishift + jshift + k
                 u[ijk] -=  (p[ijk + ip1] - p[ijk])*dims.dxi[0]
                 v[ijk] -=  (p[ijk + jp1] - p[ijk])*dims.dxi[1]
-                w[ijk] -=  (p[ijk + kp1] - p[ijk])*dims.dxi[2]  #(p[ijk + kp1] - p[ijk])*dims.dxi[2]
-                dpdz[ijk] = -(p[ijk + kp1] - p[ijk])*dims.dxi[2]
+                w[ijk] -=  (p[ijk + kp1] - p[ijk])*dims.dxi[2] * dims.imetl[k] #(p[ijk + kp1] - p[ijk])*dims.dxi[2]
+                dpdz[ijk] = -(p[ijk + kp1] - p[ijk])*dims.dxi[2] * dims.imetl[k]
 
     return
 
