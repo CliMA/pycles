@@ -35,6 +35,8 @@ def main():
         namelist = SullivanPatton()
     elif case_name == 'Bomex':
         namelist = Bomex()
+    elif case_name == 'lifecycle_Tan2018':
+        namelist = lifecycle_Tan2018()
     elif case_name == 'Soares':
         namelist = Soares()
     elif case_name == 'Soares_moist':
@@ -57,6 +59,8 @@ def main():
         namelist = CGILS_S12(is_p2, is_ctl_omega)
     elif case_name == 'ZGILS':
         namelist = ZGILS(zgils_loc)
+    elif case_name == 'GCMVarying':
+        namelist = GCMVarying()
     elif case_name == 'TRMM_LBA':
         namelist = TRMM_LBA()
     elif case_name == 'ARM_SGP':
@@ -111,6 +115,8 @@ def SullivanPatton():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -135,6 +141,7 @@ def SullivanPatton():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
@@ -217,6 +224,7 @@ def SaturatedBubble():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
 
     namelist['conditional_stats'] = {}
 
@@ -302,6 +310,7 @@ def StableBubble():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
 
     namelist['conditional_stats'] = {} 
 
@@ -363,6 +372,8 @@ def Bomex():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -387,10 +398,11 @@ def Bomex():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['Cumulus','TKE']
+    namelist['stats_io']['auxiliary'] = ['Cumulus', 'Flux', 'TKE']
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
@@ -415,6 +427,99 @@ def Bomex():
     namelist['tracers']['scheme'] = 'UpdraftTracers'
     namelist['tracers']['use_lcl_tracers'] = False
     namelist['tracers']['timescale'] = 15.0
+
+    return namelist
+
+def lifecycle_Tan2018():
+
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 3
+    namelist['grid']['nx'] = 256
+    namelist['grid']['ny'] = 256
+    namelist['grid']['nz'] = 75
+    namelist['grid']['gw'] = 3
+    namelist['grid']['dx'] = 50.0
+    namelist['grid']['dy'] = 50.0
+    namelist['grid']['dz'] = 100 / 2.5
+
+    namelist['mpi'] = {}
+    namelist['mpi']['nprocx'] = 1
+    namelist['mpi']['nprocy'] = 1
+    namelist['mpi']['nprocz'] = 1
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['ts_type'] = 3
+    namelist['time_stepping']['cfl_limit'] = 0.7
+    namelist['time_stepping']['dt_initial'] = 10.0
+    namelist['time_stepping']['dt_max'] = 10.0
+    namelist['time_stepping']['t_max'] = 6*3600.0
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['latentheat'] = 'constant'
+
+    namelist['microphysics'] = {}
+    namelist['microphysics']['scheme'] = 'None_SA'
+    namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+
+    namelist['sgs'] = {}
+    namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
+
+    namelist['diffusion'] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
+
+    namelist['momentum_transport'] = {}
+    namelist['momentum_transport']['order'] = 7
+
+    namelist['scalar_transport'] = {}
+    namelist['scalar_transport']['order'] = 7
+
+    namelist['damping'] = {}
+    namelist['damping']['scheme'] = 'Rayleigh'
+    namelist['damping']['Rayleigh'] = {}
+    namelist['damping']['Rayleigh']['gamma_r'] = 0.2
+    namelist['damping']['Rayleigh']['z_d'] = 600
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['restart'] = {}
+    namelist['restart']['output'] = True
+    namelist['restart']['init_from'] = False
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = 'stats'
+    namelist['stats_io']['auxiliary'] = ['Cumulus', 'Flux', 'TKE']
+    namelist['stats_io']['frequency'] = 60.0
+
+    namelist['fields_io'] = {}
+    namelist['fields_io']['fields_dir'] = 'fields'
+    namelist['fields_io']['frequency'] = 1800.0
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+
+    namelist['conditional_stats'] ={}
+    namelist['conditional_stats']['classes'] = ['Spectra']
+    namelist['conditional_stats']['frequency'] = 600.0
+    namelist['conditional_stats']['stats_dir'] = 'cond_stats'
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'lifecycle_Tan2018'
+    namelist['meta']['casename'] = 'lifecycle_Tan2018'
+
+    namelist['initialization'] = {}
+    namelist['initialization']['random_seed_factor'] = 1
+
+    namelist['tracers'] = {}
+    namelist['tracers']['use_tracers'] = True
+    namelist['tracers']['timescale'] = 15.0
+    namelist['tracers']['scheme'] = 'UpdraftTracers'
+    namelist['tracers']['use_lcl_tracers'] = False
 
     return namelist
 
@@ -465,22 +570,17 @@ def Soares():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
-    namelist['sgs']['Smagorinsky'] = {}
-    namelist['sgs']['Smagorinsky']['cs'] = 0.17
-    namelist['sgs']['UniformViscosity'] = {}
-    namelist['sgs']['UniformViscosity']['viscosity'] = 1.2
-    namelist['sgs']['UniformViscosity']['diffusivity'] = 3.6
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False      # seems to be set to False for all cases???
 
-    # 2 = second_order_m
-    # 32 = second_order_ml_m
     namelist['momentum_transport'] = {}
-    namelist['momentum_transport']['order'] = 2
+    namelist['momentum_transport']['order'] = 5
     # 2 = second_order_a
     namelist['scalar_transport'] = {}
-    namelist['scalar_transport']['order'] = 2
+    namelist['scalar_transport']['order'] = 7
 
     namelist['damping'] = {}
     namelist['damping']['scheme'] = 'Rayleigh'  # no more 'DampingToDomainMean' ???
@@ -496,18 +596,19 @@ def Soares():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
 
     # profile outputs
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['Flux']    # AuxiliaryStatistics
-    namelist['stats_io']['frequency'] = 900.0
+    namelist['stats_io']['auxiliary'] = ['DYCOMS', 'Flux','TKE']
+    namelist['stats_io']['frequency'] = 60.0
 
     # field outputs
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
-    namelist['fields_io']['frequency'] = 1800.0
-    namelist['fields_io']['diagnostic_fields'] = ['temperature','viscosity']   # defines diagnostic variable output fields (progn. variables output in restart files?!)
+    namelist['fields_io']['frequency'] = 3600.0
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
 
     # Conditional Statistics
     namelist['conditional_stats'] ={}
@@ -524,6 +625,7 @@ def Soares():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
 
     namelist['visualization'] = {}
     namelist['visualization']['frequency'] = 1800.0
@@ -588,25 +690,17 @@ def Soares_moist():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
-    namelist['sgs']['Smagorinsky'] = {}
-    namelist['sgs']['Smagorinsky']['cs'] = 0.17
-    namelist['sgs']['UniformViscosity'] = {}
-    namelist['sgs']['UniformViscosity']['viscosity'] = 1.2
-    namelist['sgs']['UniformViscosity']['diffusivity'] = 3.6
-    namelist['sgs']['TKE'] = {}
-    namelist['sgs']['TKE']['ck'] = 0.1
-    namelist['sgs']['TKE']['cn'] = 0.76
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False      # seems to be set to False for all cases???
 
-    # 2 = second_order_m
-    # 32 = second_order_ml_m
     namelist['momentum_transport'] = {}
-    namelist['momentum_transport']['order'] = 4
+    namelist['momentum_transport']['order'] = 5
     # 2 = second_order_a
     namelist['scalar_transport'] = {}
-    namelist['scalar_transport']['order'] = 4
+    namelist['scalar_transport']['order'] = 7
 
     namelist['damping'] = {}
     namelist['damping']['scheme'] = 'Rayleigh'  # no more 'DampingToDomainMean' ???
@@ -622,18 +716,22 @@ def Soares_moist():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
 
     # profile outputs
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['Fluxes']    # AuxiliaryStatistics
+    namelist['stats_io']['auxiliary'] = ['Flux', 'TKE']    # AuxiliaryStatistics
     namelist['stats_io']['frequency'] = 600.0
 
     # field outputs
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
-    namelist['fields_io']['frequency'] = 1800.0
-    namelist['fields_io']['diagnostic_fields'] = ['temperature','viscosity']   # defines diagnostic variable output fields (progn. variables output in restart files?!)
+    namelist['fields_io']['frequency'] = 3600.0
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+
+    namelist['visualization'] = {}
+    namelist['visualization']['frequency'] = 1e6
 
     # Conditional Statistics
     namelist['conditional_stats'] ={}
@@ -650,6 +748,7 @@ def Soares_moist():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
 
     namelist['visualization'] = {}
     namelist['visualization']['frequency'] = 1800.0
@@ -703,8 +802,7 @@ def Gabls():
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
     namelist['sgs']['Smagorinsky'] ={}
-    namelist['sgs']['Smagorinsky']['cs'] = 0.17
-    namelist['sgs']['Smagorinsky']['prt'] = 1.0/3.0
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -729,6 +827,7 @@ def Gabls():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
@@ -788,6 +887,8 @@ def DYCOMS_RF01():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -797,6 +898,7 @@ def DYCOMS_RF01():
 
     namelist['scalar_transport'] = {}
     namelist['scalar_transport']['order'] = 7
+    namelist['scalar_transport']['order_sedimentation'] = 1
 
     namelist['damping'] = {}
     namelist['damping']['scheme'] = 'Rayleigh'
@@ -812,16 +914,17 @@ def DYCOMS_RF01():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['DYCOMS', 'Flux','TKE']
-    namelist['stats_io']['frequency'] = 60.0
+    namelist['stats_io']['auxiliary'] = ['DYCOMS', 'Flux','TKE', 'Cumulus']
+    namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 3600.0
-    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity', 'buoyancy', 'thetali']
 
     namelist['conditional_stats'] ={}
     namelist['conditional_stats']['classes'] = ['Spectra']
@@ -875,6 +978,8 @@ def DYCOMS_RF02():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -899,16 +1004,17 @@ def DYCOMS_RF02():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['DYCOMS', 'Flux']
+    namelist['stats_io']['auxiliary'] = ['DYCOMS', 'Flux', 'TKE']
     namelist['stats_io']['frequency'] = 60.0
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 3600.0
-    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity', 'buoyancy', 'thetali']
 
     namelist['visualization'] = {}
     namelist['visualization']['frequency'] = 1e6
@@ -969,6 +1075,8 @@ def SMOKE():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -994,6 +1102,7 @@ def SMOKE():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
@@ -1063,6 +1172,8 @@ def Rico():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -1085,13 +1196,13 @@ def Rico():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['Cumulus']
+    namelist['stats_io']['auxiliary'] = ['Cumulus', 'Flux', 'TKE']
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 1800.0
-    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity']
+    namelist['fields_io']['diagnostic_fields'] = ['ql', 'qr', 'temperature','buoyancy_frequency','viscosity', 'buoyancy', 'thetali']
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'Rico'
@@ -1102,17 +1213,13 @@ def Rico():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
 
     namelist['conditional_stats'] ={}
     namelist['conditional_stats']['classes'] = ['Spectra']
     namelist['conditional_stats']['frequency'] = 600.0
     namelist['conditional_stats']['stats_dir'] = 'cond_stats'
-
-
     return namelist
-
-
-
 
 def CGILS_S6(is_p2,is_ctl_omega):
 
@@ -1170,7 +1277,7 @@ def CGILS_S6(is_p2,is_ctl_omega):
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
     namelist['sgs']['Smagorinsky'] ={}
-    namelist['sgs']['Smagorinsky']['iles'] = False
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -1225,6 +1332,7 @@ def CGILS_S6(is_p2,is_ctl_omega):
     namelist['restart']['frequency'] = 600.0
     namelist['restart']['delete_old'] = True
     namelist['restart']['times_retained'] = range(86400, 86400*11, 86400)
+    namelist['restart']['init_altered'] = False
 
     namelist['conditional_stats'] ={}
     namelist['conditional_stats']['classes'] = ['Spectra']
@@ -1286,12 +1394,10 @@ def CGILS_S11(is_p2,is_ctl_omega):
     namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
     namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
 
-
-
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
     namelist['sgs']['Smagorinsky'] ={}
-    namelist['sgs']['Smagorinsky']['iles'] = False
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -1346,6 +1452,7 @@ def CGILS_S11(is_p2,is_ctl_omega):
     namelist['restart']['frequency'] = 600.0
     namelist['restart']['delete_old'] = True
     namelist['restart']['times_retained'] = range(86400, 86400*11, 86400)
+    namelist['restart']['init_altered'] = False
 
     namelist['conditional_stats'] ={}
     namelist['conditional_stats']['classes'] = ['Spectra']
@@ -1405,12 +1512,10 @@ def CGILS_S12(is_p2,is_ctl_omega):
     namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
     namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
 
-
-
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
     namelist['sgs']['Smagorinsky'] ={}
-    namelist['sgs']['Smagorinsky']['iles'] = False
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['diffusion'] = {}
     namelist['diffusion']['qt_entropy_source'] = False
@@ -1465,6 +1570,7 @@ def CGILS_S12(is_p2,is_ctl_omega):
     namelist['restart']['frequency'] = 600.0
     namelist['restart']['delete_old'] = True
     namelist['restart']['times_retained'] = range(86400, 86400*11, 86400)
+    namelist['restart']['init_altered'] = False
 
     namelist['conditional_stats'] ={}
     namelist['conditional_stats']['classes'] = ['Spectra']
@@ -1522,12 +1628,10 @@ def ZGILS(zgils_loc):
     namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
     namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
 
-
-
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
     namelist['sgs']['Smagorinsky'] ={}
-    namelist['sgs']['Smagorinsky']['iles'] = False
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
 
     namelist['diffusion'] = {}
@@ -1586,12 +1690,106 @@ def ZGILS(zgils_loc):
     namelist['restart']['frequency'] = 600.0
     namelist['restart']['delete_old'] = True
     namelist['restart']['times_retained'] = range(86400, 86400*21, 86400)
+    namelist['restart']['init_altered'] = False
 
     namelist['conditional_stats'] ={}
     namelist['conditional_stats']['classes'] = ['Spectra']
     namelist['conditional_stats']['frequency'] = 43200.0
     namelist['conditional_stats']['stats_dir'] = 'cond_stats'
 
+
+    return namelist
+
+def GCMVarying():
+
+    namelist = {}
+
+    namelist['grid'] = {}
+    namelist['grid']['dims'] = 3
+    namelist['grid']['nx'] = 6
+    namelist['grid']['ny'] = 6
+    namelist['grid']['nz'] = 64
+    namelist['grid']['gw'] = 3
+    namelist['grid']['dx'] = 400.0
+    namelist['grid']['dy'] = 400.0
+    namelist['grid']['dz'] = 100.0
+
+    namelist['mpi'] = {}
+    namelist['mpi']['nprocx'] = 1
+    namelist['mpi']['nprocy'] = 1
+    namelist['mpi']['nprocz'] = 1
+
+    namelist['time_stepping'] = {}
+    namelist['time_stepping']['ts_type'] = 2
+    namelist['time_stepping']['cfl_limit'] = 0.7
+    namelist['time_stepping']['dt_initial'] = 1e-6
+    namelist['time_stepping']['dt_max'] = 30.0
+    namelist['time_stepping']['t_max'] = 3600.0*24.0*50.0 # 50 days
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['latentheat'] = 'variable'
+
+    namelist['damping'] = {}
+    namelist['damping']['scheme'] = 'Rayleigh'
+    namelist['damping']['Rayleigh'] = {}
+    namelist['damping']['Rayleigh']['gamma_r'] = 0.01
+    namelist['damping']['Rayleigh']['z_d'] = 10000.0
+
+    namelist['microphysics'] = {}
+    # namelist['microphysics']['scheme'] = 'T_Liquid'
+    namelist['microphysics']['scheme'] = 'Arctic_1M'
+    # namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+    namelist['microphysics']['n0_ice'] = 1.0e7
+
+    namelist['sgs'] = {}
+    namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = False
+
+    namelist["diffusion"] = {}
+    namelist['diffusion']['qt_entropy_source'] = False
+
+    namelist['momentum_transport'] = {}
+    namelist['momentum_transport']['order'] = 5
+
+    namelist['scalar_transport'] = {}
+    namelist['scalar_transport']['order'] = 5
+    namelist['scalar_transport']['order_sedimentation'] = 1
+
+    namelist['gcm'] = {}
+    namelist['gcm']['latitude'] = 80.0
+    namelist['gcm']['file'] = './forcing/f_data_tv_90.pkl'
+
+    namelist['surface'] = {}
+
+    namelist['radiation'] = {}
+    namelist['radiation']['use_RRTM'] = False
+    # namelist['radiation']['RRTM'] = {}
+
+    namelist['output'] = {}
+    namelist['output']['output_root'] = './'
+
+    namelist['restart'] = {}
+    namelist['restart']['output'] = True
+    namelist['restart']['init_from'] = False
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
+    namelist['restart']['delete_old'] = True
+    namelist['restart']['init_altered'] = False
+
+    namelist['stats_io'] = {}
+    namelist['stats_io']['stats_dir'] = "stats"
+    namelist['stats_io']['auxiliary'] = 'None'
+    namelist['stats_io']['frequency'] = 60.0*60*6
+
+    namelist['fields_io'] = {}
+    namelist['fields_io']['fields_dir'] = "fields"
+    namelist['fields_io']['frequency'] = 864000.0
+    namelist['fields_io']['diagnostic_fields'] = ['ql', 'temperature', 'buoyancy']
+
+    namelist['meta'] = {}
+    namelist['meta']['simname'] = 'GCMVarying'
+    namelist['meta']['casename'] = 'GCMVarying'
 
     return namelist
 
@@ -1640,6 +1838,8 @@ def TRMM_LBA():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['tracers'] = {}
     namelist['tracers']['use_tracers'] = True
@@ -1668,13 +1868,13 @@ def TRMM_LBA():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['Cumulus']
+    namelist['stats_io']['auxiliary'] = ['Cumulus', 'Flux', 'TKE']
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 1800.0
-    namelist['fields_io']['diagnostic_fields'] = ['ql', 'temperature', 'buoyancy_frequency', 'viscosity', 'buoyancy' , 'thetali']
+    namelist['fields_io']['diagnostic_fields'] = ['ql','qr', 'qi','temperature', 'buoyancy_frequency', 'viscosity', 'buoyancy' , 'thetali']
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'TRMM_LBA'
@@ -1685,6 +1885,7 @@ def TRMM_LBA():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
 
     namelist['conditional_stats'] = {}
     namelist['conditional_stats']['classes'] = ['Spectra']
@@ -1730,6 +1931,8 @@ def ARM_SGP():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
 
     namelist['tracers'] = {}
     namelist['tracers']['use_tracers'] = True
@@ -1758,13 +1961,13 @@ def ARM_SGP():
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
-    namelist['stats_io']['auxiliary'] = ['Cumulus']
+    namelist['stats_io']['auxiliary'] = ['Cumulus', 'Flux', 'TKE']
     namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
     namelist['fields_io']['frequency'] = 1800.0
-    namelist['fields_io']['diagnostic_fields'] = ['ql', 'temperature', 'buoyancy_frequency', 'viscosity']
+    namelist['fields_io']['diagnostic_fields'] = ['ql', 'temperature', 'buoyancy_frequency', 'viscosity', 'buoyancy', 'thetali']
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'ARM_SGP'
@@ -1775,6 +1978,7 @@ def ARM_SGP():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
 
     namelist['conditional_stats'] = {}
     namelist['conditional_stats']['classes'] = ['Spectra']
@@ -1821,6 +2025,9 @@ def GATE_III():
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
+    namelist['sgs']['Smagorinsky'] ={}
+    namelist['sgs']['Smagorinsky']['iles'] = True
+
     # yair - add tracer transport to the simulation
     namelist['tracers'] = {}
     namelist['tracers']['use_tracers'] = True
@@ -1866,6 +2073,7 @@ def GATE_III():
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
+    namelist['restart']['init_altered'] = False
 
     namelist['conditional_stats'] = {}
     namelist['conditional_stats']['classes'] = ['Spectra']
@@ -1874,9 +2082,7 @@ def GATE_III():
 
     return namelist
 
-
-
-def write_file(namelist):
+def write_file(namelist, new_uuid = True):
 
     try:
         type(namelist['meta']['simname'])
@@ -1885,7 +2091,8 @@ def write_file(namelist):
         print('FatalError')
         exit()
 
-    namelist['meta']['uuid'] = str(uuid.uuid4())
+    if new_uuid: 
+        namelist['meta']['uuid'] = str(uuid.uuid4())
 
     fh = open(namelist['meta']['simname'] + '.in', 'w')
     pprint.pprint(namelist)

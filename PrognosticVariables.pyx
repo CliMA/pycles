@@ -88,7 +88,7 @@ cdef class PrognosticVariables:
                 NS.add_profile(var_name+'_translational_mean',Gr,Pa)
 
             #Add mean of squares profile
-            NS.add_profile(var_name+'_mean2',Gr, Pa)
+            NS.add_profile(var_name+'_mean2',Gr ,Pa, units = '('+self.units[var_name]+')^2',nice_name = r'\overline{' + var_name + r'^2}', desc = var_name + '^2 horizontal domain mean (prognostic variable)')
             #Add mean of cubes profile
             NS.add_profile(var_name+'_mean3',Gr, Pa)
             #Add max profile
@@ -101,6 +101,7 @@ cdef class PrognosticVariables:
             NS.add_ts(var_name+'_min',Gr, Pa)
             #Add domain integral
             NS.add_ts(var_name+'_int', Gr, Pa)
+
 
         if 'qt' in self.name_index.keys() and 's' in self.name_index.keys():
             NS.add_profile('qt_s_product_mean', Gr, Pa)
@@ -187,6 +188,27 @@ cdef class PrognosticVariables:
 
         return
 
+
+    cpdef debug_large_tend(self, Grid.Grid Gr, ReferenceState.ReferenceState RS ,NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa,  str message):
+        
+        cdef:
+            Py_ssize_t var_shift
+
+        for var_name in self.name_index.keys():
+            var_shift = self.get_varshift(Gr,var_name)
+
+            v_max = np.amax(Pa.HorizontalMaximum(Gr,&self.values[var_shift])[Gr.dims.gw:-Gr.dims.gw])
+            v_min = np.amin(Pa.HorizontalMinimum(Gr,&self.values[var_shift])[Gr.dims.gw:-Gr.dims.gw])
+
+            t_max = np.amax(Pa.HorizontalMaximum(Gr,&self.tendencies[var_shift])[Gr.dims.gw:-Gr.dims.gw])
+            t_min = np.amin(Pa.HorizontalMinimum(Gr,&self.tendencies[var_shift])[Gr.dims.gw:-Gr.dims.gw])
+            
+            if np.abs(t_max) > 1e6 or np.abs(t_min) > 1e6: 
+                 Pa.root_print('Large Tendency Value At ' +  str(message) + ' in ' + var_name)
+                 Pa.kill() 
+        
+        return 
+    
 
 
     cdef void update_all_bcs(self,Grid.Grid Gr, ParallelMPI.ParallelMPI Pa):

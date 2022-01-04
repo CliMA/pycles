@@ -86,7 +86,7 @@ cdef class ParallelMPI:
         sys.exit()
         return
 
-    cdef void barrier(self):
+    cpdef void barrier(self):
         '''
         Call MPI_Barrier on global MPI communicator.
         :return:

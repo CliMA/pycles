@@ -12,14 +12,20 @@ cimport Radiation
 cimport Surface
 from NetCDFIO cimport NetCDFIO_Stats
 import cython
-
+import pickle as pickle
 cimport numpy as np
 import numpy as np
 include "parameters.pxi"
 
+import cython
+
 def SurfaceBudgetFactory(namelist):
     if namelist['meta']['casename'] == 'ZGILS':
         return SurfaceBudget(namelist)
+    elif namelist['meta']['casename'] == 'GCMFixed':
+        return SurfaceBudget(namelist)
+    elif namelist['meta']['casename'] == 'GCMNew' or namelist['meta']['casename'] == 'GCMVarying':
+        return SurfaceBudgetNew(namelist)
     else:
         return SurfaceBudgetNone()
 
@@ -100,6 +106,18 @@ cdef class SurfaceBudget:
         mpi.MPI_Bcast(&Sur.T_surface,count,mpi.MPI_DOUBLE,root, Pa.cart_comm_sub_z)
         return
 
+    cpdef stats_io(self, Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        NS.write_ts('surface_temperature', Sur.T_surface, Pa)
+        return
+
+cdef class SurfaceBudgetNew:
+    def __init__(self, namelist):
+        return
+    cpdef initialize(self, Grid.Grid Gr,  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        NS.add_ts('surface_temperature', Gr, Pa)
+        return
+    cpdef update(self, Grid.Grid Gr, Radiation.RadiationBase Ra, Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
+        return
     cpdef stats_io(self, Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         NS.write_ts('surface_temperature', Sur.T_surface, Pa)
         return
