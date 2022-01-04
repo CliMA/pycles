@@ -861,12 +861,12 @@ cdef cython_wetbulb(Grid.DimStruct *dims, Lookup.LookupStruct *LT, double *p0, d
 cdef class Microphysics_T_Liquid:
     def __init__(self, ParallelMPI.ParallelMPI Par, LatentHeat LH, namelist):
 
-        LH.Lambda_fp = lambda_T
-        LH.L_fp = latent_heat_T
+        LH.Lambda_fp = lambda_constant
+        LH.L_fp = latent_heat_variable
         self.thermodynamics_type = 'SA'
         #also set local versions
-        self.Lambda_fp = lambda_T
-        self.L_fp = latent_heat_T
+        self.Lambda_fp = lambda_constant
+        self.L_fp = latent_heat_variable
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Par)
 
@@ -876,14 +876,12 @@ cdef class Microphysics_T_Liquid:
     cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
                      DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
-        DV.add_variables('dqtdt_precip', 'kgkg^-1s^-1',
-                         r'\left(\frac{dq_t}{d_t}\right)_{auto}', 'qt autoconversion tendency',  'sym', Pa)
-        DV.add_variables('dsdt_precip', 'J kg^-1 K^-1s^-1',
-                         r'\left(\frac{ds}{d_t}\right)_{auto}', 's autoconversion tendency', 'sym', Pa)
+        DV.add_variables('dqtdt_precip', 'kg/kg/s', 'sym', Pa)
+        DV.add_variables('dsdt_precip', '', 'sym', Pa)
 
 
         return
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, PrognosticVariables.PrognosticVariables PV,
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
 
         cdef:
@@ -901,19 +899,11 @@ cdef class Microphysics_T_Liquid:
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t qv_shift = DV.get_varshift(Gr,'qv')
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
-            Py_ssize_t qi_shift = DV.get_varshift(Gr,'qi')
             Py_ssize_t t_shift = DV.get_varshift(Gr,'temperature')
             Py_ssize_t dqtdt_shift = DV.get_varshift(Gr,'dqtdt_precip')
             Py_ssize_t dsdt_shift = DV.get_varshift(Gr,'dsdt_precip')
             double lam, t, p0, rho0, qt, qv, pd, pv
             double lv
-
-            double qco = 1e-3
-            double alpha_kessler = 0.001
-            double dqtdt_rain_auto
-            double dqtdt_snow_auto
-            double tau_a
-
 
         # Ouput profiles of relative humidity
         with nogil:
@@ -925,16 +915,13 @@ cdef class Microphysics_T_Liquid:
                     for k in range(kmin, kmax):
                         ijk = ishift + jshift + k
 
-                        dqtdt_rain_auto = 0.0
-                        dqtdt_snow_auto = 0.0
-
                         #Zero the diagnotic tendencies
                         DV.values[dsdt_shift + ijk] = 0.0
                         DV.values[dqtdt_shift + ijk] = 0.0
 
                         if DV.values[ql_shift + ijk] > 0.0:
-                            p0 = RS.p0_half[k]
-                            rho0 = RS.rho0_half[k]
+                            p0 = Ref.p0_half[k]
+                            rho0 = Ref.rho0_half[k]
                             qt = PV.values[qt_shift + ijk]
                             qv = qt - DV.values[ql_shift + ijk]
                             pd = pd_c(p0,qt,qv)
@@ -944,23 +931,15 @@ cdef class Microphysics_T_Liquid:
                             lam = self.Lambda_fp(t)
                             lv = self.L_fp(t, lam)
 
-                            tau_a = 32.0/9.0*pow((t-258.15),2.0) + 200.0;
-                            if tau_a > 1000.0:
-                                tau_a = 1000.0
-
-                            dqtdt_rain_auto =  -fmax(0.0, alpha_kessler * (DV.values[ql_shift + ijk] - qco))
-                            dqtdt_snow_auto = - rho0 * DV.values[qi_shift + ijk]/ tau_a
-
-
-                            DV.values[dqtdt_shift + ijk] = dqtdt_rain_auto  + dqtdt_snow_auto  #-fmax(0.0, DV.values[ql_shift + ijk] -  0.02 * DV.values[qv_shift+ijk])/TS.dt
-                            DV.values[dsdt_shift + ijk] = -(sd_c(pd,t) - sv_c(pv,t) + lv/t ) * DV.values[dqtdt_shift + ijk]
+                            DV.values[dqtdt_shift + ijk] = -fmax(0.0, DV.values[ql_shift + ijk] -  0.02 * DV.values[qv_shift+ijk])/TS.dt
+                            DV.values[dsdt_shift + ijk] = (sv_c(pv,t) - sd_c(pd,t) - lv/t ) * DV.values[dqtdt_shift + ijk]
                             PV.tendencies[qt_shift + ijk] += DV.values[dqtdt_shift + ijk]
                             PV.tendencies[s_shift + ijk] += DV.values[dsdt_shift + ijk]
 
 
 
         return
-    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th, PrognosticVariables.PrognosticVariables PV,
+    cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, Th, PrognosticVariables.PrognosticVariables PV,
                    DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         return
