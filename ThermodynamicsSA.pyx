@@ -27,6 +27,7 @@ cdef extern from "thermodynamics_sa.h":
     void bvf_sa(Grid.DimStruct * dims, Lookup.LookupStruct * LT, double(*lam_fp)(double), double(*L_fp)(double, double), double *p0, double *T, double *qt, double *qv, double *theta_rho, double *bvf)
     void thetali_update(Grid.DimStruct *dims, double (*lam_fp)(double), double (*L_fp)(double, double), double *p0, double *T, double *qt, double *ql, double *qi, double *thetali)
     void clip_qt(Grid.DimStruct *dims, double  *qt, double clip_value)
+    void compute_s(Grid.DimStruct *dims, Lookup.LookupStruct * LT, double (*lam_fp)(double), double (*L_fp)(double, double), double *p0, double *T, double *qt, double *ql, double *qi, double *s)
 
 cdef extern from "thermodynamic_functions.h":
     # Dry air partial pressure
@@ -66,6 +67,11 @@ cdef class ThermodynamicsSA:
         except:
             self.do_qt_clipping = True
 
+        try:
+            self.s_prognostic = namelist['thermodynamics']['s_prognostic']
+        except:
+            self.s_prognostic = True
+
         return
 
 
@@ -83,7 +89,7 @@ cdef class ThermodynamicsSA:
         '''
 
         PV.add_variable('s', 'J kg^-1 K^-1', 's', 'specific entropy', "sym", "scalar", Pa)
-        PV.add_variable('qt', 'kg/kg', 'q_t', 'total water mass fraction', "sym", "scalar", Pa)
+        PV.add_variable('qt', 'kg/kg', 'q_t', 'total water specific humidity', "sym", "scalar", Pa)
 
         # Initialize class member arrays
         DV.add_variables('buoyancy' ,r'ms^{-1}', r'b', 'buoyancy','sym', Pa)
@@ -124,7 +130,10 @@ cdef class ThermodynamicsSA:
 
 
         NS.add_profile('cloud_fraction', Gr, Pa)
+        NS.add_profile('cloud_cum_fraction', Gr, Pa)
         NS.add_ts('cloud_fraction', Gr, Pa)
+        NS.add_ts('cloud_mid_fraction', Gr, Pa)
+        NS.add_ts('cloud_threshold_fraction', Gr, Pa)
         NS.add_ts('cloud_top', Gr, Pa)
         NS.add_ts('cloud_base', Gr, Pa)
         NS.add_ts('lwp', Gr, Pa)
@@ -151,7 +160,7 @@ cdef class ThermodynamicsSA:
             double Lambda = self.Lambda_fp(T)
             double L = self.L_fp(T, Lambda)
 
-        return sd_c(pd, T) * (1.0 - qt) + sv_c(pv, T) * qt + sc_c(L, T) * (ql + qi)
+        return sd_c(pd, T) * qd + sv_c(pv, T) * qt + sc_c(L, T) * (ql + qi)
 
     cpdef alpha(self, double p0, double T, double qt, double qv):
         '''
@@ -183,7 +192,10 @@ cdef class ThermodynamicsSA:
             Py_ssize_t ql_shift = DV.get_varshift(Gr, 'ql')
             Py_ssize_t qi_shift = DV.get_varshift(Gr, 'qi')
             Py_ssize_t qv_shift = DV.get_varshift(Gr, 'qv')
-            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t qc_shift
+            Py_ssize_t s_shift
+            Py_ssize_t qs_shift
+            Py_ssize_t qr_shift
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t w_shift = PV.get_varshift(Gr, 'w')
             Py_ssize_t bvf_shift = DV.get_varshift(Gr, 'buoyancy_frequency')
@@ -199,16 +211,13 @@ cdef class ThermodynamicsSA:
             clip_qt(&Gr.dims, &PV.values[qt_shift], 1e-11)
 
 
+        s_shift = PV.get_varshift(Gr, 's')
         eos_update(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0],
-                    &PV.values[s_shift], &PV.values[qt_shift], &DV.values[t_shift], &DV.values[qv_shift], &DV.values[ql_shift],
-                    &DV.values[qi_shift], &DV.values[alpha_shift])
-
+                &PV.values[s_shift], &PV.values[qt_shift], &DV.values[t_shift], &DV.values[qv_shift], &DV.values[ql_shift],
+                &DV.values[qi_shift], &DV.values[alpha_shift])
         buoyancy_update_sa(&Gr.dims, &RS.alpha0_half[0], &DV.values[alpha_shift], &DV.values[buoyancy_shift], &PV.tendencies[w_shift])
-
-        bvf_sa( &Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[qv_shift], &DV.values[thr_shift], &DV.values[bvf_shift])
-
-        thetali_update(&Gr.dims,self.Lambda_fp, self.L_fp, &RS.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[ql_shift],&DV.values[qi_shift],&DV.values[thl_shift])
-
+        bvf_sa(&Gr.dims, &self.CC.LT.LookupStructC, self.Lambda_fp, self.L_fp, &RS.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[qv_shift], &DV.values[thr_shift], &DV.values[bvf_shift])
+        thetali_update(&Gr.dims,self.Lambda_fp, self.L_fp, &RS.p0_half[0], &DV.values[t_shift], &PV.values[qt_shift], &DV.values[ql_shift], &DV.values[qi_shift], &DV.values[thl_shift])
         return
 
     cpdef get_pv_star(self, t):
@@ -266,13 +275,14 @@ cdef class ThermodynamicsSA:
             Py_ssize_t jmax = Gr.dims.nlg[1]
             Py_ssize_t kmax = Gr.dims.nlg[2]
             Py_ssize_t count
-            Py_ssize_t s_shift = PV.get_varshift(Gr, 's')
+            Py_ssize_t s_shift
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             double[:] data = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
             double[:] tmp
 
 
-
+        #If entropy is not a prognostic variable get it from the diagnostic variable class
+        s_shift = PV.get_varshift(Gr, 's')
         # Ouput profiles of thetas
         with nogil:
             count = 0
@@ -285,9 +295,6 @@ cdef class ThermodynamicsSA:
                         data[count] = thetas_c(PV.values[s_shift + ijk], PV.values[qt_shift + ijk])
 
                         count += 1
-
-
-
         # Compute and write mean
 
         tmp = Pa.HorizontalMean(Gr, &data[0])
@@ -411,13 +418,21 @@ cdef class ThermodynamicsSA:
             Py_ssize_t pi, k
             ParallelMPI.Pencil z_pencil = ParallelMPI.Pencil()
             Py_ssize_t ql_shift = DV.get_varshift(Gr, 'ql')
+            Py_ssize_t qi_shift = DV.get_varshift(Gr, 'qi')
             double[:, :] ql_pencils
+            double[:, :] qi_pencils 
             # Cloud indicator
             double[:] ci
+            double[:] ci_threshold
+            double[:] ci_mid
+            double[:] ci_cum
             double cb
             double ct
             # Weighted sum of local cloud indicator
             double ci_weighted_sum = 0.0
+            double ci_threshold_weighted_sum = 0.0
+            double ci_mid_weighted_sum = 0.0
+            double ci_cum_weighted_sum = 0.0
             double mean_divisor = np.double(Gr.dims.n[0] * Gr.dims.n[1])
 
             double dz = Gr.dims.dx[2]
@@ -425,16 +440,18 @@ cdef class ThermodynamicsSA:
             double lwp_weighted_sum = 0.0
 
             double[:] cf_profile = np.zeros((Gr.dims.n[2]), dtype=np.double, order='c')
+            double[:] cf_cum_profile = np.zeros((Gr.dims.n[2]), dtype=np.double, order='c')
 
         # Initialize the z-pencil
         z_pencil.initialize(Gr, Pa, 2)
         ql_pencils =  z_pencil.forward_double( &Gr.dims, Pa, &DV.values[ql_shift])
+        qi_pencils = z_pencil.forward_double( &Gr.dims, Pa, &DV.values[qi_shift])
 
         # Compute cloud fraction profile
         with nogil:
             for pi in xrange(z_pencil.n_local_pencils):
                 for k in xrange(kmin, kmax):
-                    if ql_pencils[pi, k] > 0.0:
+                    if ql_pencils[pi, k] + qi_pencils[pi, k] > 0.0:
                         cf_profile[k] += 1.0 / mean_divisor
 
         cf_profile = Pa.domain_vector_sum(cf_profile, Gr.dims.n[2])
@@ -445,7 +462,7 @@ cdef class ThermodynamicsSA:
         with nogil:
             for pi in xrange(z_pencil.n_local_pencils):
                 for k in xrange(kmin, kmax):
-                    if ql_pencils[pi, k] > 0.0:
+                    if ql_pencils[pi, k] + qi_pencils[pi, k] > 0.0:
                         ci[pi] = 1.0
                         break
                     else:
@@ -456,6 +473,56 @@ cdef class ThermodynamicsSA:
 
         ci_weighted_sum = Pa.domain_scalar_sum(ci_weighted_sum)
         NS.write_ts('cloud_fraction', ci_weighted_sum, Pa)
+        
+        # 062119[ZS]: Compute all or nothing cloud fraction for qc > 1.e-5
+        ci_threshold = np.empty((z_pencil.n_local_pencils), dtype=np.double, order='c')
+        with nogil:
+            for pi in xrange(z_pencil.n_local_pencils):
+                for k in xrange(kmin, kmax):
+                    if (ql_pencils[pi, k] + qi_pencils[pi, k] > 1.0e-5):
+                        ci_threshold[pi] = 1.0
+                        break
+                    else:
+                        ci_threshold[pi] = 0.0
+            for pi in xrange(z_pencil.n_local_pencils):
+                ci_threshold_weighted_sum += ci_threshold[pi]
+            ci_threshold_weighted_sum /= mean_divisor
+
+        ci_threshold_weighted_sum = Pa.domain_scalar_sum(ci_threshold_weighted_sum)
+        NS.write_ts('cloud_threshold_fraction', ci_threshold_weighted_sum, Pa)
+
+        # 062019[ZS]: Compute all or nothing cloud fraction below 8km
+        ci_mid = np.empty((z_pencil.n_local_pencils), dtype=np.double, order='c')
+        with nogil:
+            for pi in xrange(z_pencil.n_local_pencils):
+                for k in xrange(kmin, kmax):
+                    if (ql_pencils[pi, k] + qi_pencils[pi, k] > 0.0) and (Gr.zp_half[gw + k]<=8000.0):
+                        ci_mid[pi] = 1.0
+                        break
+                    else:
+                        ci_mid[pi] = 0.0
+            for pi in xrange(z_pencil.n_local_pencils):
+                ci_mid_weighted_sum += ci_mid[pi]
+            ci_mid_weighted_sum /= mean_divisor
+
+        ci_mid_weighted_sum = Pa.domain_scalar_sum(ci_mid_weighted_sum)
+        NS.write_ts('cloud_mid_fraction', ci_mid_weighted_sum, Pa)
+
+        # 062019[ZS]: Compute cumulative cloud fraction profile
+        ci_cum = np.empty((z_pencil.n_local_pencils), dtype=np.double, order='c')
+        ci_cum[:] = 0.0
+        with nogil:
+            for k in xrange(kmin, kmax):
+                for pi in xrange(z_pencil.n_local_pencils):
+                    if (ql_pencils[pi, k] + qi_pencils[pi, k] > 0.0):
+                        ci_cum[pi] = 1.0
+                for pi in xrange(z_pencil.n_local_pencils):
+                    ci_cum_weighted_sum += ci_cum[pi]
+                ci_cum_weighted_sum /= mean_divisor
+                cf_cum_profile[k] = ci_cum_weighted_sum
+
+        cf_cum_profile = Pa.domain_vector_sum(cf_cum_profile, Gr.dims.n[2])
+        NS.write_profile('cloud_cum_fraction', cf_cum_profile, Pa)
 
         # Compute cloud top and cloud base height
         cb = 99999.9
@@ -478,7 +545,7 @@ cdef class ThermodynamicsSA:
             for pi in xrange(z_pencil.n_local_pencils):
                 lwp[pi] = 0.0
                 for k in xrange(kmin, kmax):
-                    lwp[pi] += RS.rho0_half[k] * ql_pencils[pi, k] * dz
+                    lwp[pi] += RS.rho0_half[k] * ql_pencils[pi, k] * dz * Gr.dims.met_half[k]
 
             for pi in xrange(z_pencil.n_local_pencils):
                 lwp_weighted_sum += lwp[pi]
