@@ -6,6 +6,7 @@
 
 cimport ParallelMPI
 cimport Grid
+cimport ReferenceState
 from NetCDFIO cimport NetCDFIO_Stats
 import numpy as np
 cimport numpy as np
@@ -119,10 +120,20 @@ cdef class DiagnosticVariables:
 
     cpdef val_nan(self,PA,message):
         if np.isnan(self.values).any():
-            print('Nans found in Diagnostic Variables values')
-            print(message)
+            PA.root_print('Nans found in Diagnostic Variables values')
+            PA.root_print(message)
             PA.kill()
         return
+
+    cpdef mean_prof(self, Grid.Grid Gr, ParallelMPI.ParallelMPI Pa, str var): 
+
+        cdef: 
+             int var_shift = self.get_varshift(Gr,var)
+        
+        tmp = Pa.HorizontalMean(Gr,&self.values[var_shift])
+
+        return tmp
+
 
     cpdef initialize(self,Grid.Grid Gr, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         self.values = np.zeros((self.nv*Gr.dims.npg),dtype=np.double,order='c')
@@ -189,5 +200,24 @@ cdef class DiagnosticVariables:
             #Compute and write mean
             tmp2 = Pa.HorizontalMeanSurface(Gr,&self.values_2d[var_shift])
             NS.write_ts(var_name + '_mean',tmp2,Pa)
+
+        return
+
+    cpdef debug_large(self, Grid.Grid Gr, ReferenceState.ReferenceState RS ,NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa,  str message):
+
+        cdef:
+            Py_ssize_t var_shift
+
+        names = [ 'temperature', 'ql', 'qi']
+        for var_name in names: #self.name_index.keys():
+            var_shift = self.get_varshift(Gr,var_name)
+
+            v_max = np.amax(Pa.HorizontalMaximum(Gr,&self.values[var_shift])[Gr.dims.gw:-Gr.dims.gw])
+            v_min = np.amin(Pa.HorizontalMinimum(Gr,&self.values[var_shift])[Gr.dims.gw:-Gr.dims.gw])
+
+
+            if np.abs(v_max) > 1e6 or np.abs(v_min) > 1e6 or np.isnan(v_max) or np.isnan(v_min): 
+                 Pa.root_print('Large DV Value At ' +  str(message) + ' in ' + var_name + ':  ' + str(v_max) + ' ' + str(v_min))
+                 Pa.kill()
 
         return

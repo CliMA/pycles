@@ -14,12 +14,17 @@ from NetCDFIO cimport NetCDFIO_Stats
 cimport Grid
 cimport PrognosticVariables
 cimport DiagnosticVariables
-from thermodynamic_functions cimport exner_c, entropy_from_thetas_c, thetas_t_c, qv_star_c, thetas_c
+from thermodynamic_functions cimport exner_c, entropy_from_thetas_c, thetas_t_c, qv_star_c, thetas_c, thetali_c
 cimport ReferenceState
+cimport Restart
 from Forcing cimport AdjustedMoistAdiabat
 from Thermodynamics cimport LatentHeat
 from libc.math cimport sqrt, fmin, cos, exp, fabs
 include 'parameters.pxi'
+import pickle as pickle
+from scipy import interpolate
+from cfsites_forcing_reader import cfreader
+from cfgrid_forcing_reader import cfreader_grid
 
 def InitializationFactory(namelist):
 
@@ -30,7 +35,7 @@ def InitializationFactory(namelist):
             return InitStableBubble
         elif casename == 'SaturatedBubble':
             return InitSaturatedBubble
-        elif casename == 'Bomex':
+        elif casename == 'Bomex' or casename == 'lifecycle_Tan2018':
             return InitBomex
         elif casename == 'Soares':
             return InitSoares
@@ -58,6 +63,10 @@ def InitializationFactory(namelist):
             return  InitGATE_III
         elif casename == 'WANGARA':
             return  InitWANGARA
+        elif casename == 'GCMVarying':
+            return InitGCMVarying
+        elif casename == 'GCMNew':
+            return InitGCMNew
         else:
             pass
 
@@ -199,9 +208,17 @@ def InitSullivanPatton(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVaria
     RS.v0 = 0.0
 
     RS.initialize(Gr, Th, NS, Pa)
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
 
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
     #Get the variable number for each of the velocity components
-    np.random.seed(Pa.rank)
+    np.random.seed(Pa.rank * random_seed_factor)
     cdef:
         Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
         Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
@@ -371,7 +388,7 @@ def InitSoares(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     #First generate the reference profiles
     RS.Pg = 1000.0 * 100.0  #Pressure at ground
     RS.Tg = 300.0  #Temperature at ground
-    RS.qtg = 4.5e-3   #Total water mixing ratio at surface
+    RS.qtg = 0.0 #This was set to 4.5e-3 earlier, but Soares 2004 sets 5e-3   #Total water mixing ratio at surface
 
     RS.initialize(Gr, Th, NS, Pa)
 
@@ -389,29 +406,24 @@ def InitSoares(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
         Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
         Py_ssize_t s_varshift = PV.get_varshift(Gr,'s')
-        Py_ssize_t qt_varshift = PV.get_varshift(Gr,'qt')
         Py_ssize_t i,j,k
         Py_ssize_t ishift, jshift
         Py_ssize_t ijk, e_varshift
         double temp
-        double qt_
         double [:] thetal = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
         double [:] qt = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
         double [:] u = np.empty((Gr.dims.nlg[2]),dtype=np.double,order='c')
         Py_ssize_t count
 
         theta_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.1 # Yair check what is the correct perturbation
-        qt_pert = (np.random.random_sample(Gr.dims.npg )-0.5)*0.025/1000.0
 
     for k in xrange(Gr.dims.nlg[2]):
 
         #Set Thetal and qt profile
         if Gr.zp_half[k] <= 1350.0:
             thetal[k] = 300.0
-            qt[k] = 5.0e-3 - 3.7e-4* Gr.zp_half[k]/1000.0
         else:
-            thetal[k] = 300.0 + 2.0 * (Gr.zp_half[k]-1350.0)/1000.0
-            qt[k] = 5.0e-3 - 3.7e-4 * 1.35 - 9.4e-4 * (Gr.zp_half[k]-1350.0)/1000.0
+            thetal[k] = 300.0 + 3.0 * (Gr.zp_half[k]-1350.0)/1000.0
         #Set u profile
         u[k] = 0.01
 
@@ -434,12 +446,9 @@ def InitSoares(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 PV.values[w_varshift + ijk] = 0.0
                 if Gr.zp_half[k] <= 1600.0:
                     temp = (thetal[k] + (theta_pert[count])) * exner_c(RS.p0_half[k])
-                    qt_ = qt[k]+qt_pert[count]
                 else:
                     temp = (thetal[k]) * exner_c(RS.p0_half[k])
-                    qt_ = qt[k]
-                PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],temp,qt_,0.0,0.0)
-                PV.values[qt_varshift + ijk] = qt_
+                PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],temp,0.0,0.0,0.0)
                 count += 1
 
     if 'e' in PV.name_index:
@@ -450,20 +459,17 @@ def InitSoares(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                 jshift = j * Gr.dims.nlg[2]
                 for k in xrange(Gr.dims.nlg[2]):
                     ijk = ishift + jshift + k
-                    PV.values[e_varshift + ijk] = 1.0-Gr.zp_half[k]/3000.0
-
+                    PV.values[e_varshift + ijk] = 0.1*1.46*1.46*(1.0-Gr.zp_half[k]/1600.0)
 
     return
 
-
+# This case is based on (Soares et al, 2004): An EDMF parameterization for dry and shallow cumulus convection
 def InitSoares_moist(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
                        ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, LatentHeat La):
     # Generate the reference profiles
     # RS.Pg = 1.015e5  #Pressure at ground (Bomex)
     RS.Pg = 1.0e5     #Pressure at ground (Soares)
-    # RS.Tg = 300.4  #Temperature at ground (Bomex)
     RS.Tg = 300.0     #Temperature at ground (Soares)
-    # RS.qtg = 0.02245   #Total water mixing ratio at surface (Bomex)
     RS.qtg = 5.0e-3     #Total water mixing ratio at surface: qt = 5 g/kg (Soares)
     RS.u0 = 0.01   # velocities removed in Galilean transformation (Soares: u = 0.01 m/s, IOP: 0.0 m/s)
     RS.v0 = 0.0   # (Soares: v = 0.0 m/s)
@@ -499,7 +505,6 @@ def InitSoares_moist(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariab
             theta[k] = 300.0
         else:
             theta[k] = 300.0 + 2.0/1000.0 * (Gr.zpl_half[k] - 1350.0)
-        # theta[k] = 297.3 + 2.0/1000.0 * (Gr.zpl_half[k])
 
         # Initial qt profile (Soares)
         if Gr.zpl_half[k] <= 1350:
@@ -535,6 +540,15 @@ def InitSoares_moist(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariab
                 PV.values[qt_varshift + ijk] = qt_
                 count += 1
 
+    if 'e' in PV.name_index:
+        e_varshift = PV.get_varshift(Gr, 'e')
+        for i in xrange(Gr.dims.nlg[0]):
+            ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            for j in xrange(Gr.dims.nlg[1]):
+                jshift = j * Gr.dims.nlg[2]
+                for k in xrange(Gr.dims.nlg[2]):
+                    ijk = ishift + jshift + k
+                    PV.values[e_varshift + ijk] = 0.1*1.46*1.46*(1.0-Gr.zp_half[k]/1600.0)  
 
     # __ Initialize phi __
     try:
@@ -612,9 +626,13 @@ def InitGabls(namelist,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV,
     RS.v0 = 0.0
 
     RS.initialize(Gr, Th, NS, Pa)
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
 
     #Get the variable number for each of the velocity components
-    np.random.seed(Pa.rank)
+    np.random.seed(Pa.rank * random_seed_factor)
     cdef:
         Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
         Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
@@ -683,13 +701,11 @@ def InitDYCOMS_RF01(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariable
 
     '''
     Initialize the DYCOMS_RF01 case described in
-
     Bjorn Stevens, Chin-Hoh Moeng, Andrew S. Ackerman, Christopher S. Bretherton, Andreas Chlond, Stephan de Roode,
     James Edwards, Jean-Christophe Golaz, Hongli Jiang, Marat Khairoutdinov, Michael P. Kirkpatrick, David C. Lewellen,
     Adrian Lock, Frank Müller, David E. Stevens, Eoin Whelan, and Ping Zhu, 2005: Evaluation of Large-Eddy Simulations
     via Observations of Nocturnal Marine Stratocumulus. Mon. Wea. Rev., 133, 1443–1462.
     doi: http://dx.doi.org/10.1175/MWR2930.1
-
     :param Gr: Grid cdef extension class
     :param PV: PrognosticVariables cdef extension class
     :param RS: ReferenceState cdef extension class
@@ -776,8 +792,13 @@ def InitDYCOMS_RF01(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariable
 
             return t_2, ql_2
 
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
+
     #Generate initial perturbations (here we are generating more than we need)
-    np.random.seed(Pa.rank)
+    np.random.seed(Pa.rank * random_seed_factor)
     cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
     cdef double theta_pert_
 
@@ -904,8 +925,13 @@ def InitDYCOMS_RF02(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariable
 
             return t_2, ql_2
 
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
+
     #Generate initial perturbations (here we are generating more than we need)
-    np.random.seed(Pa.rank)
+    np.random.seed(Pa.rank * random_seed_factor)
     cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
     cdef double theta_pert_
 
@@ -954,9 +980,13 @@ def InitSmoke(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     RS.Tg = 288.0
 
     RS.initialize(Gr ,Th, NS, Pa)
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
 
     #Get the variable number for each of the velocity components
-    np.random.seed(Pa.rank)
+    np.random.seed(Pa.rank * random_seed_factor)
     cdef:
         Py_ssize_t u_varshift = PV.get_varshift(Gr, 'u')
         Py_ssize_t v_varshift = PV.get_varshift(Gr, 'v')
@@ -1035,9 +1065,13 @@ def InitRico(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
     RS.qtg = eps_v * pvg/(RS.Pg - pvg)   #Total water mixing ratio at surface = qsat
 
     RS.initialize(Gr, Th, NS, Pa)
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
 
     #Get the variable number for each of the velocity components
-    np.random.seed(Pa.rank)
+    np.random.seed(Pa.rank * random_seed_factor)
     cdef:
         Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
         Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
@@ -1356,8 +1390,13 @@ def InitCGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
             return t_2, ql_2
 
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
+
     #Generate initial perturbations (here we are generating more than we need)
-    np.random.seed(Pa.rank)
+    np.random.seed(Pa.rank * random_seed_factor)
     cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
     cdef double theta_pert_
 
@@ -1474,8 +1513,12 @@ def InitZGILS(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
 
             return t_2, ql_2
 
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
     #Generate initial perturbations (here we are generating more than we need)
-    np.random.seed(Pa.rank)
+    np.random.seed(Pa.rank * random_seed_factor)
     cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
     cdef double theta_pert_
 
@@ -1593,7 +1636,11 @@ def InitTRMM_LBA(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables 
     #Generate initial perturbations (here we are generating more than we need)
     #random fluctuations
     #I need to perturbed the temperature and only later calculate the entropy
-    np.random.seed(Pa.rank)
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
+    np.random.seed(Pa.rank * random_seed_factor)
     cdef double [:] T_pert = np.random.random_sample(Gr.dims.npg)
     cdef double T_pert_
     cdef double pv_star
@@ -1669,7 +1716,12 @@ def InitARM_SGP(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables P
     #Generate initial perturbations (here we are generating more than we need)
     #random fluctuations
     #I need to perturbed the temperature and only later calculate the entropy
-    np.random.seed(Pa.rank)
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
+
+    np.random.seed(Pa.rank * random_seed_factor)
     cdef double [:] T_pert = np.random.random_sample(Gr.dims.npg)
     cdef double T_pert_
     cdef double pv_star
@@ -1746,7 +1798,12 @@ def InitGATE_III(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables 
     #Generate initial perturbations (here we are generating more than we need)
     #random fluctuations
     #I need to perturbed the temperature and only later calculate the entropy
-    np.random.seed(Pa.rank)
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
+
+    np.random.seed(Pa.rank * random_seed_factor)
     cdef double [:] T_pert = np.random.random_sample(Gr.dims.npg)
     cdef double T_pert_
     cdef double pv_star
@@ -1791,7 +1848,7 @@ def InitWANGARA(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables P
     u_in     = np.fliplr(np.array([0.060, 0.459, 0.057, -0.390, -0.903, -1.460, -1.193 , -1.235, -1.435, -2.096, -1.968, -2.260, -2.538, -2.290, -2.317, -2.435, -2.466, -2.436, -2.438, -2.670, -2.813, -2.523, -3.230, -3.373, -2.814, -2.800, -2.900, -2.933])) # [m/s]
 
     z_ug_in  = np.array([3.984, 26.382,104.279,172.557,401.839,714.228,885.041,1095.556,1404.998,1479.547,1865.095,1975.504,1994.082]) # [m]
-    ug_in    = np.array([-5.273,-5.261,-4.977	,-4.735,-3.966,-3.063,-2.623,-2.165,-1.605,-1.487,-0.994, -0.885, -0.796]) # [m/s]
+    ug_in    = np.array([-5.273,-5.261,-4.977   ,-4.735,-3.966,-3.063,-2.623,-2.165,-1.605,-1.487,-0.994, -0.885, -0.796]) # [m/s]
 
     z_vg_in  = np.fliplr(np.array([1981.726, 1857.332, 1636.376,1384.139,1088.321, 804.141, 461.978, 5.052])) # [m]
     vg_in    = np.fliplr(np.array([-0.240, -0.287, -0.347, -0.436, -0.460, -0.482, -0.505, -0.442])) # [m/s]
@@ -1835,8 +1892,12 @@ def InitWANGARA(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables P
     RS.u0 = 0.5 * (np.amax(u)+np.amin(u))
     RS.v0 = 0.5 * (np.amax(v)+np.amin(v))
 
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
     # it is not clear if there is any random perturbation in the Neggers paper
-    np.random.seed(Pa.rank)
+    np.random.seed(Pa.rank * random_seed_factor)
     cdef double [:] T_pert = np.random.random_sample(Gr.dims.npg)
     cdef double T_pert_
     cdef double pv_star
@@ -1863,10 +1924,301 @@ def InitWANGARA(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables P
                     PV.values[ijk + s_varshift] = Th.entropy(RS.p0_half[k], T , qt[k], 0.0, 0.0)
     return
 
+def InitGCMNew(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa , LatentHeat LH):
+
+    #Generate the reference profiles
+    data_path = namelist['gcm']['file']
+    try:
+        griddata = namelist['gcm']['griddata']
+    except:
+        griddata = False
+    try:
+        instant_forcing = namelist['gcm']['instant_forcing']
+    except:
+        instant_forcing = False
+    try:
+        gcm_tidx = namelist['gcm']['gcm_tidx']
+    except:
+        gcm_tidx = 0
+    if griddata:
+        lat = namelist['gcm']['lat']
+        lon = namelist['gcm']['lon']
+    else:
+        site = namelist['gcm']['site']
+    #fh = open(data_path, 'r')
+    #input_data_tv = pickle.load(fh)
+    #fh.close()
+
+    if griddata:
+        rdr = cfreader_grid(data_path, lat, lon)
+    else:
+        rdr = cfreader(data_path, site)
+
+    RS.Pg = rdr.get_timeseries_mean('ps', instant=instant_forcing, t_idx=gcm_tidx)
+    RS.Tg = rdr.get_timeseries_mean('ts', instant=instant_forcing, t_idx=gcm_tidx)
+    RS.qtg = rdr.get_profile_mean('hus', instant=instant_forcing, t_idx=gcm_tidx)[0]
+
+    RS.u0 = 0.0
+    RS.v0 = 0.0
+
+    RS.initialize(Gr, Th, NS, Pa)
+
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
+
+    np.random.seed(Pa.rank * random_seed_factor)
+
+    cdef:
+        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
+        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
+        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
+        Py_ssize_t s_varshift
+        Py_ssize_t thli_varshift
+        Py_ssize_t qt_varshift = PV.get_varshift(Gr, 'qt')
+        Py_ssize_t i,j,k
+        Py_ssize_t ishift, jshift, e_varshift
+        Py_ssize_t ijk
+
+
+
+    cdef double [:] t = rdr.get_interp_profile('ta', Gr.zp_half, instant=instant_forcing, t_idx=gcm_tidx)#interp_pchip(Gr.zp_half, z_in, np.log(t_in))
+    cdef double [:] qt = rdr.get_interp_profile('hus', Gr.zp_half, instant=instant_forcing, t_idx=gcm_tidx)
+    cdef double [:] u = rdr.get_interp_profile('ua', Gr.zp_half, instant=instant_forcing, t_idx=gcm_tidx)
+    cdef double [:] v = rdr.get_interp_profile('va', Gr.zp_half, instant=instant_forcing, t_idx=gcm_tidx)
+
+
+
+    #Generate initial perturbations (here we are generating more than we need)
+    cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
+    cdef int jk
+    #Now set the initial condition
+    if 's' in PV.name_index:
+        s_varshift = PV.get_varshift(Gr, 's')
+        for i in xrange(Gr.dims.nlg[0]):
+            ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            for j in xrange(Gr.dims.nlg[1]):
+                jshift = j * Gr.dims.nlg[2]
+                for k in xrange(Gr.dims.nlg[2]):
+                    ijk = ishift + jshift + k
+                    jk = ishift + jshift + k 
+                    PV.values[u_varshift + ijk] = u[k]
+                    PV.values[v_varshift + ijk] = v[k]
+                    PV.values[w_varshift + ijk] = 0.0
+                    PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t[k],qt[k],0.0,0.0)
+                    PV.values[qt_varshift + ijk] = qt[k]
+                    if Gr.zpl_half[k] < 500.0:
+                        PV.values[s_varshift + ijk] = PV.values[s_varshift + ijk]  + (theta_pert[jk] - 0.5)*0.3
+    else:
+        thli_varshift = PV.get_varshift(Gr, 'thli')
+        for i in xrange(Gr.dims.nlg[0]):
+            ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            for j in xrange(Gr.dims.nlg[1]):
+                jshift = j * Gr.dims.nlg[2]
+                for k in xrange(Gr.dims.nlg[2]):
+                    ijk = ishift + jshift + k
+                    PV.values[u_varshift + ijk] = u[k]
+                    PV.values[v_varshift + ijk] = v[k]
+                    PV.values[w_varshift + ijk] = 0.0
+                    PV.values[thli_varshift + ijk] = thetali_c(RS.p0_half[k], t[k], 0.0, 0.0, 0.0, Th.get_lh(t[k]))
+                    PV.values[qt_varshift + ijk] = qt[k]
+                    if Gr.zpl_half[k] < 500.0:
+                        PV.values[thli_varshift + ijk] = PV.values[thli_varshift + ijk]  + (theta_pert[ijk] - 0.5)*0.3
+
+    return
+
+def InitGCMVarying(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa , LatentHeat LH):
+
+    #Generate the reference profiles
+    data_path = namelist['gcm']['file']
+    try:
+        griddata = namelist['gcm']['griddata']
+    except:
+        griddata = False
+    if griddata:
+        lat = namelist['gcm']['lat']
+        lon = namelist['gcm']['lon']
+    else:
+        site = namelist['gcm']['site']
+
+    if griddata:
+        rdr = cfreader_grid(data_path, lat, lon)
+    else:
+        rdr = cfreader(data_path, site)
+
+    RS.Pg = rdr.get_timeseries_mean('ps', instant=False, t_idx=0)
+    RS.Tg = rdr.get_timeseries_mean('ts', instant=False, t_idx=0)
+    RS.qtg = rdr.get_profile_mean('hus', instant=False, t_idx=0)[0]
+
+    RS.u0 = 0.0
+    RS.v0 = 0.0
+
+    RS.initialize(Gr, Th, NS, Pa)
+
+    try:
+        random_seed_factor = namelist['initialization']['random_seed_factor']
+    except:
+        random_seed_factor = 1
+
+    np.random.seed(Pa.rank * random_seed_factor)
+
+    cdef:
+        Py_ssize_t u_varshift = PV.get_varshift(Gr,'u')
+        Py_ssize_t v_varshift = PV.get_varshift(Gr,'v')
+        Py_ssize_t w_varshift = PV.get_varshift(Gr,'w')
+        Py_ssize_t s_varshift
+        Py_ssize_t thli_varshift
+        Py_ssize_t qt_varshift = PV.get_varshift(Gr, 'qt')
+        Py_ssize_t i,j,k
+        Py_ssize_t ishift, jshift, e_varshift
+        Py_ssize_t ijk
+
+    cdef double [:] t = rdr.get_interp_profile('ta', Gr.zp_half, instant=True, t_idx=0)#interp_pchip(Gr.zp_half, z_in, np.log(t_in))
+    cdef double [:] qt = rdr.get_interp_profile('hus', Gr.zp_half, instant=True, t_idx=0)
+    cdef double [:] u = rdr.get_interp_profile('ua', Gr.zp_half, instant=True, t_idx=0)
+    cdef double [:] v = rdr.get_interp_profile('va', Gr.zp_half, instant=True, t_idx=0)
+
+    #Generate initial perturbations (here we are generating more than we need)
+    cdef double [:] theta_pert = np.random.random_sample(Gr.dims.npg)
+    cdef int jk
+    #Now set the initial condition
+    s_varshift = PV.get_varshift(Gr, 's')
+    for i in xrange(Gr.dims.nlg[0]):
+        ishift =  i * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        for j in xrange(Gr.dims.nlg[1]):
+            jshift = j * Gr.dims.nlg[2]
+            for k in xrange(Gr.dims.nlg[2]):
+                ijk = ishift + jshift + k
+                jk = ishift + jshift + k
+                PV.values[u_varshift + ijk] = u[k]
+                PV.values[v_varshift + ijk] = v[k]
+                PV.values[w_varshift + ijk] = 0.0
+                PV.values[s_varshift + ijk] = Th.entropy(RS.p0_half[k],t[k],qt[k],0.0,0.0)
+                PV.values[qt_varshift + ijk] = qt[k]
+                if Gr.zpl_half[k] < 500.0:
+                    PV.values[s_varshift + ijk] = PV.values[s_varshift + ijk]  + (theta_pert[jk] - 0.5)*0.3
+
+    return
+
+
+def FillAlteredFields(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
+                       ReferenceState.ReferenceState RS, Th, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa , LatentHeat LH, Restart.Restart Restart):
+
+    cdef:
+        Py_ssize_t i, j, k, ijk, ishift, jshift, var_shift
+        Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+        Py_ssize_t jstride = Gr.dims.nlg[2]
+
+    #First get the files to initialzie from
+    #xl = (Gr.dims.indx_lo[0] + 1.0 + np.arange(Gr.dims.nl[0], dtype=np.double)) * Gr.dims.dx[0]
+    #yl = (Gr.dims.indx_lo[1] + 1.0 + np.arange(Gr.dims.nl[1], dtype=np.double)) * Gr.dims.dx[1]
+
+    #xl_half = (Gr.dims.indx_lo[0] + 1.0 + np.arange(Gr.dims.nl[0], dtype=np.double)) * Gr.dims.dx[0] - Gr.dims.dx[0] * 0.5
+    #yl_half = (Gr.dims.indx_lo[1] + 1.0 + np.arange(Gr.dims.nl[1], dtype=np.double)) * Gr.dims.dx[1] - Gr.dims.dx[1] * 0.5
+
+
+    data_tmp = np.zeros((Gr.dims.nl[0], Gr.dims.nl[1], Gr.dims.nlg[2]), dtype=np.double)
+    cdef double [:,:,:] data_tmp_pt = data_tmp
+
+    np.random.seed(Pa.rank)
+    cdef double [:] w_pert = (np.random.random_sample(Gr.dims.npg) - 0.5)
+    cdef int count = 0
+
+
+    print np.array(w_pert)
+    #import time; time.sleep(Pa.rank)
+    for v in PV.index_name:
+        count = 0
+        print v
+        var_shift = PV.get_varshift(Gr,v)
+
+        #Read dataset
+        rt_grp = nc.Dataset(Restart.fields_path + '/' + v + '_scratch.nc', 'r')
+
+        x = rt_grp.variables['xh'][:]
+        y = rt_grp.variables['yh'][:]
+
+        xl = (Gr.dims.indx_lo[0] + 1.0 + np.arange(Gr.dims.nl[0], dtype=np.double)) * Gr.dims.dx[0] - Gr.dims.dx[0] * 0.5
+        yl = (Gr.dims.indx_lo[1] + 1.0 + np.arange(Gr.dims.nl[1], dtype=np.double)) * Gr.dims.dx[1] - Gr.dims.dx[1] * 0.5
+
+
+        #print "Gr", np.min(np.array(Gr.xl_half)[Gr.dims.gw:-Gr.dims.gw]), np.max(Gr.xl_half[Gr.dims.gw:-Gr.dims.gw]), np.min(np.array(Gr.yl_half)[Gr.dims.gw:-Gr.dims.gw]), np.max(Gr.yl_half[Gr.dims.gw:-Gr.dims.gw])
+        #print 'x', np.array(xl).min(), np.array(xl).max() , 'y', np.array(yl).min(), np.array(yl).max()
+        #import sys; sys.exit()
+
+        if v == 'u':
+            x = rt_grp.variables['x'][:]
+            xl = (Gr.dims.indx_lo[0] + 1.0 + np.arange(Gr.dims.nl[0], dtype=np.double)) * Gr.dims.dx[0]
+        elif v == 'v':
+            #yl = np.copy(np.array(Gr.yl)[Gr.dims.gw:-Gr.dims.gw])
+            yl = (Gr.dims.indx_lo[1] + 1.0 + np.arange(Gr.dims.nl[1], dtype=np.double)) * Gr.dims.dx[1]
+            y = rt_grp.variables['y'][:]
+
+        #print rt_grp.variables['data'].shape
+        #print np.shape(data_tmp), np.shape(x), np.shape(y), Gr.dims.nl[0], Gr.dims.nl[1]
+        for k in range(Gr.dims.gw,Gr.dims.nlg[2]-Gr.dims.gw):
+            data_k = k - Gr.dims.gw
+            f_interp = interpolate.interp2d(x, y, rt_grp.variables['data'][:,:,data_k], kind='linear', bounds_error=True)
+            data_tmp[:,:,k] = f_interp(yl, xl)
+
+        if v == 'w':
+            print 'Adding perturbations'
+            with nogil:
+                for i in xrange(Gr.dims.nl[0]):
+                    for j in xrange(Gr.dims.nl[1]):
+                        for k in xrange(Gr.dims.nlg[2]):
+                            if k <= 10:
+                                data_tmp_pt[i,j,k] = data_tmp_pt[i,j,k]  +  w_pert[count]
+                                count += 1
+
+
+        #Now fill in prgnostic variables array
+        with nogil:
+            for i in xrange(Gr.dims.nl[0]):
+                ishift =  (i + Gr.dims.gw) * Gr.dims.nlg[1] * Gr.dims.nlg[2]
+                for j in xrange(Gr.dims.nl[1]):
+                    jshift = (j + Gr.dims.gw) * Gr.dims.nlg[2]
+                    for k in xrange(Gr.dims.nlg[2]):
+                        ijk = ishift + jshift + k
+                        PV.values[var_shift + ijk] = data_tmp_pt[i,j,k]
+
+        rt_grp.close()
+
+    return
+
 def AuxillaryVariables(nml, PrognosticVariables.PrognosticVariables PV,
                        DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
+
     casename = nml['meta']['casename']
     if casename == 'SMOKE':
         PV.add_variable('smoke', 'kg/kg', 'smoke', 'radiatively active smoke', "sym", "scalar", Pa)
         return
     return
+
+from scipy.interpolate import pchip, interp1d
+def interp_pchip(z_out, z_in, v_in, pchip_type=True):
+    if pchip_type:
+        p = pchip(z_in, v_in, extrapolate=True)
+        #p = interp1d(z_in, v_in, kind='linear', fill_value='extrapolate')
+        return p(z_out)
+    else:
+        return np.interp(z_out, z_in, v_in)
+
+
+def integral_interp(p_half_gcm, variable_gcm):
+
+    int_var = np.zeros(p_half_gcm.shape[0], dtype=np.double)
+    for k in range(variable_gcm.shape[0]-1, -1, -1):
+        dsigma = -(p_half_gcm[k] - p_half_gcm[k+1])/9.81
+        int_var[k] = int_var[k+1] + variable_gcm[k] * dsigma
+
+
+    #import pylab as plt
+    #plt.plot(int_var)
+    #plt.show()
+
+    return
+

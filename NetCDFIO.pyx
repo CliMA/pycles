@@ -11,6 +11,7 @@ cimport ParallelMPI
 cimport TimeStepping
 cimport PrognosticVariables
 cimport DiagnosticVariables
+cimport ReferenceState
 cimport Grid
 import numpy as np
 cimport numpy as np
@@ -31,7 +32,7 @@ cdef class NetCDFIO_Stats:
         self.frequency = namelist['stats_io']['frequency']
 
         # Setup the statistics output path
-        outpath = str(os.path.join(namelist['output']['output_root'] + 'Output.' + namelist['meta']['simname'] + '.' + self.uuid[-5:]))
+        outpath = str(os.path.join(namelist['output']['output_root'] + 'Output.' + namelist['meta']['simname'] + '.' + self.uuid[:]))
 
         if Pa.rank == 0:
             try:
@@ -51,7 +52,6 @@ cdef class NetCDFIO_Stats:
         if os.path.exists(self.path_plus_file):
             for i in range(100):
                 res_name = 'Restart_'+str(i)
-                print "Here " + res_name
                 if os.path.exists(self.path_plus_file):
                     self.path_plus_file = str( self.stats_path + '/' + 'Stats.' + namelist['meta']['simname']
                            + '.' + res_name + '.nc')
@@ -122,7 +122,7 @@ cdef class NetCDFIO_Stats:
 
         ts_grp = root_grp.createGroup('timeseries')
         ts_grp.createDimension('t', None)
-        ts_grp.createVariable('t', 'f8', ('t'))
+        ts_grp.createVariable('t', 'f8', ('t'), chunksizes=(60*24*10,))
 
         root_grp.close()
         return
@@ -132,7 +132,7 @@ cdef class NetCDFIO_Stats:
         if Pa.rank == 0:
             root_grp = nc.Dataset(self.path_plus_file, 'r+', format='NETCDF4')
             profile_grp = root_grp.groups['profiles']
-            new_var = profile_grp.createVariable(var_name, 'f8', ('t', 'z'))
+            new_var = profile_grp.createVariable(var_name, 'f8', ('t', 'z'), chunksizes=(60,Gr.dims.n[2]))
 
             #Add string attributes to new_var. These are optional arguments. If argument is not given just fill with None
             if units is not None:
@@ -280,7 +280,7 @@ cdef class NetCDFIO_Fields:
         self.diagnostic_fields = namelist['fields_io']['diagnostic_fields']
 
         # Setup the statistics output path
-        outpath = str(os.path.join(namelist['output']['output_root'] + 'Output.' + namelist['meta']['simname'] + '.' + self.uuid[-5:]))
+        outpath = str(os.path.join(namelist['output']['output_root'] + 'Output.' + namelist['meta']['simname'] + '.' + self.uuid[:]))
         self.fields_path = str(os.path.join(outpath, namelist['fields_io']['fields_dir']))
         if Pa.rank == 0:
             try:
@@ -404,6 +404,94 @@ cdef class NetCDFIO_Fields:
         return
 
 
+
+    cpdef dump_vmr(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ReferenceState.ReferenceState Rs):
+
+        cdef:
+            Py_ssize_t i, j, k, ijk, ishift, jshift
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t imin = Gr.dims.gw
+            Py_ssize_t jmin = Gr.dims.gw
+            Py_ssize_t kmin = Gr.dims.gw
+            Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
+            Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
+            Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
+            Py_ssize_t var_shift, qi_shift, ql_shift, qr_shift, qs_shift 
+            double[:] data = np.empty((Gr.dims.npl,), dtype=np.double, order='c')
+            Py_ssize_t count
+        for name in PV.name_index.keys():
+            if name in ['ql', 'qi', 'qr', 'qs']:
+                self.add_field(name + '_vr')
+                var_shift = PV.get_varshift(Gr, name)
+                count = 0
+                with nogil:
+                    for i in range(imin, imax):
+                        ishift = i * istride
+                        for j in range(jmin, jmax):
+                            jshift = j * jstride
+                            for k in range(kmin, kmax):
+                                ijk = ishift + jshift + k
+                                data[count] = PV.values[var_shift + ijk] * Rs.rho0[k] 
+                                count += 1
+                self.write_field(name+'_vr', data)
+
+        for name in DV.name_index.keys():
+            if name in ['ql', 'qi', 'qr', 'qs']:
+                self.add_field(name + '_vr')
+                var_shift = DV.get_varshift(Gr, name)
+                count = 0
+                with nogil:
+                    for i in range(imin, imax):
+                        ishift = i * istride
+                        for j in range(jmin, jmax):
+                            jshift = j * jstride
+                            for k in range(kmin, kmax):
+                                ijk = ishift + jshift + k
+                                data[count] = DV.values[var_shift + ijk] * Rs.rho0[k]
+                                count += 1
+                self.write_field(name+'_vr', data)
+
+
+
+        if 'ql' in DV.name_index.keys() and 'qi' in DV.name_index.keys():
+            ql_shift = DV.get_varshift(Gr, 'ql') 
+            qi_shift = DV.get_varshift(Gr, 'qi')
+            self.add_field('qc_eq_vr')
+            count = 0
+            with nogil:
+                for i in range(imin, imax):
+                    ishift = i * istride
+                    for j in range(jmin, jmax):
+                        jshift = j * jstride
+                        for k in range(kmin, kmax):
+                            ijk = ishift + jshift + k
+                            data[count] = (DV.values[ql_shift + ijk] + DV.values[qi_shift + ijk])* Rs.rho0[k] 
+                            count += 1
+            self.write_field('qc_eq_vr', data)
+            if 'qs' in PV.name_index.keys(): 
+                qs_shift = PV.get_varshift(Gr, 'qs') 
+                count = 0 
+                self.add_field('qc_noneq_vr')
+                with nogil:
+                    for i in range(imin, imax):
+                        ishift = i * istride
+                        for j in range(jmin, jmax):
+                            jshift = j * jstride
+                            for k in range(kmin, kmax):
+                                ijk = ishift + jshift + k
+                                data[count] = (DV.values[ql_shift + ijk] + DV.values[qi_shift + ijk] + PV.values[qs_shift + ijk])* Rs.rho0[k] 
+                                count += 1                
+
+                self.write_field('qc_noneq_vr', data)
+
+
+
+
+        return
+     
+
+
     cpdef dump_diagnostic_variables(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):
 
         cdef:
@@ -473,7 +561,7 @@ cdef class NetCDFIO_CondStats:
 
 
         # Setup the statistics output path
-        outpath = str(os.path.join(namelist['output']['output_root'] + 'Output.' + namelist['meta']['simname'] + '.' + self.uuid[-5:]))
+        outpath = str(os.path.join(namelist['output']['output_root'] + 'Output.' + namelist['meta']['simname'] + '.' + self.uuid[:]))
 
         if Pa.rank == 0:
             try:

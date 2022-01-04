@@ -13,18 +13,22 @@ def main():
     parser.add_argument("out_dir")
     args = parser.parse_args()
 
-    directories = os.listdir(args.fields_dir) 
+    directories = [args.fields_dir]#os.listdir(args.fields_dir)[:]
     print('Found the following directories', directories)
     print('Beginning combination of files')
 
     for d in directories:
         print('\t Combining ' + d)
-        d_path = os.path.join(args.fields_dir, d)
-        ranks = os.listdir(d_path)
+        #d_path = os.path.join(args.fields_dir, d)
+        d_path = args.fields_dir 
+        ranks = sorted(os.listdir(d_path))
+        print len(ranks) 
         print('\t\t Combining files')
 
+     
+
         print(ranks)
-        file_path = os.path.join(args.fields_dir, d, ranks[0])
+        file_path = os.path.join(args.fields_dir, ranks[0])
         rootgrp = nc.Dataset(file_path, 'r')
         field_keys = rootgrp.groups['fields'].variables.keys()
         dims = rootgrp.groups['dims'].variables
@@ -36,16 +40,25 @@ def main():
         y = dims['y'][:]
         z = dims['z'][:]
 
+
+	x = dims['x'][:]
+        y = dims['y'][:] 
+        z = dims['z'][:]  
+
         rootgrp.close()
 
-        out_path = os.path.join(args.out_dir, str(1000000 + int(d)) + '.nc')
+        out_path = os.path.join(args.out_dir, "combined"  + '.nc')
+ 
         if not os.path.exists(out_path):
+            #print out_path 
             create_file(out_path, n_0, n_1, n_2, x, y, z)
         for f in field_keys:
+            print f 
             f_data_3d = np.empty((n_0, n_1, n_2), dtype=np.double, order='c')
             for r in ranks:
+                #print r 
                 if r[-3:] == '.nc':
-                    file_path = os.path.join(args.fields_dir, d, r)
+                    file_path = os.path.join(args.fields_dir, r)
                     rootgrp = nc.Dataset(file_path, 'r')
                     fields = rootgrp.groups['fields'].variables
                     dims = rootgrp.groups['dims'].variables
@@ -74,29 +87,36 @@ def main():
 
 
 def create_file(fname, nx, ny, nz, x, y, z):
-    rootgrp = nc.Dataset(fname, 'w', format='NETCDF4')
-    fieldgrp = rootgrp.createGroup('fields')
+    print fname
+    rootgrp = nc.Dataset(fname, 'w', format='NETCDF4_CLASSIC')
+    fieldgrp = rootgrp #rootgrp.createGroup('fields')
     fieldgrp.createDimension('nx', nx)
     fieldgrp.createDimension('ny', ny)
     fieldgrp.createDimension('nz', nz)
 
-    xh = fieldgrp.createVariable('x', 'f8', ('nx',))
-    yh = fieldgrp.createVariable('y', 'f8', ('ny',))
-    zh = fieldgrp.createVariable('z', 'f8', ('nz',))
 
-    xh[:] = x
-    yh[:] = y
-    zh[:] = z
+    #print x, y, z, 
+    xn = fieldgrp.createVariable('nx', 'f8', ('nx',))
+    xn[:] = x 
 
+    yn = fieldgrp.createVariable('ny', 'f8', ('ny',))
+    yn[:] = y
 
+    zn = fieldgrp.createVariable('nz', 'f8', ('nz',))
+    zn[:] = z 
     rootgrp.close()
     return
 
 
 def write_field(fname, f, data):
     rootgrp = nc.Dataset(fname, 'r+')
-    fields = rootgrp.groups['fields']
+    fields = rootgrp #rootgrp.groups['fields']
     var = fields.createVariable(f, 'f8', ('nx', 'ny', 'nz'))
+    #var.sync() 
+    rootgrp.close() 
+    rootgrp = nc.Dataset(fname, 'r+')
+ 
+    var = rootgrp[f] 
     var[:, :, :] = data
 
     rootgrp.close()

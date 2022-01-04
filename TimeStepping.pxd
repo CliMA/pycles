@@ -13,6 +13,7 @@ cdef class TimeStepping:
         public double dt_max
         public double dt_initial
         public double t_max
+        public double acceleration_factor
         public double statIOdt
         double [:,:] value_copies
         double [:,:] tendency_copies
@@ -26,6 +27,7 @@ cdef class TimeStepping:
 
     cpdef initialize(self, namelist, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa)
     cpdef update(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa)
+    cpdef accelerate_tendencies(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, ParallelMPI.ParallelMPI Pa)
     cpdef update_pressure(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
     cpdef update_second(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV)
     cpdef update_third(self,Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV)

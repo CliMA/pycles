@@ -3,6 +3,7 @@ cimport TimeStepping
 cimport PrognosticVariables
 cimport DiagnosticVariables
 cimport Grid
+cimport ReferenceState
 cdef class NetCDFIO_Stats:
     cdef:
         object root_grp
@@ -35,7 +36,7 @@ cdef class NetCDFIO_Fields:
     cdef:
         str fields_file_name
         str fields_path
-        str output_path
+        public str output_path
         str path_plus_file
         str uuid
         list diagnostic_fields
@@ -52,6 +53,7 @@ cdef class NetCDFIO_Fields:
 
     cpdef dump_prognostic_variables(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV)
     cpdef dump_diagnostic_variables(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa)
+    cpdef dump_vmr(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV, ReferenceState.ReferenceState Rs)
 
     cpdef add_field(self, name)
     cpdef write_field(self, name, double[:] data)
