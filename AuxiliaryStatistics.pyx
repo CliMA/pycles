@@ -85,6 +85,8 @@ class CumulusStatistics:
             NS.add_profile('fraction_'+cond,Gr,Pa)
             NS.add_profile('w_'+cond,Gr,Pa)
             NS.add_profile('w2_'+cond,Gr,Pa)
+            NS.add_profile('dyn_pressure_'+cond,Gr,Pa)
+            NS.add_profile('buoyancy_'+cond,Gr,Pa)
             for scalar in scalars:
                 NS.add_profile(scalar+'_'+cond,Gr,Pa)
                 NS.add_profile(scalar+'2_'+cond,Gr,Pa)
@@ -617,11 +619,11 @@ class TKEStatistics:
 
         #Compute the dissipation of TKE
         with nogil:
-            for i in xrange(1, Gr.dims.nlg[0]-1):
+            for i in xrange(1, Gr.dims.nlg[0]):
                 ishift = i * istride
-                for j in xrange(1, Gr.dims.nlg[1]-1):
+                for j in xrange(1, Gr.dims.nlg[1]):
                     jshift = j * jstride
-                    for k in xrange(1, Gr.dims.nlg[2]-1):
+                    for k in xrange(1, Gr.dims.nlg[2]):
                         ijk = ishift + jshift + k
                         nu = DV.values[visc_shift + ijk]
                         e_dis[ijk] += (up[ijk + istride] - up[ijk-istride]) * 0.5 * Gr.dims.dxi[0] * (up[ijk + istride] - up[ijk-istride]) * 0.5 * Gr.dims.dxi[0]
@@ -882,7 +884,5 @@ class FluxStatistics:
         NS.write_profile('sgs_x_flux_qt', qt_xsgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.write_profile('sgs_y_flux_qt', qt_ysgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.write_profile('sgs_z_flux_qt', qt_zsgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
-
-
 
         return
