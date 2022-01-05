@@ -85,7 +85,6 @@ double compute_wetbulb(struct LookupStruct *LT,const double p0, const double s, 
         Twet  = T_1;
     }
 
-    Twet = T; 
     return Twet;
 }
 
