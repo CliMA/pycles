@@ -144,19 +144,19 @@ cdef class DiagnosticVariables:
         Pa.root_print('Setting up statistical output files for Prognostic Variables')
         for var_name in self.name_index.keys():
             #Add mean profile
-            NS.add_profile(var_name+'_mean',Gr,Pa)
+            NS.add_profile(var_name+'_mean', Gr, Pa,  units=self.units[var_name], nice_name = r'\overline{' + var_name + r'}', desc=var_name + ' hoizontal domain mean')
             #Add mean of squares profile
-            NS.add_profile(var_name+'_mean2',Gr,Pa)
+            NS.add_profile(var_name+'_mean2',Gr ,Pa, units = '('+self.units[var_name]+')^2',nice_name = r'\overline{' + var_name + r'^2}', desc = var_name + '^2 horizontal domain mean')
             #Add mean of cubes profile
-            NS.add_profile(var_name+'_mean3',Gr,Pa)
+            NS.add_profile(var_name+'_mean3', Gr, Pa, units = '('+self.units[var_name]+')^3',nice_name = r'\overline{' + var_name + r'^3}', desc = var_name + '^3 horizontal domain mean')
             #Add max profile
-            NS.add_profile(var_name+'_max',Gr,Pa)
+            NS.add_profile(var_name+'_max', Gr, Pa, units=self.units[var_name], nice_name = r'\max(' + var_name + r')', desc = var_name + ' horzontal domain maximum ')
             #Add min profile
-            NS.add_profile(var_name+'_min',Gr,Pa)
+            NS.add_profile(var_name+'_min', Gr, Pa, units=self.units[var_name], nice_name = r'\min(' + var_name + r')', desc = var_name + ' horzontal domain minimum ')
             #Add max ts
-            NS.add_ts(var_name+'_max',Gr,Pa)
+            NS.add_ts(var_name+'_max', Gr, Pa, units=self.units[var_name], nice_name = r'\max(' + var_name + r')', desc = var_name + ' domain maximum ')
             #Add min ts
-            NS.add_ts(var_name+'_min',Gr,Pa)
+            NS.add_ts(var_name+'_min',Gr , Pa, units=self.units[var_name], nice_name = r'\max(' + var_name + r')', desc = var_name + ' domain minimum ')
         for var_name in self.name_index_2d.keys():
             #Add mean profile
             NS.add_ts(var_name+'_mean',Gr,Pa)

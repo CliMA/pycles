@@ -1011,7 +1011,7 @@ def InitSmoke(namelist,Grid.Grid Gr,PrognosticVariables.PrognosticVariables PV,
         elif Gr.zp_half[k] >= 687.5 and Gr.zp_half[k] <= 712.5:
             theta[k] = 288.0 + (Gr.zp_half[k] - 687.5) * 0.28
             smoke[k] = 1.0 - 0.04 * (Gr.zp_half[k] - 687.5)
-            print k, Gr.zp_half[k], smoke[k]
+            print(k, Gr.zp_half[k], smoke[k])
         else:
             theta[k] = 295.0 + (Gr.zp_half[k] - 712.5) * 1e-4
             smoke[k] = 0.0
@@ -2128,11 +2128,11 @@ def FillAlteredFields(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVaria
     cdef int count = 0
 
 
-    print np.array(w_pert)
+    print(np.array(w_pert))
     #import time; time.sleep(Pa.rank)
     for v in PV.index_name:
         count = 0
-        print v
+        print(v)
         var_shift = PV.get_varshift(Gr,v)
 
         #Read dataset
@@ -2165,7 +2165,7 @@ def FillAlteredFields(namelist, Grid.Grid Gr,PrognosticVariables.PrognosticVaria
             data_tmp[:,:,k] = f_interp(yl, xl)
 
         if v == 'w':
-            print 'Adding perturbations'
+            print('Adding perturbations')
             with nogil:
                 for i in xrange(Gr.dims.nl[0]):
                     for j in xrange(Gr.dims.nl[1]):

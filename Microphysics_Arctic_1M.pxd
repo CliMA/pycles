@@ -26,7 +26,7 @@ cdef inline double latent_heat_constant_Arctic(double T, double Lambda) nogil:
 cdef inline double lambda_Arctic(double T) nogil:
     cdef:
         double Twarm = 273.15
-        double Tcold = 263.15
+        double Tcold = 235.0
         double Lambda = 0.0
 
     #POW_N can be modified in generate_parameters_a1m.py

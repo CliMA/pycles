@@ -52,7 +52,7 @@ cdef class ThermodynamicsDry:
         if self.s_prognostic:
             PV.add_variable('s', 'J kg^-1 K^-1', 's', 'specific entropy', "sym", "scalar", Pa)
         else:
-            print 'Using thli'
+            print('Using thli')
             PV.add_variable('thli', 'K', r'\theta_l', r'liquid-ice potential temperature', "sym", "scalar", Pa)
             DV.add_variables('s', 'J kg^-1 K^-1', 's', 'specific entropy', 'sym', Pa)
 
