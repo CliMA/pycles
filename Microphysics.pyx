@@ -877,7 +877,7 @@ cdef class Microphysics_T_Liquid:
                      DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
 
         DV.add_variables('dqtdt_precip', 'kg/kg/s', r'dsdt_precip', 'specific humidity rain tendency', 'sym', Pa)
-        DV.add_variables('dsdt_precip', 'J/s', r'dsdt_precip','entrophy rain tendency', 'sym', Pa)
+        DV.add_variables('dsdt_precip ', 'J/s', r'dsdt_precip','entrophy rain tendency', 'sym', Pa)
 
 
         return
