@@ -16,10 +16,6 @@ inline double temperature_no_ql(const double pd, const double pv, const double s
 }
 
 
-inline double temperature_no_ql_thli(const double p0, const double thli){
-    return thli * exner_c(p0);
-}
-
 void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(double, double),
                     const double p0, const double s, const double qt, double* T, double* qv, double* ql, double *qi){
     *qv = qt;
