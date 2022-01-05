@@ -206,12 +206,12 @@ void sb_sedimentation_velocity_rain(const struct DimStruct *dims, double (*rain_
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
-    const ssize_t imin = 1;
-    const ssize_t jmin = 1;
-    const ssize_t kmin = 1;
-    const ssize_t imax = dims->nlg[0]-1;
-    const ssize_t jmax = dims->nlg[1]-1;
-    const ssize_t kmax = dims->nlg[2]-1;
+    const ssize_t imin = 0;
+    const ssize_t jmin = 0;
+    const ssize_t kmin = 0;
+    const ssize_t imax = dims->nlg[0];
+    const ssize_t jmax = dims->nlg[1];
+    const ssize_t kmax = dims->nlg[2];
 
 
     for(ssize_t i=imin; i<imax; i++){
@@ -262,12 +262,12 @@ void sb_sedimentation_velocity_liquid(const struct DimStruct *dims, double* rest
 
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
-    const ssize_t imin = 1;
-    const ssize_t jmin = 1;
-    const ssize_t kmin = 1;
-    const ssize_t imax = dims->nlg[0]-1;
-    const ssize_t jmax = dims->nlg[1]-1;
-    const ssize_t kmax = dims->nlg[2]-1;
+    const ssize_t imin = 0;
+    const ssize_t jmin = 0;
+    const ssize_t kmin = 0;
+    const ssize_t imax = dims->nlg[0];
+    const ssize_t jmax = dims->nlg[1];
+    const ssize_t kmax = dims->nlg[2];
 
 
     for(ssize_t i=imin; i<imax; i++){
@@ -520,13 +520,7 @@ void sb_entropy_source_heating(const struct DimStruct *dims, double* restrict T,
             const ssize_t jshift = j * jstride;
             for(ssize_t k=kmin; k<kmax; k++){
                 const ssize_t ijk = ishift + jshift + k;
-                const double w_adv = w_qr[ijk] - w[ijk]; 
-                if(w_adv <= 0.0){
-                    entropy_tendency[ijk]-= qr[ijk]*w_adv * cl * (Twet[ijk+1] - Twet[ijk])* dzi/T[ijk]*dims->imetl_half[k];
-                }
-                else{
-                    entropy_tendency[ijk]-= qr[ijk]*w_adv * cl * (Twet[ijk] - Twet[ijk-1])* dzi/T[ijk]*dims->imetl_half[k];
-                }
+                entropy_tendency[ijk]+= qr[ijk]*(fabs(w_qr[ijk]) - w[ijk]) * cl * (Twet[ijk+1] - Twet[ijk])* dzi/T[ijk];
             }
         }
     }
