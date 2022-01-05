@@ -208,17 +208,16 @@ cdef class RadiationPrescribed(RadiationBase):
             self.t_tend_rad = rdr.get_interp_profile_old('tntr', Gr.zp_half)
 
         # Now update entropy tendencies
-        if 's' in PV.name_index:
-            s_shift = PV.get_varshift(Gr, 's')
-            with nogil:
-                for i in xrange(imin, imax):
-                    ishift = i * istride
-                    for j in xrange(jmin, jmax):
-                        jshift = j * jstride
-                        for k in xrange(kmin, kmax):
-                            ijk = ishift + jshift + k
-                            self.s_tend_rad[ijk] = cpm_c(PV.values[ijk+qt_shift]) * self.t_tend_rad[k] / DV.values[ijk+t_shift]
-                            PV.tendencies[s_shift + ijk] += self.s_tend_rad[ijk]
+        s_shift = PV.get_varshift(Gr, 's')
+        with nogil:
+            for i in xrange(imin, imax):
+                ishift = i * istride
+                for j in xrange(jmin, jmax):
+                    jshift = j * jstride
+                    for k in xrange(kmin, kmax):
+                        ijk = ishift + jshift + k
+                        self.s_tend_rad[ijk] = cpm_c(PV.values[ijk+qt_shift]) * self.t_tend_rad[k] / DV.values[ijk+t_shift]
+                        PV.tendencies[s_shift + ijk] += self.s_tend_rad[ijk]
         return
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, DiagnosticVariables.DiagnosticVariables DV,
@@ -341,29 +340,17 @@ cdef class RadiationDyCOMS_RF01(RadiationBase):
 
 
         # Now update entropy tendencies
-        if 's' in PV.name_index:
-            s_shift = PV.get_varshift(Gr, 's')
-            with nogil:
-                for i in xrange(imin, imax):
-                    ishift = i * istride
-                    for j in xrange(jmin, jmax):
-                        jshift = j * jstride
-                        for k in xrange(kmin, kmax):
-                            ijk = ishift + jshift + k
-                            PV.tendencies[
-                                s_shift + ijk] +=  self.heating_rate[ijk] / DV.values[ijk + t_shift]
-                            self.dTdt_rad[ijk] = self.heating_rate[ijk] / cpm_c(PV.values[ijk + qt_shift])
-        else:
-            thli_shift = PV.get_varshift(Gr, 'thli')
-            with nogil:
-                for i in xrange(imin, imax):
-                    ishift = i * istride
-                    for j in xrange(jmin, jmax):
-                        jshift = j * jstride
-                        for k in xrange(kmin, kmax):
-                            ijk = ishift + jshift + k
-                            PV.tendencies[
-                                thli_shift + ijk] += self.heating_rate[ijk] / cpd / exner_c(RS.p0_half[k])
+        s_shift = PV.get_varshift(Gr, 's')
+        with nogil:
+            for i in xrange(imin, imax):
+                ishift = i * istride
+                for j in xrange(jmin, jmax):
+                    jshift = j * jstride
+                    for k in xrange(kmin, kmax):
+                        ijk = ishift + jshift + k
+                        PV.tendencies[
+                            s_shift + ijk] +=  self.heating_rate[ijk] / DV.values[ijk + t_shift]
+                        self.dTdt_rad[ijk] = self.heating_rate[ijk] / cpm_c(PV.values[ijk + qt_shift])
 
         return
 
