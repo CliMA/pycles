@@ -175,7 +175,6 @@ cdef class ForcingBomex:
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
             Py_ssize_t s_shift
-            Py_ssize_t thli_shift
             Py_ssize_t qt_shift = PV.get_varshift(Gr, 'qt')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t ql_shift = DV.get_varshift(Gr,'ql')
@@ -445,7 +444,6 @@ cdef class ForcingDyCOMS_RF01:
             Py_ssize_t u_shift = PV.get_varshift(Gr, 'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
             Py_ssize_t s_shift
-            Py_ssize_t thli_shift
             Py_ssize_t qt_shift = PV.get_varshift(Gr,'qt')
 
         s_shift = PV.get_varshift(Gr, 's')

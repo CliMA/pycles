@@ -22,7 +22,7 @@ cdef class VisualizationOutput:
 
         try:
             outpath = str(os.path.join(str(namelist['output']['output_root'])
-                                   + 'Output.' + str(namelist['meta']['simname']) + '.' + self.uuid[:]))
+                                   + 'Output.' + str(namelist['meta']['simname']) + '.' + self.uuid[-10:]))
             self.vis_path = os.path.join(outpath, 'Visualization')
         except:
             self.vis_path = './Visualization.' + self.uuid[:]

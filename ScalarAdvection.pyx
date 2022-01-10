@@ -66,7 +66,7 @@ cdef class ScalarAdvection:
 
         cdef:
             Py_ssize_t d, i, vel_shift,scalar_shift, scalar_count = 0, flux_shift
-            Py_ssize_t s_shift, thli_shift
+            Py_ssize_t s_shift
             Py_ssize_t t_shift = DV.get_varshift(Gr,'temperature')
             Py_ssize_t ql_shift, qv_shift, qt_shift, qc_shift
 

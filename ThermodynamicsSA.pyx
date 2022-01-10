@@ -67,10 +67,7 @@ cdef class ThermodynamicsSA:
         except:
             self.do_qt_clipping = True
 
-        try:
-            self.s_prognostic = namelist['thermodynamics']['s_prognostic']
-        except:
-            self.s_prognostic = True
+        self.s_prognostic = True
 
         return
 
