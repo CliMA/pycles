@@ -54,14 +54,14 @@ cdef class TracersNone:
     cpdef initialize(self, Grid.Grid Gr,  PrognosticVariables.PrognosticVariables PV,
                      DiagnosticVariables.DiagnosticVariables DV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         return
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
         return
-    cpdef update_cleanup(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+    cpdef update_cleanup(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
         return
     cpdef stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                   TimeStepping.TimeStepping TS, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+                   TimeStepping.TimeStepping TS, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ReferenceState.ReferenceState RS):
         return
 
 
@@ -72,6 +72,11 @@ cdef class UpdraftTracers:
             self.lcl_tracers = namelist['tracers']['use_lcl_tracers']
         except:
             self.lcl_tracers = False
+        try:
+              self.timescale = namelist['tracers']['timescale']
+        except:
+              self.timescale = 15.0
+              print('Tracer timescale is set do 15min by default')
 
         self.index_lcl = 0
 
@@ -86,14 +91,15 @@ cdef class UpdraftTracers:
         # Can be expanded for different init heights or timescales
         self.tracer_dict = {}
         self.tracer_dict['surface'] = {}
-        self.tracer_dict['surface']['c_srf_15'] = {}
-        self.tracer_dict['surface']['c_srf_15']['timescale'] = 15.0 * 60.0
+        self.tracer_dict['surface']['c_srf_' + str(int(self.timescale))] = {}
+        self.tracer_dict['surface']['c_srf_' + str(int(self.timescale))]['timescale'] = self.timescale * 60.0
         if self.lcl_tracers:
             self.tracer_dict['lcl'] = {}
-            self.tracer_dict['lcl']['c_lcl_15'] = {}
-            self.tracer_dict['lcl']['c_lcl_15']['timescale'] = 15.0 * 60.0
+            self.tracer_dict['lcl']['c_lcl_' + str(int(self.timescale))] = {}
+            self.tracer_dict['lcl']['c_lcl_' + str(int(self.timescale))]['timescale'] = self.timescale * 60.0
 
         for var in self.tracer_dict['surface'].keys():
+
            PV.add_variable(var, '-', var, 'tracer diagnostics' , "sym", "scalar", Pa)
 
         if self.lcl_tracers:
@@ -205,6 +211,21 @@ cdef class UpdraftTracers:
         NS.add_profile('env_thetarho', Gr, Pa, units=r'K', nice_name=r'\theta_{\rho,e}',
                        desc=r'environment density potential temperature')
 
+        NS.add_profile('updraft_dyn_pressure', Gr, Pa, units=r'Pa', nice_name=r'dynamic pressure',
+                       desc=r'updraft dynamic pressure')
+        NS.add_profile('updraft_ddz_p_alpha', Gr, Pa, units=r'm/s^2', nice_name=r'updraft vertical pressure gradient',
+                       desc=r'updraft vertical pressure gradient')
+        NS.add_profile('updraft_u_dyn_pressure', Gr, Pa, units=r'm/s Pa', nice_name=r'u''p''',
+                       desc=r'updraft dynamic pressure*u')
+        NS.add_profile('updraft_v_dyn_pressure', Gr, Pa, units=r'm/s Pa', nice_name=r'v''p''',
+                       desc=r'updraft dynamic pressure*v')
+        NS.add_profile('updraft_w_dyn_pressure', Gr, Pa, units=r'm/s Pa', nice_name=r'w''p''',
+                       desc=r'updraft dynamic pressure*w')
+        NS.add_profile('updraft_alpha', Gr, Pa, units=r'm^{3}kg^{-1}', nice_name=r'alpha_{u}',
+                       desc=r'updraft specific volume')
+        NS.add_profile('env_alpha', Gr, Pa, units=r'm^{3}kg^{-1}', nice_name=r'alpha_{e}',
+                       desc=r'environment specific volume')
+
         NS.add_profile('updraft_perturbation_pressure_potential', Gr, Pa, units=r'm^2 s^-2 ', nice_name=r'updraft alpha0 * perturbation pressure',
                       desc=r'updraft alpha0 * perturbation pressure')
         NS.add_profile('updraft_wBudget_PressureGradient', Gr, Pa, units=r'm/s', nice_name=r'updraft average of pressure gradient contribution',
@@ -239,7 +260,7 @@ cdef class UpdraftTracers:
 
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
         cdef:
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
@@ -298,7 +319,7 @@ cdef class UpdraftTracers:
                 for i in xrange(Gr.dims.gw, Gr.dims.nlg[0]-Gr.dims.gw):
                     for j in xrange(Gr.dims.gw, Gr.dims.nlg[1]-Gr.dims.gw):
                         ijk = i * istride + j * jstride + Gr.dims.gw
-                        vapor_pressure = pv_c(Ref.p0_half[Gr.dims.gw], PV.values[qt_shift + ijk], DV.values[qv_shift + ijk])
+                        vapor_pressure = pv_c(RS.p0_half[Gr.dims.gw], PV.values[qt_shift + ijk], DV.values[qv_shift + ijk])
                         T_dew[count] = B1 * log(vapor_pressure/C1)/(A1-log(vapor_pressure/C1))  + CtoK
                         z_lcl[count] = 125.0 * (DV.values[t_shift+ijk] - T_dew[count])
                         count += 1
@@ -322,7 +343,7 @@ cdef class UpdraftTracers:
         return
 
 
-    cpdef update_cleanup(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+    cpdef update_cleanup(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
         cdef:
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
@@ -357,24 +378,23 @@ cdef class UpdraftTracers:
                             for k in xrange( Gr.dims.nlg[2]):
                                 ijk = i * istride + j * jstride + k
                                 PV.values[var_shift + ijk] = fmax(PV.values[var_shift + ijk],0.0)
-
-
         return
 
 
     cpdef stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                   TimeStepping.TimeStepping TS, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+                   TimeStepping.TimeStepping TS, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ReferenceState.ReferenceState RS):
         cdef:
             Py_ssize_t u_shift = PV.get_varshift(Gr,'u')
             Py_ssize_t v_shift = PV.get_varshift(Gr,'v')
             Py_ssize_t w_shift = PV.get_varshift(Gr,'w')
             Py_ssize_t q_shift = PV.get_varshift(Gr,'qt')
-            Py_ssize_t c_shift = PV.get_varshift(Gr,'c_srf_15')
+            Py_ssize_t c_shift = PV.get_varshift(Gr,'c_srf_' + str(int(self.timescale)))
             Py_ssize_t b_shift = DV.get_varshift(Gr, 'buoyancy')
             Py_ssize_t t_shift = DV.get_varshift(Gr, 'temperature')
             Py_ssize_t bvf_shift = DV.get_varshift(Gr, 'buoyancy_frequency')
             Py_ssize_t thr_shift = DV.get_varshift(Gr, 'theta_rho')
             Py_ssize_t qv_shift = DV.get_varshift(Gr, 'qv')
+            Py_ssize_t alpha_shift = DV.get_varshift(Gr, 'alpha')
             Py_ssize_t press_shift = DV.get_varshift(Gr, 'perturbation_pressure_potential')
             Py_ssize_t pz_shift = DV.get_varshift(Gr, 'wBudget_PressureGradient')
             Py_ssize_t whor_shift = DV.get_varshift(Gr, 'wBudget_removeHorAve')
@@ -385,7 +405,7 @@ cdef class UpdraftTracers:
             double [:] u_half = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
             double [:] v_half = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
             double [:] w_half = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
-
+            double [:] dpalphadz = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
             double [:] wpz_half = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
             double [:] whor_half = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
 
@@ -484,6 +504,10 @@ cdef class UpdraftTracers:
         tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &DV.values[b_shift], &DV.values[b_shift], &self.updraft_indicator[0])
         NS.write_profile('updraft_b2', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
+        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[alpha_shift], &self.updraft_indicator[0])
+        NS.write_profile('updraft_alpha', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
+#        tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[alpha_shift], &self.env_indicator[0])
+#        NS.write_profile('env_alpha', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         tmp = Pa.HorizontalMeanofSquaresConditional(Gr, &w_half[0], &PV.values[q_shift], &self.updraft_indicator[0])
         NS.write_profile('updraft_w_qt', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
@@ -664,6 +688,11 @@ cdef class PurityTracers:
     def __init__(self, namelist):
         cdef UpdraftTracers TracersUpdraft
         self.TracersUpdraft = UpdraftTracers(namelist)
+        try:
+              self.timescale = namelist['tracers']['timescale']
+        except:
+              self.timescale = 15.0
+              print('Tracer timescale is set do 15min by default')
         return
 
     cpdef initialize(self, Grid.Grid Gr,  PrognosticVariables.PrognosticVariables PV,
@@ -691,17 +720,17 @@ cdef class PurityTracers:
 
         return
 
-    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+    cpdef update(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
 
-        self.TracersUpdraft.update(Gr,Ref, PV, DV, TS, Pa)
+        self.TracersUpdraft.update(Gr,RS, PV, DV, TS, Pa)
 
         # First do the surface tracers
         cdef:
             Py_ssize_t w_shift = PV.get_varshift(Gr,'w')
             Py_ssize_t q_shift = PV.get_varshift(Gr,'qt')
-            Py_ssize_t th_shift #= DV.get_varshift(Gr,'thetali')
-            Py_ssize_t c_shift = PV.get_varshift(Gr,'c_srf_15')
+            Py_ssize_t th_shift = DV.get_varshift(Gr,'thetali')
+            Py_ssize_t c_shift = PV.get_varshift(Gr,'c_srf_' + str(int(self.timescale)))
             Py_ssize_t p_shift = PV.get_varshift(Gr,'purity_srf')
             Py_ssize_t pt_shift = PV.get_varshift(Gr,'time_srf')
             Py_ssize_t pq_shift = PV.get_varshift(Gr,'qt_srf')
@@ -819,9 +848,9 @@ cdef class PurityTracers:
 
         return
 
-    cpdef update_cleanup(self, Grid.Grid Gr, ReferenceState.ReferenceState Ref, PrognosticVariables.PrognosticVariables PV,
+    cpdef update_cleanup(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, PrognosticVariables.PrognosticVariables PV,
                  DiagnosticVariables.DiagnosticVariables DV,ParallelMPI.ParallelMPI Pa, TimeStepping.TimeStepping TS):
-        self.TracersUpdraft.update_cleanup(Gr, Ref, PV, DV, Pa, TS)
+        self.TracersUpdraft.update_cleanup(Gr, RS, PV, DV, Pa, TS)
         cdef:
             Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
             Py_ssize_t jstride = Gr.dims.nlg[2]
@@ -879,8 +908,8 @@ cdef class PurityTracers:
         return
 
     cpdef stats_io(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, DiagnosticVariables.DiagnosticVariables DV,
-                   TimeStepping.TimeStepping TS, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
-        self.TracersUpdraft.stats_io(Gr, PV, DV, TS, NS, Pa)
+                   TimeStepping.TimeStepping TS, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa, ReferenceState.ReferenceState RS):
+        self.TracersUpdraft.stats_io(Gr, PV, DV, TS, NS, Pa, RS)
 
         cdef:
             double [:] extracted_purity_var = np.zeros((Gr.dims.npg),dtype=np.double, order='c')

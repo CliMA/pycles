@@ -34,6 +34,8 @@ cdef class SGS:
     def __init__(self,namelist):
         if(namelist['sgs']['scheme'] == 'UniformViscosity'):
             self.scheme = UniformViscosity(namelist)
+        elif(namelist['sgs']['scheme'] == 'LinearViscosity'):
+            self.scheme = LinearViscosity(namelist)
         elif(namelist['sgs']['scheme'] == 'Smagorinsky'):
             self.scheme = Smagorinsky(namelist)
         elif(namelist['sgs']['scheme'] == 'TKE'):
@@ -102,6 +104,82 @@ cdef class UniformViscosity:
 
         return
 
+cdef class LinearViscosity:
+    def __init__(self,namelist):
+        try:
+            self.diffusivity_max = namelist['sgs']['LinearViscosity']['diffusivity_max']
+        except:
+            self.diffusivity_max = 0.0
+        try:
+            self.viscosity_max = namelist['sgs']['LinearViscosity']['viscosity_max']
+        except:
+            self.viscosity_max = 0.0
+        try:
+            self.z_peak1 = namelist['sgs']['LinearViscosity']['z_peak1']
+        except:
+            self.z_peak1 = 0.0
+        try:
+            self.z_peak2 = namelist['sgs']['LinearViscosity']['z_peak2']
+        except:
+            self.z_peak2 = self.z_peak1
+        try:
+            self.z_top = namelist['sgs']['LinearViscosity']['z_top']
+        except:
+            self.z_top = 0.0
+
+        self.is_init = False 
+
+        return
+
+    cpdef initialize(self, Grid.Grid Gr, PrognosticVariables.PrognosticVariables PV, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        return
+
+    cpdef update(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke,Surface.SurfaceBase Sur, ParallelMPI.ParallelMPI Pa):
+
+        cdef:
+            Py_ssize_t diff_shift = DV.get_varshift(Gr,'diffusivity')
+            Py_ssize_t visc_shift = DV.get_varshift(Gr,'viscosity')
+            Py_ssize_t gw = Gr.dims.gw
+            Py_ssize_t imax = Gr.dims.nlg[0] - gw
+            Py_ssize_t jmax = Gr.dims.nlg[1] - gw
+            Py_ssize_t kmax = Gr.dims.nlg[2] - gw
+            Py_ssize_t istride = Gr.dims.nlg[1] * Gr.dims.nlg[2]
+            Py_ssize_t jstride = Gr.dims.nlg[2]
+            Py_ssize_t i,j,k,ishift,jshift,ijk
+
+        cdef double [:] xi = np.zeros(Gr.dims.nlg[2],dtype=np.double,order='c')
+        with nogil:
+            for k in xrange(Gr.dims.nlg[2]):
+                if Gr.zpl_half[k] >= self.z_top:
+                    xi[k] = 0.0
+                elif Gr.zpl_half[k] >= self.z_peak2:
+                    xi[k] = (self.z_top-Gr.zpl_half[k]) / (self.z_top-self.z_peak2)
+                elif Gr.zpl_half[k] >= self.z_peak1:
+                    xi[k] = 1.0
+                else:
+                    xi[k] = Gr.zpl_half[k] / self.z_peak1
+        with nogil:
+            if not self.is_init: 
+                for i in xrange(gw,imax):
+                    ishift = i * istride
+                    for j in xrange(gw,jmax):
+                        jshift = j * jstride
+                        for k in xrange(gw,kmax):
+                            ijk = ishift + jshift + k
+                            DV.values[diff_shift + ijk] = self.diffusivity_max * xi[k]
+                            DV.values[visc_shift + ijk] = self.viscosity_max * xi[k]
+                self.is_init = True 
+
+        return
+
+    cpdef stats_io(self, Grid.Grid Gr,  DiagnosticVariables.DiagnosticVariables DV,
+                 PrognosticVariables.PrognosticVariables PV, Kinematics.Kinematics Ke, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+
+        return
+
+
 cdef class Smagorinsky:
     def __init__(self,namelist):
         try:
@@ -143,11 +221,11 @@ cdef class Smagorinsky:
             Py_ssize_t bf_shift =DV.get_varshift(Gr, 'buoyancy_frequency')
 
         if self.adjust_wall:
-            smagorinsky_update_wall(&Gr.dims, &Gr.zl_half[0], &DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
+            smagorinsky_update_wall(&Gr.dims, &Gr.zpl_half[0], &DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
                                     &Ke.strain_rate_mag[0],self.cs,self.prt)
 
         elif self.iles:
-            smagorinsky_update_iles(&Gr.dims, &Gr.zl_half[0], &DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
+            smagorinsky_update_iles(&Gr.dims, &Gr.zpl_half[0], &DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],
                                     &Ke.strain_rate_mag[0],self.cs,self.prt)
         else:
             smagorinsky_update(&Gr.dims,&DV.values[visc_shift],&DV.values[diff_shift],&DV.values[bf_shift],

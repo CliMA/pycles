@@ -20,14 +20,29 @@ void compute_velocity_gradient(const struct DimStruct *dims, double* restrict v,
     const ssize_t sp1 = stencil[d];
     const double dxi = dims->dxi[d];
 
+    const double * imetl_half = dims -> imetl_half;
 
-    for(ssize_t i=imin;i<imax;i++){
-        const ssize_t ishift = i*istride ;
-        for(ssize_t j=jmin;j<jmax;j++){
-            const ssize_t jshift = j*jstride;
-            for(ssize_t k=kmin;k<kmax;k++){
-                const ssize_t ijk = ishift + jshift + k ;
-                vgrad[ijk] = (v[ijk + sp1] - v[ijk])*dxi;
+    if(d == 3){
+        for(ssize_t i=imin;i<imax;i++){
+            const ssize_t ishift = i*istride ;
+            for(ssize_t j=jmin;j<jmax;j++){
+                const ssize_t jshift = j*jstride;
+                for(ssize_t k=kmin;k<kmax;k++){
+                    const ssize_t ijk = ishift + jshift + k ;
+                    vgrad[ijk] = (v[ijk + sp1] - v[ijk])*dxi * imetl_half[k+1];
+                }
+            }
+        }
+    }
+    else{
+        for(ssize_t i=imin;i<imax;i++){
+            const ssize_t ishift = i*istride ;
+            for(ssize_t j=jmin;j<jmax;j++){
+                const ssize_t jshift = j*jstride;
+                for(ssize_t k=kmin;k<kmax;k++){
+                    const ssize_t ijk = ishift + jshift + k ;
+                    vgrad[ijk] = (v[ijk + sp1] - v[ijk])*dxi ;
+                }
             }
         }
     }
@@ -111,7 +126,7 @@ void compute_strain_rate_mag(const struct DimStruct *dims, double* restrict stra
     //Off-diagonal components
     //Here factor of 2 arises because we invoke symmetry of tensor
     for(ssize_t vi1=0;vi1<dims->dims-1;vi1++){
-        for (ssize_t d=vi1;d<dims->dims;d++){
+        for (ssize_t d=vi1+1;d<dims->dims;d++){
             const ssize_t shift_s = 3 * dims->npg * vi1 + dims->npg * d ;
             for(ssize_t i=imin+1;i<imax;i++){
                 const ssize_t ishift = i*istride;

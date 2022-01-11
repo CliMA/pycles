@@ -11,7 +11,6 @@ _ext = Extension("combine3d", ["combine3d.pyx"],
                  extra_compile_args=extra_compile_args)
 extensions.append(_ext)
 
-
 setup(
     ext_modules=cythonize(extensions, verbose=1)
 )

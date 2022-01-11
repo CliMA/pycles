@@ -12,7 +12,7 @@ cimport Radiation
 cimport Surface
 from NetCDFIO cimport NetCDFIO_Stats
 import cython
-
+import pickle as pickle
 cimport numpy as np
 import numpy as np
 include "parameters.pxi"
@@ -22,6 +22,10 @@ import cython
 def SurfaceBudgetFactory(namelist):
     if namelist['meta']['casename'] == 'ZGILS':
         return SurfaceBudget(namelist)
+    elif namelist['meta']['casename'] == 'GCMFixed':
+        return SurfaceBudget(namelist)
+    elif namelist['meta']['casename'] == 'GCMNew' or namelist['meta']['casename'] == 'GCMVarying':
+        return SurfaceBudgetNew(namelist)
     else:
         return SurfaceBudgetNone()
 
@@ -39,12 +43,10 @@ cdef class SurfaceBudgetNone:
 
 cdef class SurfaceBudget:
     def __init__(self, namelist):
-
         try:
             self.constant_sst = namelist['surface_budget']['constant_sst']
         except:
             self.constant_sst = False
-
         try:
             self.ocean_heat_flux = namelist['surface_budget']['ocean_heat_flux']
         except:
@@ -66,14 +68,8 @@ cdef class SurfaceBudget:
             self.fixed_sst_time = namelist['surface_budget']['fixed_sst_time']
         except:
             self.fixed_sst_time = 0.0
-
-
-
         self.water_depth = self.water_depth_initial
-
         return
-
-
 
     cpdef initialize(self, Grid.Grid Gr,  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         NS.add_ts('surface_temperature', Gr, Pa)
@@ -103,15 +99,24 @@ cdef class SurfaceBudget:
             else:
                 self.water_depth = self.water_depth_initial
 
-
             net_flux =  -self.ocean_heat_flux - Ra.srf_lw_up - Ra.srf_sw_up - mean_shf - mean_lhf + Ra.srf_lw_down + Ra.srf_sw_down
             tendency = net_flux/cl/rho_liquid/self.water_depth
             Sur.T_surface += tendency *TS.dt
 
         mpi.MPI_Bcast(&Sur.T_surface,count,mpi.MPI_DOUBLE,root, Pa.cart_comm_sub_z)
+        return
 
+    cpdef stats_io(self, Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        NS.write_ts('surface_temperature', Sur.T_surface, Pa)
+        return
 
-
+cdef class SurfaceBudgetNew:
+    def __init__(self, namelist):
+        return
+    cpdef initialize(self, Grid.Grid Gr,  NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
+        NS.add_ts('surface_temperature', Gr, Pa)
+        return
+    cpdef update(self, Grid.Grid Gr, Radiation.RadiationBase Ra, Surface.SurfaceBase Sur, TimeStepping.TimeStepping TS, ParallelMPI.ParallelMPI Pa):
         return
     cpdef stats_io(self, Surface.SurfaceBase Sur, NetCDFIO_Stats NS, ParallelMPI.ParallelMPI Pa):
         NS.write_ts('surface_temperature', Sur.T_surface, Pa)

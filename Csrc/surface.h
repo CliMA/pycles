@@ -183,3 +183,33 @@ void compute_windspeed(const struct DimStruct *dims, double* restrict u, double*
 
     return;
 }
+
+void compute_windspeed_gust(const struct DimStruct *dims, double* restrict u, double* restrict v, double* restrict speed, double u0, double v0, double gustiness ){
+    const ssize_t istride = dims->nlg[1] * dims->nlg[2];
+    const ssize_t jstride = dims->nlg[2];
+    const ssize_t istride_2d = dims->nlg[1];
+
+    const ssize_t imin = 1;
+    const ssize_t jmin = 1;
+    const ssize_t kmin = 1;
+
+    const ssize_t imax = dims->nlg[0];
+    const ssize_t jmax = dims->nlg[1];
+    const ssize_t kmax = dims->nlg[2];
+
+    const ssize_t gw = dims->gw;
+
+    for(ssize_t i=imin;i<imax;i++){
+        const ssize_t ishift = i*istride ;
+        for(ssize_t j=jmin;j<jmax;j++){
+            const ssize_t jshift = j*jstride;
+            const ssize_t ij = i * istride_2d + j;
+            const ssize_t ijk = ishift + jshift + gw ;
+            const double u_interp = interp_2(u[ijk-istride],u[ijk]) + u0;
+            const double v_interp = interp_2(v[ijk-jstride],v[ijk]) + v0;
+            speed[ij] = sqrt(u_interp*u_interp + v_interp*v_interp+gustiness*gustiness);
+        }
+    }
+
+    return;
+}
