@@ -4,19 +4,80 @@
 #include "advection_interpolation.h"
 #include "entropies.h"
 
-// CLIMA microphysics parameters
-#define C_drag 0.55
+// CLIMA microphysics parameters - size distributions and relations
+#define r0_ice 1e-5
+#define r0_rai 1e-3
+#define r0_sno 1e-3
+
+
+Microphysics.n0_ice(::AEPS)         = 1e7 * 2
+Microphysics.me_ice(::AEPS)         = 3
+Microphysics.m0_ice(ps::AEPS) = 4/3 * π *
+    CLIMAParameters.Planet.ρ_cloud_ice(ps) *
+    Microphysics.r0_ice(ps)^Microphysics.me_ice(ps)
+Microphysics.χm_ice(::AEPS)         = 1
+Microphysics.Δm_ice(::AEPS)         = 0
+
+Microphysics.q_liq_threshold(::AEPS) = 5e-4
+Microphysics.τ_acnv_rai(::AEPS)      = 1e3
+Microphysics.n0_rai(::AEPS)              = 8e6 * 2
+Microphysics.me_rai(::AEPS)              = 3
+Microphysics.ae_rai(::AEPS)              = 2
+Microphysics.ve_rai(::AEPS)              = 0.5
+Microphysics.m0_rai(ps::AEPS) = 4/3 * π *
+    CLIMAParameters.Planet.ρ_cloud_liq(ps) *
+    Microphysics.r0_rai(ps)^Microphysics.me_rai(ps)
+Microphysics.a0_rai(ps::AEPS) = π * Microphysics.r0_rai(ps)^Microphysics.ae_rai(ps)
+Microphysics.χm_rai(::AEPS)              = 1
+Microphysics.Δm_rai(::AEPS)              = 0
+Microphysics.χa_rai(::AEPS)              = 1
+Microphysics.Δa_rai(::AEPS)              = 0
+Microphysics.χv_rai(::AEPS)              = 1
+Microphysics.Δv_rai(::AEPS)              = 0
+
+Microphysics.q_ice_threshold(::AEPS) = 1e-6
+Microphysics.τ_acnv_sno(::AEPS)      = 1e2
+# n0_sno = μ_sno (ρ q_sno / ρ_0)^ν_sno;  ρ_0 = 1kg/m3
+Microphysics.μ_sno(::AEPS)  = 4.36 * 1e9
+Microphysics.ν_sno(::AEPS)  = 0.63
+Microphysics.me_sno(::AEPS)     = 2
+Microphysics.ae_sno(::AEPS)     = 2
+Microphysics.ve_sno(::AEPS)     = 0.25
+Microphysics.m0_sno(ps::AEPS)   = 1e-1 * Microphysics.r0_sno(ps)^Microphysics.me_sno(ps)
+Microphysics.a0_sno(ps::AEPS)   = 0.3 * π * Microphysics.r0_sno(ps)^Microphysics.ae_sno(ps)
+Microphysics.v0_sno(ps::AEPS)   = 2^(9/4) * Microphysics.r0_sno(ps)^Microphysics.ve_sno(ps)
+Microphysics.χm_sno(::AEPS)     = 1
+Microphysics.Δm_sno(::AEPS)     = 0
+Microphysics.χa_sno(::AEPS)     = 1
+Microphysics.Δa_sno(::AEPS)     = 0
+Microphysics.χv_sno(::AEPS)     = 1
+Microphysics.Δv_sno(::AEPS)     = 0
+
+// CLIMA microphysics parameters - processes
 #define rho_cloud_liq 1e3
+
+#define C_drag 0.55
+#define K_therm 2.4e-2
+#define D_vapor 2.26e-5
+#define nu_air 1.6e-5
+#define N_sc 1.6/2.26
+
 #define MP_n_0 16 * 1e6
 #define tau_cond_evap 10
 #define q_liq_threshold 5e-4
 #define tau_acnv 1e3
-#define E_col 0.8
-#define nu_air 1.6e-5
-#define K_therm 2.4e-2
-#define D_vapor 2.26e-5
-#define a_vent 1.5
-#define b_vent 0.53
+
+#define a_vent_rai 1.5
+#define b_vent_rai 0.53
+#define a_vent_sno 0.65
+#define b_vent_sno 0.44
+
+#define E_liq_rai 0.8
+#define E_liq_sno 0.1
+#define E_ice_rai 1.0
+#define E_ice_sno 0.1
+#define E_rai_sno 1.0
+
 // additional parameters for pycles implementation
 #define max_iter 10
 #define microph_eps 1e-3

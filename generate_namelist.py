@@ -312,7 +312,7 @@ def StableBubble():
     namelist['restart']['frequency'] = 600.0
     namelist['restart']['init_altered'] = False
 
-    namelist['conditional_stats'] = {} 
+    namelist['conditional_stats'] = {}
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
@@ -956,8 +956,8 @@ def DYCOMS_RF02():
     namelist['grid']['dz'] = 5.0
 
     namelist['mpi'] = {}
-    namelist['mpi']['nprocx'] = 1
-    namelist['mpi']['nprocy'] = 1
+    namelist['mpi']['nprocx'] = 8
+    namelist['mpi']['nprocy'] = 8
     namelist['mpi']['nprocz'] = 1
 
     namelist['time_stepping'] = {}
@@ -967,14 +967,30 @@ def DYCOMS_RF02():
     namelist['time_stepping']['dt_max'] = 10.0
     namelist['time_stepping']['t_max'] = 6.0 * 3600.0
 
+    #namelist['thermodynamics'] = {}
+    #namelist['thermodynamics']['latentheat'] = 'constant'
+
+    #namelist['microphysics'] = {}
+    #namelist['microphysics']['scheme'] = 'None_SA'
+    #namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+    #namelist['microphysics']['cloud_sedimentation'] = False
+    #namelist['microphysics']['ccn'] = 100.0e6
+
+    #namelist['microphysics'] = {}
+    #namelist['microphysics']['scheme'] = 'CLIMA_liquid_1M'
+
     namelist['thermodynamics'] = {}
     namelist['thermodynamics']['latentheat'] = 'constant'
 
     namelist['microphysics'] = {}
-    namelist['microphysics']['scheme'] = 'SB_Liquid'
     namelist['microphysics']['phase_partitioning'] = 'liquid_only'
-    namelist['microphysics']['cloud_sedimentation'] = True
-    namelist['microphysics']['ccn'] = 55.0e6
+    namelist['microphysics']['cloud_sedimentation'] = False
+    namelist['microphysics']['ccn'] = 70.0e6
+    namelist['microphysics']['scheme'] = 'SB_Liquid'
+    namelist['microphysics']['SB_Liquid'] = {}
+
+    namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
+    namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
@@ -1003,17 +1019,17 @@ def DYCOMS_RF02():
     namelist['restart']['output'] = True
     namelist['restart']['init_from'] = False
     namelist['restart']['input_path'] = './'
-    namelist['restart']['frequency'] = 600.0
+    namelist['restart']['frequency'] = 30 * 60.0
     namelist['restart']['init_altered'] = False
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
     namelist['stats_io']['auxiliary'] = ['DYCOMS', 'Flux', 'TKE']
-    namelist['stats_io']['frequency'] = 60.0
+    namelist['stats_io']['frequency'] = 20 * 60.0
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
-    namelist['fields_io']['frequency'] = 3600.0
+    namelist['fields_io']['frequency'] = 6 * 3600.0
     namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity', 'buoyancy', 'thetali']
 
     namelist['visualization'] = {}
@@ -1021,9 +1037,14 @@ def DYCOMS_RF02():
 
     namelist['conditional_stats'] ={}
     namelist['conditional_stats']['classes'] = ['Spectra']
-    namelist['conditional_stats']['frequency'] = 600.0
+    namelist['conditional_stats']['frequency'] = 20 * 60.0
     namelist['conditional_stats']['stats_dir'] = 'cond_stats'
 
+    namelist['tracers'] = {}
+    namelist['tracers']['use_tracers'] = True
+    namelist['tracers']['scheme'] = 'UpdraftTracers'
+    namelist['tracers']['use_lcl_tracers'] = False
+    namelist['tracers']['timescale'] = 15.0
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'DYCOMS_RF02'
@@ -2091,7 +2112,7 @@ def write_file(namelist, new_uuid = True):
         print('FatalError')
         exit()
 
-    if new_uuid: 
+    if new_uuid:
         namelist['meta']['uuid'] = str(uuid.uuid4())
 
     fh = open(namelist['meta']['simname'] + '.in', 'w')
