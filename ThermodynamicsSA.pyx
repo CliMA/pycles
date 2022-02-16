@@ -125,7 +125,6 @@ cdef class ThermodynamicsSA:
         # NS.add_ts('rh_max', Gr, Pa)
         # NS.add_ts('rh_min', Gr, Pa)
 
-
         NS.add_profile('cloud_fraction', Gr, Pa)
         NS.add_profile('cloud_cum_fraction', Gr, Pa)
         NS.add_ts('cloud_fraction', Gr, Pa)
@@ -134,8 +133,7 @@ cdef class ThermodynamicsSA:
         NS.add_ts('cloud_top', Gr, Pa)
         NS.add_ts('cloud_base', Gr, Pa)
         NS.add_ts('lwp', Gr, Pa)
-
-
+        NS.add_ts('iwp', Gr, Pa)
         return
 
     cpdef entropy(self, double p0, double T, double qt, double ql, double qi):
@@ -417,7 +415,7 @@ cdef class ThermodynamicsSA:
             Py_ssize_t ql_shift = DV.get_varshift(Gr, 'ql')
             Py_ssize_t qi_shift = DV.get_varshift(Gr, 'qi')
             double[:, :] ql_pencils
-            double[:, :] qi_pencils 
+            double[:, :] qi_pencils
             # Cloud indicator
             double[:] ci
             double[:] ci_threshold
@@ -434,7 +432,9 @@ cdef class ThermodynamicsSA:
 
             double dz = Gr.dims.dx[2]
             double[:] lwp
+            double[:] iwp
             double lwp_weighted_sum = 0.0
+            double iwp_weighted_sum = 0.0
 
             double[:] cf_profile = np.zeros((Gr.dims.n[2]), dtype=np.double, order='c')
             double[:] cf_cum_profile = np.zeros((Gr.dims.n[2]), dtype=np.double, order='c')
@@ -470,7 +470,7 @@ cdef class ThermodynamicsSA:
 
         ci_weighted_sum = Pa.domain_scalar_sum(ci_weighted_sum)
         NS.write_ts('cloud_fraction', ci_weighted_sum, Pa)
-        
+
         # 062119[ZS]: Compute all or nothing cloud fraction for qc > 1.e-5
         ci_threshold = np.empty((z_pencil.n_local_pencils), dtype=np.double, order='c')
         with nogil:
@@ -538,17 +538,23 @@ cdef class ThermodynamicsSA:
 
         # Compute liquid water path
         lwp = np.empty((z_pencil.n_local_pencils), dtype=np.double, order='c')
+        iwp = np.empty((z_pencil.n_local_pencils), dtype=np.double, order='c')
         with nogil:
             for pi in xrange(z_pencil.n_local_pencils):
                 lwp[pi] = 0.0
+                iwp[pi] = 0.0
                 for k in xrange(kmin, kmax):
                     lwp[pi] += RS.rho0_half[k] * ql_pencils[pi, k] * dz * Gr.dims.met_half[k]
+                    iwp[pi] += RS.rho0_half[k] * qi_pencils[pi, k] * dz * Gr.dims.met_half[k]
 
             for pi in xrange(z_pencil.n_local_pencils):
                 lwp_weighted_sum += lwp[pi]
+                iwp_weighted_sum += iwp[pi]
             lwp_weighted_sum /= mean_divisor
+            iwp_weighted_sum /= mean_divisor
 
         lwp_weighted_sum = Pa.domain_scalar_sum(lwp_weighted_sum)
+        iwp_weighted_sum = Pa.domain_scalar_sum(iwp_weighted_sum)
         NS.write_ts('lwp', lwp_weighted_sum, Pa)
-
+        NS.write_ts('iwp', iwp_weighted_sum, Pa)
         return
