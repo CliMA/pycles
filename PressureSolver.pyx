@@ -28,19 +28,6 @@ cdef class PressureSolver:
         DV.add_variables('perturbation_pressure_potential', 'm^2 s^-2', r'p', 'density dynamic pressure', 'sym', PM)
         DV.add_variables('divergence', '1/s', r'd', '3d divergence', 'sym',PM)
 
-        DV.add_variables('wBudget_PressureGradient', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
-        DV.add_variables('wBudget_PressureGradient_RK0', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
-        DV.add_variables('wBudget_PressureGradient_RK1', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
-        DV.add_variables('wBudget_PressureGradient_RK2', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
-        DV.add_variables('wBudget_PressureGradient_RK3', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
-        DV.add_variables('wBudget_PressureGradient_RK4', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
-        DV.add_variables('wBudget_removeHorAve', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
-        DV.add_variables('wBudget_removeHorAve_RK0', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
-        DV.add_variables('wBudget_removeHorAve_RK1', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
-        DV.add_variables('wBudget_removeHorAve_RK2', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
-        DV.add_variables('wBudget_removeHorAve_RK3', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
-        DV.add_variables('wBudget_removeHorAve_RK4', 'm/s', r'pgrad', 'pressure gradient', 'sym', PM)
-
         self.divergence = np.zeros(Gr.dims.npl,dtype=np.double, order='c')
         #self.poisson_solver = PressureFFTSerial.PressureFFTSerial()
         self.poisson_solver = PressureFFTParallel.PressureFFTParallel()
@@ -67,7 +54,7 @@ cdef class PressureSolver:
 
         #Remove mean u3
         cdef double [:] u3_mean = PM.HorizontalMean(Gr,&PV.values[w_shift])
-        remove_mean_u3(&Gr.dims,&u3_mean[0],&PV.values[w_shift],&DV.values[whor_shift])
+        remove_mean_u3(&Gr.dims,&u3_mean[0],&PV.values[w_shift])
 
         #Zero the divergence array [Perhaps we can replace this with a C-Call to Memset]
         with nogil:
@@ -89,7 +76,7 @@ cdef class PressureSolver:
 
         #Apply pressure correction
         second_order_pressure_correction(&Gr.dims,&DV.values[pres_shift],
-                                         &PV.values[u_shift],&PV.values[v_shift],&PV.values[w_shift],&DV.values[dpdz_shift])
+                                         &PV.values[u_shift],&PV.values[v_shift],&PV.values[w_shift])
 
 
         #Zero the divergence array [Perhaps we can replace this with a C-Call to Memset]
@@ -108,7 +95,7 @@ cdef class PressureSolver:
 
         return
 
-cdef void second_order_pressure_correction(Grid.DimStruct *dims, double *p, double *u, double *v, double *w ,double *dpdz ):
+cdef void second_order_pressure_correction(Grid.DimStruct *dims, double *p, double *u, double *v, double *w):
 
     cdef:
         Py_ssize_t imin = 0
@@ -134,12 +121,11 @@ cdef void second_order_pressure_correction(Grid.DimStruct *dims, double *p, doub
                 u[ijk] -=  (p[ijk + ip1] - p[ijk])*dims.dxi[0]
                 v[ijk] -=  (p[ijk + jp1] - p[ijk])*dims.dxi[1]
                 w[ijk] -=  (p[ijk + kp1] - p[ijk])*dims.dxi[2] * dims.imetl[k] #(p[ijk + kp1] - p[ijk])*dims.dxi[2]
-                dpdz[ijk] = -(p[ijk + kp1] - p[ijk])*dims.dxi[2] * dims.imetl[k]
 
     return
 
 
-cdef void remove_mean_u3(Grid.DimStruct *dims, double *u3_mean, double *velocity, double *whor):
+cdef void remove_mean_u3(Grid.DimStruct *dims, double *u3_mean, double *velocity):
 
     cdef:
         Py_ssize_t imin = 0
@@ -161,7 +147,6 @@ cdef void remove_mean_u3(Grid.DimStruct *dims, double *u3_mean, double *velocity
                 for k in xrange(kmin,kmax):
                      ijk = ishift + jshift + k
                      velocity[ijk] = velocity[ijk] - u3_mean[k]
-                     whor[ijk] = -u3_mean[k]
 
     return
 

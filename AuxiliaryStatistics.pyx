@@ -85,8 +85,6 @@ class CumulusStatistics:
             NS.add_profile('fraction_'+cond,Gr,Pa)
             NS.add_profile('w_'+cond,Gr,Pa)
             NS.add_profile('w2_'+cond,Gr,Pa)
-            NS.add_profile('dyn_pressure_'+cond,Gr,Pa)
-            NS.add_profile('buoyancy_'+cond,Gr,Pa)
             for scalar in scalars:
                 NS.add_profile(scalar+'_'+cond,Gr,Pa)
                 NS.add_profile(scalar+'2_'+cond,Gr,Pa)
