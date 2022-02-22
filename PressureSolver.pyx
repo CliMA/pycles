@@ -47,11 +47,6 @@ cdef class PressureSolver:
             Py_ssize_t w_shift = PV.get_varshift(Gr,'w')
             Py_ssize_t pres_shift = DV.get_varshift(Gr,'perturbation_pressure_potential')
             Py_ssize_t div_shift = DV.get_varshift(Gr,'divergence')
-
-            Py_ssize_t dpdz_shift = DV.get_varshift(Gr,'wBudget_PressureGradient')
-            Py_ssize_t whor_shift = DV.get_varshift(Gr,'wBudget_removeHorAve')
-
-
         #Remove mean u3
         cdef double [:] u3_mean = PM.HorizontalMean(Gr,&PV.values[w_shift])
         remove_mean_u3(&Gr.dims,&u3_mean[0],&PV.values[w_shift])
