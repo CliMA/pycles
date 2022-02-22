@@ -22,7 +22,7 @@ cdef class VisualizationOutput:
 
         try:
             outpath = str(os.path.join(str(namelist['output']['output_root'])
-                                   + 'Output.' + str(namelist['meta']['simname']) + '.' + self.uuid[-10:]))
+                                   + 'Output.' + str(namelist['meta']['simname']) + '.' + self.uuid[:]))
             self.vis_path = os.path.join(outpath, 'Visualization')
         except:
             self.vis_path = './Visualization.' + self.uuid[:]
@@ -194,7 +194,7 @@ cdef class VisualizationOutput:
                     del reduced_var
 
                     #Now output a horizontal slice
-                    k = 4 
+                    k = 4
                     local_lwp = np.zeros((Gr.dims.n[0], Gr.dims.n[1]), dtype=np.double, order='c')
                     reduced_lwp = np.zeros((Gr.dims.n[0], Gr.dims.n[1]), dtype=np.double, order='c')
                     with nogil:
