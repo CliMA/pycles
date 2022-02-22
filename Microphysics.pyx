@@ -46,11 +46,11 @@ cdef class No_Microphysics_Dry:
 cdef class No_Microphysics_SA:
     def __init__(self, ParallelMPI.ParallelMPI Par, LatentHeat LH, namelist):
         LH.Lambda_fp = lambda_constant
-        LH.L_fp = latent_heat_variable
+        LH.L_fp = latent_heat_variable_with_T
         self.thermodynamics_type = 'SA'
         #also set local versions
         self.Lambda_fp = lambda_constant
-        self.L_fp = latent_heat_variable
+        self.L_fp = latent_heat_variable_with_T
 
         # Extract case-specific parameter values from the namelist
         # Get number concentration of cloud condensation nuclei (1/m^3)
@@ -179,11 +179,11 @@ cdef class Microphysics_SB_Liquid:
     def __init__(self, ParallelMPI.ParallelMPI Par, LatentHeat LH, namelist):
         # Create the appropriate linkages to the bulk thermodynamics
         LH.Lambda_fp = lambda_constant
-        LH.L_fp = latent_heat_variable
+        LH.L_fp = latent_heat_variable_with_T
         self.thermodynamics_type = 'SA'
         #also set local versions
         self.Lambda_fp =  lambda_constant
-        self.L_fp = latent_heat_variable
+        self.L_fp = latent_heat_variable_with_T
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Par)
 
@@ -561,11 +561,11 @@ cdef class Microphysics_CLIMA_1M:
     def __init__(self, ParallelMPI.ParallelMPI Par, LatentHeat LH, namelist):
         # Create the appropriate linkages to the bulk thermodynamics
         LH.Lambda_fp = lambda_T_clima
-        LH.L_fp = latent_heat_T
+        LH.L_fp = latent_heat_variable_with_T
         self.thermodynamics_type = 'SA'
         #also set local versions
         self.Lambda_fp = lambda_T_clima
-        self.L_fp = latent_heat_T
+        self.L_fp = latent_heat_variable_with_T
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Par)
 
@@ -710,14 +710,13 @@ cdef class Microphysics_CLIMA_1M:
             Py_ssize_t wqr_shift = DV.get_varshift(Gr, 'w_qr')
             Py_ssize_t wqs_shift = DV.get_varshift(Gr, 'w_qs')
 
-            double[:] ql_tendency = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
-            double[:] qi_tendency = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
-            double[:] qr_tendency = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
-            double[:] qs_tendency = np.empty((Gr.dims.npg,), dtype=np.double, order='c')
+            double[:] ql_tendency = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+            double[:] qi_tendency = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+            double[:] qr_tendency = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+            double[:] qs_tendency = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
+            double[:] dummy       = np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
 
             double[:] tmp
-
-            double[:] dummy =  np.zeros((Gr.dims.npg,), dtype=np.double, order='c')
 
             double dz = Gr.dims.dx[2]
             double[:, :] qr_pencils
@@ -886,11 +885,11 @@ cdef class Microphysics_T_Liquid:
     def __init__(self, ParallelMPI.ParallelMPI Par, LatentHeat LH, namelist):
 
         LH.Lambda_fp = lambda_constant
-        LH.L_fp = latent_heat_variable
+        LH.L_fp = latent_heat_variable_with_T
         self.thermodynamics_type = 'SA'
         #also set local versions
         self.Lambda_fp = lambda_constant
-        self.L_fp = latent_heat_variable
+        self.L_fp = latent_heat_variable_with_T
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Par)
         return

@@ -32,7 +32,7 @@ cdef class NetCDFIO_Stats:
         self.frequency = namelist['stats_io']['frequency']
 
         # Setup the statistics output path
-        outpath = str(os.path.join(namelist['output']['output_root'] + 'Output.' + namelist['meta']['simname'] + '.' + self.uuid[-10:]))
+        outpath = str(os.path.join(namelist['output']['output_root'] + 'Output.' + namelist['meta']['simname'] + '.' + self.uuid[:]))
 
         if Pa.rank == 0:
             try:
@@ -417,7 +417,7 @@ cdef class NetCDFIO_Fields:
             Py_ssize_t imax = Gr.dims.nlg[0] - Gr.dims.gw
             Py_ssize_t jmax = Gr.dims.nlg[1] - Gr.dims.gw
             Py_ssize_t kmax = Gr.dims.nlg[2] - Gr.dims.gw
-            Py_ssize_t var_shift, qi_shift, ql_shift, qr_shift, qs_shift 
+            Py_ssize_t var_shift, qi_shift, ql_shift, qr_shift, qs_shift
             double[:] data = np.empty((Gr.dims.npl,), dtype=np.double, order='c')
             Py_ssize_t count
         for name in PV.name_index.keys():
@@ -432,7 +432,7 @@ cdef class NetCDFIO_Fields:
                             jshift = j * jstride
                             for k in range(kmin, kmax):
                                 ijk = ishift + jshift + k
-                                data[count] = PV.values[var_shift + ijk] * Rs.rho0[k] 
+                                data[count] = PV.values[var_shift + ijk] * Rs.rho0[k]
                                 count += 1
                 self.write_field(name+'_vr', data)
 
@@ -455,7 +455,7 @@ cdef class NetCDFIO_Fields:
 
 
         if 'ql' in DV.name_index.keys() and 'qi' in DV.name_index.keys():
-            ql_shift = DV.get_varshift(Gr, 'ql') 
+            ql_shift = DV.get_varshift(Gr, 'ql')
             qi_shift = DV.get_varshift(Gr, 'qi')
             self.add_field('qc_eq_vr')
             count = 0
@@ -466,12 +466,12 @@ cdef class NetCDFIO_Fields:
                         jshift = j * jstride
                         for k in range(kmin, kmax):
                             ijk = ishift + jshift + k
-                            data[count] = (DV.values[ql_shift + ijk] + DV.values[qi_shift + ijk])* Rs.rho0[k] 
+                            data[count] = (DV.values[ql_shift + ijk] + DV.values[qi_shift + ijk])* Rs.rho0[k]
                             count += 1
             self.write_field('qc_eq_vr', data)
-            if 'qs' in PV.name_index.keys(): 
-                qs_shift = PV.get_varshift(Gr, 'qs') 
-                count = 0 
+            if 'qs' in PV.name_index.keys():
+                qs_shift = PV.get_varshift(Gr, 'qs')
+                count = 0
                 self.add_field('qc_noneq_vr')
                 with nogil:
                     for i in range(imin, imax):
@@ -480,8 +480,8 @@ cdef class NetCDFIO_Fields:
                             jshift = j * jstride
                             for k in range(kmin, kmax):
                                 ijk = ishift + jshift + k
-                                data[count] = (DV.values[ql_shift + ijk] + DV.values[qi_shift + ijk] + PV.values[qs_shift + ijk])* Rs.rho0[k] 
-                                count += 1                
+                                data[count] = (DV.values[ql_shift + ijk] + DV.values[qi_shift + ijk] + PV.values[qs_shift + ijk])* Rs.rho0[k]
+                                count += 1
 
                 self.write_field('qc_noneq_vr', data)
 
@@ -489,7 +489,7 @@ cdef class NetCDFIO_Fields:
 
 
         return
-     
+
 
 
     cpdef dump_diagnostic_variables(self, Grid.Grid Gr, DiagnosticVariables.DiagnosticVariables DV, ParallelMPI.ParallelMPI Pa):

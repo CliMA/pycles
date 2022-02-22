@@ -968,19 +968,19 @@ def DYCOMS_RF02():
     namelist['time_stepping']['t_max'] = 6.0 * 3600.0
 
     namelist['thermodynamics'] = {}
-    namelist['thermodynamics']['latentheat'] = 'constant'
-
-    namelist['microphysics'] = {}
-    namelist['microphysics']['phase_partitioning'] = 'liquid_only'
-    namelist['microphysics']['cloud_sedimentation'] = False
-    namelist['microphysics']['ccn'] = 70.0e6
-    namelist['microphysics']['scheme'] = 'SB_Liquid'
-    namelist['microphysics']['SB_Liquid'] = {}
-    namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
-    namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
+    namelist['thermodynamics']['latentheat'] = 'variable'
 
     #namelist['microphysics'] = {}
-    #namelist['microphysics']['scheme'] = 'CLIMA_1M'
+    #namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+    #namelist['microphysics']['cloud_sedimentation'] = False
+    #namelist['microphysics']['ccn'] = 70.0e6
+    #namelist['microphysics']['scheme'] = 'SB_Liquid'
+    #namelist['microphysics']['SB_Liquid'] = {}
+    #namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
+    #namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
+
+    namelist['microphysics'] = {}
+    namelist['microphysics']['scheme'] = 'CLIMA_1M'
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'

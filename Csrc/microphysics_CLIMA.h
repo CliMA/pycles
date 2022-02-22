@@ -148,80 +148,62 @@ void CLIMA_conv_q_ice_to_q_sno_no_supersat(double q_ice, double* qs_tendency_aut
   return;
 }
 
-void CLIMA_accretion_liq_rai(double q_liq, double q_rai, double rho,
-                             double* ql_tendency_acc,
-                             double* qr_tendency_acc){
-  if(q_liq > 0. && q_rai > 0.){
+void CLIMA_accretion(double _q_liq, double _q_ice, double _q_rai, double _q_sno,
+                     double rho, double T,
+                     double* ql_tendency_acc,
+                     double* qi_tendency_acc,
+                     double* qr_tendency_acc,
+                     double* qs_tendency_acc){
 
+    double q_liq = fmax(0., _q_liq);
+    double q_ice = fmax(0., _q_ice);
+    double q_rai = fmax(0., _q_rai);
+    double q_sno = fmax(0., _q_sno);
+
+    double lambda_ice = CLIMA_lambda(q_ice, rho, n0_ice, m0_ice, me_ice, r0_ice, Chi_m_ice, Delta_m_ice);
     double lambda_rai = CLIMA_lambda(q_rai, rho, n0_rai, m0_rai, me_rai, r0_rai, Chi_m_rai, Delta_m_rai);
+    double lambda_sno = CLIMA_lambda(q_sno, rho, CLIMA_n0_sno(q_sno, rho), m0_sno, me_sno, r0_sno, Chi_m_sno, Delta_m_sno);
 
-    double tmp =
+    double v_rai = CLIMA_terminal_velocity_rai(rho, q_rai);
+    double v_sno = CLIMA_terminal_velocity_sno(rho, q_sno);
+
+    double tmp = 0.;
+
+    // accretion qr ql
+    tmp =
       q_liq * E_liq_rai * n0_rai * a0_rai * CLIMA_v0_rai(rho) * Chi_a_rai * Chi_v_rai / lambda_rai *
       tgamma(ae_rai + ve_rai + Delta_a_rai + Delta_v_rai + 1.) /
       pow(lambda_rai * r0_rai, ae_rai + ve_rai + Delta_a_rai + Delta_v_rai);
+    *qr_tendency_acc =  tmp;
+    *ql_tendency_acc = -tmp;
 
-    *qr_tendency_acc += tmp;
-    *ql_tendency_acc -= tmp;
-  }
-  return;
-}
-
-void CLIMA_accretion_ice_sno(double q_ice, double q_sno, double rho,
-                             double* qi_tendency_acc,
-                             double* qs_tendency_acc){
-  if(q_ice > 0. && q_sno > 0.){
-
-    double lambda_sno = CLIMA_lambda(q_sno, rho, CLIMA_n0_sno(q_sno, rho), m0_sno, me_sno, r0_sno, Chi_m_sno, Delta_m_sno);
-
-    double tmp =
+    // accretion qs qi
+    tmp =
       q_ice * E_ice_sno * CLIMA_n0_sno(q_sno, rho) * a0_sno * v0_sno * Chi_a_sno * Chi_v_sno / lambda_sno *
       tgamma(ae_sno + ve_sno + Delta_a_sno + Delta_v_sno + 1.) /
       pow(lambda_sno * r0_sno, ae_sno + ve_sno + Delta_a_sno + Delta_v_sno);
+    *qs_tendency_acc = tmp;
+    *qi_tendency_acc = -tmp;
 
-    *qs_tendency_acc += tmp;
-    *qi_tendency_acc -= tmp;
-  }
-  return;
-}
-
-void CLIMA_accretion_ice_rai(double q_ice, double q_rai, double rho,
-                             double* qi_tendency_acc,
-                             double* qr_tendency_acc,
-                             double* qs_tendency_acc){
-  if(q_ice > 0. && q_rai > 0.){
-
-    double lambda_rai = CLIMA_lambda(q_rai, rho, n0_rai, m0_rai, me_rai, r0_rai, Chi_m_rai, Delta_m_rai);
-    double lambda_ice = CLIMA_lambda(q_ice, rho, n0_ice, m0_ice, me_ice, r0_ice, Chi_m_ice, Delta_m_ice);
-
-    double tmp_ice_sink =
+    // accretion qr qi
+    double acc_q_ice_q_rai_ice_sink =
       q_ice * E_ice_rai * n0_rai * a0_rai * CLIMA_v0_rai(rho) * Chi_a_rai * Chi_v_rai / lambda_rai *
       tgamma(ae_rai + ve_rai + Delta_a_rai + Delta_v_rai + 1.) /
       pow(lambda_rai * r0_rai, ae_rai + ve_rai + Delta_a_rai + Delta_v_rai);
-
-    double tmp_rain_sink = E_ice_rai / rho * n0_rai * n0_ice * m0_rai * a0_rai * CLIMA_v0_rai(rho) *
+    double acc_q_ice_q_rai_rain_sink = E_ice_rai / rho * n0_rai * n0_ice * m0_rai * a0_rai * CLIMA_v0_rai(rho) *
       Chi_m_rai * Chi_a_rai * Chi_v_rai / lambda_ice / lambda_rai *
       tgamma(me_rai + ae_rai + ve_rai + Delta_m_rai + Delta_a_rai + Delta_v_rai +1.) /
       pow(r0_rai * lambda_rai, me_rai + ae_rai + ve_rai + Delta_m_rai + Delta_a_rai + Delta_v_rai);
+    *qr_tendency_acc -= acc_q_ice_q_rai_rain_sink;
+    *qs_tendency_acc += acc_q_ice_q_rai_rain_sink + acc_q_ice_q_rai_ice_sink;
+    *qi_tendency_acc -= acc_q_ice_q_rai_ice_sink;
 
-    *qs_tendency_acc += tmp_ice_sink + tmp_rain_sink;
-    *qi_tendency_acc -= tmp_ice_sink;
-    *qr_tendency_acc -= tmp_rain_sink;
-  }
-  return;
-}
-
-void CLIMA_accretion_liq_sno(double q_liq, double q_sno, double rho, double T,
-                             double* ql_tendency_acc,
-                             double* qr_tendency_acc,
-                             double* qs_tendency_acc){
-  if(q_liq > 0. && q_sno > 0.){
-
-    double lambda_sno = CLIMA_lambda(q_sno, rho, CLIMA_n0_sno(q_sno, rho), m0_sno, me_sno, r0_sno, Chi_m_sno, Delta_m_sno);
-
-    double tmp = -q_liq * E_liq_sno * CLIMA_n0_sno(q_sno, rho) * a0_sno * v0_sno * Chi_a_sno * Chi_v_sno / lambda_sno *
+    // accretion qs ql
+    tmp = -q_liq * E_liq_sno * CLIMA_n0_sno(q_sno, rho) * a0_sno * v0_sno * Chi_a_sno * Chi_v_sno / lambda_sno *
       tgamma(ae_sno + ve_sno + Delta_a_sno + Delta_v_sno + 1.) /
       pow(lambda_sno * r0_sno, ae_sno + ve_sno + Delta_a_sno + Delta_v_sno);
 
+    // accretion qr qs
     if(T>T_freeze){
      double L_f = CLIMA_latent_heat_fusion(T);
      double alpha = cv_l / L_f * (T - T_freeze);
@@ -233,22 +215,8 @@ void CLIMA_accretion_liq_sno(double q_liq, double q_sno, double rho, double T,
      *qs_tendency_acc -= tmp;
      *ql_tendency_acc += tmp;
     }
-  }
-  return;
-}
-
-void CLIMA_accretion_snow_rain(double q_rai, double q_sno, double rho, double T,
-                               double* qr_tendency_acc, double* qs_tendency_acc){
-  if (q_rai > 0. && q_sno > 0.){
-
-    double lambda_rai = CLIMA_lambda(q_rai, rho, n0_rai, m0_rai, me_rai, r0_rai, Chi_m_rai, Delta_m_rai);
-    double lambda_sno = CLIMA_lambda(q_sno, rho, CLIMA_n0_sno(q_sno, rho), m0_sno, me_sno, r0_sno, Chi_m_sno, Delta_m_sno);
-
-    double v_rai = CLIMA_terminal_velocity_rai(rho, q_rai);
-    double v_sno = CLIMA_terminal_velocity_sno(rho, q_sno);
-
     if(T>T_freeze){
-      double tmp = pi / rho * n0_rai * CLIMA_n0_sno(q_sno, rho) * m0_sno * Chi_m_sno * E_rai_sno *
+       tmp = pi / rho * n0_rai * CLIMA_n0_sno(q_sno, rho) * m0_sno * Chi_m_sno * E_rai_sno *
         fabs(v_rai - v_sno) / pow(r0_sno, me_sno + Delta_m_sno) * (
           2. * tgamma(me_sno + Delta_m_sno + 1.) / pow(lambda_rai, 3) / pow(lambda_sno, me_sno + Delta_m_sno + 1) +
           2. * tgamma(me_sno + Delta_m_sno + 2.) / pow(lambda_rai, 2) / pow(lambda_sno, me_sno + Delta_m_sno + 2) +
@@ -257,7 +225,7 @@ void CLIMA_accretion_snow_rain(double q_rai, double q_sno, double rho, double T,
        *qs_tendency_acc -= tmp;
     }
     else{
-      double tmp = pi / rho * CLIMA_n0_sno(q_sno, rho) * n0_rai * m0_rai * Chi_m_rai * E_rai_sno *
+      tmp = pi / rho * CLIMA_n0_sno(q_sno, rho) * n0_rai * m0_rai * Chi_m_rai * E_rai_sno *
         fabs(v_rai - v_sno) / pow(r0_rai, me_rai + Delta_m_rai) * (
           2. * tgamma(me_rai + Delta_m_rai + 1.) / pow(lambda_sno, 3) / pow(lambda_rai, me_rai + Delta_m_rai + 1) +
           2. * tgamma(me_rai + Delta_m_rai + 2.) / pow(lambda_sno, 2) / pow(lambda_rai, me_rai + Delta_m_rai + 2) +
@@ -265,8 +233,7 @@ void CLIMA_accretion_snow_rain(double q_rai, double q_sno, double rho, double T,
       *qs_tendency_acc += tmp;
       *qr_tendency_acc -= tmp;
     }
-  }
-  return;
+    return;
 }
 
 void CLIMA_rain_evaporation(double q_tot, double q_liq, double q_ice, double q_rai, double rho, double T, double p0,
@@ -415,9 +382,12 @@ void CLIMA_microphysics_sources(const struct DimStruct *dims, struct LookupStruc
                                 double* restrict qr_tendency,
                                 double* restrict qs_tendency){
 
-    double qr_tendency_tmp, ql_tendency_tmp;
-    double qs_tendency_tmp, qi_tendency_tmp;
-    double precip_formation_rate_tmp, evap_dep_sub_rate_tmp;
+    double qr_tendency_tmp = 0.;
+    double ql_tendency_tmp = 0.;
+    double qs_tendency_tmp = 0.;
+    double qi_tendency_tmp = 0.;
+    double precip_formation_rate_tmp = 0;
+    double evap_dep_sub_rate_tmp = 0;
 
     double qr_tendency_aut = 0.;
     double qs_tendency_aut = 0.;
@@ -480,11 +450,8 @@ void CLIMA_microphysics_sources(const struct DimStruct *dims, struct LookupStruc
                     CLIMA_conv_q_ice_to_q_sno_no_supersat(qi_tmp, &qs_tendency_aut);
 
                     // accretion
-                    CLIMA_accretion_liq_rai(ql_tmp, qr_tmp, density[k], &ql_tendency_acc, &qr_tendency_acc);
-                    CLIMA_accretion_ice_sno(qi_tmp, qs_tmp, density[k], &qi_tendency_acc, &qs_tendency_acc);
-                    CLIMA_accretion_ice_rai(qi_tmp, qr_tmp, density[k], &qi_tendency_acc, &qr_tendency_acc, &qs_tendency_acc);
-                    CLIMA_accretion_liq_sno(ql_tmp, qs_tmp, density[k], temperature[ijk], &ql_tendency_acc, &qr_tendency_acc, &qs_tendency_acc);
-                    CLIMA_accretion_snow_rain(qr_tmp, qs_tmp, density[k], temperature[ijk], &qr_tendency_acc, &qs_tendency_acc);
+                    CLIMA_accretion(ql_tmp, qi_tmp, qr_tmp, qs_tmp, density[k], temperature[ijk],
+                                    &ql_tendency_acc, &qi_tendency_acc, &qr_tendency_acc, &qs_tendency_acc);
 
                     // evaporation, deposition/sublimation, melting
                     CLIMA_rain_evaporation(qt_tmp, ql_tmp, qi_tmp, qr_tmp, density[k], temperature[ijk], p0[k],
@@ -496,14 +463,18 @@ void CLIMA_microphysics_sources(const struct DimStruct *dims, struct LookupStruc
                     // find the maximum substep time:
                     dt_ = dt - time_added;
                     // ... check the source term magnitudes ...
-                    ql_tendency_tmp = -qr_tendency_aut + ql_tendency_acc;
-                    qi_tendency_tmp = -qs_tendency_aut + qs_tendency_acc;
-                    qr_tendency_tmp =  qr_tendency_aut + qr_tendency_acc;
-                                      +qr_tendency_evp
-                                      +qs_tendency_melt;
-                    qs_tendency_tmp =  qs_tendency_aut + qs_tendency_acc;
-                                      +qs_tendency_dep_sub
-                                      -qs_tendency_melt;
+                    ql_tendency_tmp = -qr_tendency_aut
+                                      +ql_tendency_acc;
+                    qi_tendency_tmp = -qs_tendency_aut
+                                      +qs_tendency_acc;
+                    qr_tendency_tmp =  qr_tendency_aut
+                                      +qr_tendency_acc;
+                                      //+qr_tendency_evp
+                                      //+qs_tendency_melt;
+                    qs_tendency_tmp =  qs_tendency_aut
+                                      +qs_tendency_acc;
+                                      //+qs_tendency_dep_sub
+                                      //-qs_tendency_melt;
 
                     //... adjust the rates if necessary (factor of 1.05 is ad-hoc)
                     rate = 1.05 * ql_tendency_tmp * dt_ / (-fmax(ql_tmp, microph_eps));
@@ -516,8 +487,8 @@ void CLIMA_microphysics_sources(const struct DimStruct *dims, struct LookupStruc
                         dt_ = fmax(dt_/rate, 1.0e-3);
                     }
 
-                    precip_formation_rate_tmp += (qr_tendency_aut + qr_tendency_acc + qs_tendency_aut + qs_tendency_acc) * dt_;
-                    evap_dep_sub_rate_tmp += (qr_tendency_evp + qs_tendency_dep_sub) * dt_;
+                    //precip_formation_rate_tmp += (qr_tendency_aut + qr_tendency_acc + qs_tendency_aut + qs_tendency_acc) * dt_;
+                    //evap_dep_sub_rate_tmp += (qr_tendency_evp + qs_tendency_dep_sub) * dt_;
 
                     //integrate forward in time
                     ql_tmp += ql_tendency_tmp * dt_;
@@ -531,7 +502,6 @@ void CLIMA_microphysics_sources(const struct DimStruct *dims, struct LookupStruc
                     qi_tmp = fmax(qi_tmp, 0.0);
                     qr_tmp = fmax(qr_tmp, 0.0);
                     qs_tmp = fmax(qs_tmp, 0.0);
-
                     qt_tmp = qv_tmp + ql_tmp + qi_tmp;
 
                     time_added += dt_ ;
@@ -766,13 +736,10 @@ void CLIMA_accretion_wrapper(const struct DimStruct *dims,
                 const double qr_tmp = fmax(qr[ijk], 0.0);
                 const double qs_tmp = fmax(qs[ijk], 0.0);
 
-                CLIMA_accretion_liq_rai(ql_tmp, qr_tmp, density[k], &ql_tendency_acc[ijk], &qr_tendency_acc[ijk]);
-                CLIMA_accretion_ice_sno(qi_tmp, qs_tmp, density[k], &qi_tendency_acc[ijk], &qs_tendency_acc[ijk]);
-                CLIMA_accretion_ice_rai(qi_tmp, qr_tmp, density[k], &qi_tendency_acc[ijk], &qr_tendency_acc[ijk], &qs_tendency_acc[ijk]);
-                CLIMA_accretion_liq_sno(
-                    ql_tmp, qs_tmp, density[k], temperature[ijk], &ql_tendency_acc[ijk], &qr_tendency_acc[ijk], &qs_tendency_acc[ijk]
-                );
-                CLIMA_accretion_snow_rain(qr_tmp, qs_tmp, density[k], temperature[ijk], &qr_tendency_acc[ijk], &qs_tendency_acc[ijk]);
+                CLIMA_accretion(
+                    ql_tmp, qi_tmp, qr_tmp, qs_tmp, density[k], temperature[ijk],
+                    &ql_tendency_acc[ijk], &qi_tendency_acc[ijk], &qr_tendency_acc[ijk], &qs_tendency_acc[ijk]
+               );
             }
         }
     }
