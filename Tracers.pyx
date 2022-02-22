@@ -400,7 +400,6 @@ cdef class UpdraftTracers:
             double [:] w_half = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
             double [:] dpalphadz = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
             double [:] wpz_half = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
-            double [:] whor_half = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
 
             double [:] mean = Pa.HorizontalMean(Gr, &PV.values[c_shift])
             double [:] mean_square = Pa.HorizontalMeanofSquares(Gr, &PV.values[c_shift], &PV.values[c_shift])
@@ -449,7 +448,6 @@ cdef class UpdraftTracers:
                         v_half[ijk] = 0.5 * (PV.values[v_shift+ijk-jstride] + PV.values[v_shift+ijk])
                         w_half[ijk] = 0.5 * (PV.values[w_shift+ijk-1] + PV.values[w_shift+ijk])
                         wpz_half[ijk] = 0.5 * (DV.values[pz_shift+ijk-1] + DV.values[pz_shift+ijk])
-                        whor_half[ijk] = 0.5 * (DV.values[whor_shift+ijk-1] + DV.values[whor_shift+ijk])
 
         tmp = Pa.HorizontalMean(Gr, &self.updraft_indicator[0])
         NS.write_profile('updraft_fraction', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
@@ -474,7 +472,6 @@ cdef class UpdraftTracers:
         NS.write_profile('updraft_perturbation_pressure_potential', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         tmp = Pa.HorizontalMeanConditional(Gr, &wpz_half[0], &self.updraft_indicator[0])
-        tmp = Pa.HorizontalMeanConditional(Gr, &whor_half[0], &self.updraft_indicator[0])
 
         tmp = Pa.HorizontalMeanConditional(Gr, &PV.values[q_shift], &self.updraft_indicator[0])
         NS.write_profile('updraft_qt', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
