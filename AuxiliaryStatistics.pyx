@@ -16,11 +16,8 @@ import cython
 cimport numpy as np
 import numpy as np
 from libc.math cimport sqrt
+from thermodynamic_functions cimport thetas_c
 include "parameters.pxi"
-
-cdef extern from "thermodynamic_functions.h":
-    double thetas_c(const double s, const double qt) nogil
-
 
 class AuxiliaryStatistics:
     def __init__(self, namelist):
@@ -85,8 +82,6 @@ class CumulusStatistics:
             NS.add_profile('fraction_'+cond,Gr,Pa)
             NS.add_profile('w_'+cond,Gr,Pa)
             NS.add_profile('w2_'+cond,Gr,Pa)
-            NS.add_profile('dyn_pressure_'+cond,Gr,Pa)
-            NS.add_profile('buoyancy_'+cond,Gr,Pa)
             for scalar in scalars:
                 NS.add_profile(scalar+'_'+cond,Gr,Pa)
                 NS.add_profile(scalar+'2_'+cond,Gr,Pa)
@@ -460,7 +455,7 @@ class TKEStatistics:
             Py_ssize_t v_shift = PV.get_varshift(Gr, 'v')
             Py_ssize_t w_shift = PV.get_varshift(Gr, 'w')
             Py_ssize_t b_shift = DV.get_varshift(Gr,'buoyancy')
-            Py_ssize_t p_shift = DV.get_varshift(Gr, 'perturbation_pressure_potential')
+            Py_ssize_t p_shift = DV.get_varshift(Gr, 'dynamic_pressure')
             Py_ssize_t visc_shift = DV.get_varshift(Gr, 'viscosity')
 
             double [:] uc = np.zeros(Gr.dims.nlg[0]* Gr.dims.nlg[1]* Gr.dims.nlg[2], dtype=np.double, order='c')
@@ -884,5 +879,7 @@ class FluxStatistics:
         NS.write_profile('sgs_x_flux_qt', qt_xsgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.write_profile('sgs_y_flux_qt', qt_ysgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
         NS.write_profile('sgs_z_flux_qt', qt_zsgs_mean[Gr.dims.gw:-Gr.dims.gw], Pa)
+
+
 
         return

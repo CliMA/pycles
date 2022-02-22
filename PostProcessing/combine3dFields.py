@@ -44,7 +44,7 @@ def main(path, o_path):
         n_2 = dims['n_2'][0]
 
 
-	 x = dims['x'][:]
+	x = dims['x'][:]
         y = dims['y'][:] 
         z = dims['z'][:]  
 

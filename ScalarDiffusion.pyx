@@ -91,7 +91,6 @@ cdef class ScalarDiffusion:
 
         if 'qt' in PV.name_index:
             n_qt = PV.name_index['qt']
-            s_shift = PV.get_varshift(Gr,'s')
             qt_shift = PV.get_varshift(Gr,'qt')
             t_shift = DV.get_varshift(Gr,'temperature')
             qv_shift = DV.get_varshift(Gr,'qv')

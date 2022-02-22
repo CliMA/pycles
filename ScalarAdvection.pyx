@@ -28,6 +28,10 @@ cdef extern from "scalar_advection.h":
                                     double* qt, double* qv, double* T, double* tendency, double (*lam_fp)(double),
                                     double (*L_fp)(double, double), double dx, Py_ssize_t d) nogil
 
+    void compute_qt_sedimentation_thli_source(Grid.DimStruct *dims, double *p0_half, double* rho0_half, double *flux,
+                                    double* qc, double* T, double* tendency, double (*lam_fp)(double),
+                                    double (*L_fp)(double, double), double dx, Py_ssize_t d) nogil
+
 
 cdef class ScalarAdvection:
     def __init__(self, namelist, LatentHeat LH,  ParallelMPI.ParallelMPI Pa):
@@ -66,7 +70,7 @@ cdef class ScalarAdvection:
 
         cdef:
             Py_ssize_t d, i, vel_shift,scalar_shift, scalar_count = 0, flux_shift
-            Py_ssize_t s_shift
+            Py_ssize_t s_shift, thli_shift
             Py_ssize_t t_shift = DV.get_varshift(Gr,'temperature')
             Py_ssize_t ql_shift, qv_shift, qt_shift, qc_shift
 
@@ -95,10 +99,18 @@ cdef class ScalarAdvection:
                                                &PV.tendencies[scalar_shift],Gr.dims.dx[d],d)
 
 
-                            s_shift = PV.get_varshift(Gr,'s')
-                            compute_qt_sedimentation_s_source(&Gr.dims, &Rs.p0_half[0],  &Rs.rho0_half[0], &self.flux[flux_shift],
-                                                              &PV.values[qt_shift], &DV.values[qv_shift], &DV.values[t_shift],
-                                                              &PV.tendencies[s_shift], self.Lambda_fp,self.L_fp, Gr.dims.dx[d],d)
+                            if 's' in PV.name_index:
+                                s_shift = PV.get_varshift(Gr,'s')
+                                compute_qt_sedimentation_s_source(&Gr.dims, &Rs.p0_half[0],  &Rs.rho0_half[0], &self.flux[flux_shift],
+                                                                  &PV.values[qt_shift], &DV.values[qv_shift], &DV.values[t_shift],
+                                                                  &PV.tendencies[s_shift], self.Lambda_fp,self.L_fp, Gr.dims.dx[d],d)
+                            else:
+                                thli_shift = PV.get_varshift(Gr,'thli')
+                                qc_shift =  DV.get_varshift(Gr,'qc')
+                                compute_qt_sedimentation_thli_source(&Gr.dims, &Rs.p0_half[0],  &Rs.rho0_half[0], &self.flux[flux_shift],
+                                                                  &DV.values[qc_shift], &DV.values[t_shift],
+                                                                  &PV.tendencies[thli_shift], self.Lambda_fp,self.L_fp, Gr.dims.dx[d],d)
+
                         else:
                             # print(sc_vel_name, ' detected as sedimentation velocity')
                             #First get the tendency associated with the sedimentation velocity
@@ -107,6 +119,13 @@ cdef class ScalarAdvection:
 
                             scalar_flux_divergence(&Gr.dims,&Rs.alpha0[0],&Rs.alpha0_half[0],&self.flux[flux_shift],
                                                &PV.tendencies[scalar_shift],Gr.dims.dx[d],d)
+
+                            if 's' not in PV.name_index and (PV.index_name[i] == 'qr' or PV.index_name[i] == 'qs'):
+                                thli_shift = PV.get_varshift(Gr,'thli')
+                                qc_shift =  DV.get_varshift(Gr,'qc')
+                                compute_qt_sedimentation_thli_source(&Gr.dims, &Rs.p0_half[0],  &Rs.rho0_half[0], &self.flux[flux_shift],
+                                                                  &DV.values[qc_shift], &DV.values[t_shift],
+                                                                  &PV.tendencies[thli_shift], self.Lambda_fp,self.L_fp, Gr.dims.dx[d],d)
 
                     # now the advective flux for all scalars
                     vel_shift = PV.velocity_directions[d]*Gr.dims.npg
@@ -135,4 +154,10 @@ cdef class ScalarAdvection:
                     tmp_interp[k] = 0.5*(tmp[k-1]+tmp[k])
                 NS.write_profile(PV.index_name[i] + '_flux_z', tmp_interp[Gr.dims.gw:-Gr.dims.gw], Pa)
                 scalar_count += 1
+
+
+            #print PV.index_name[i], np.amax(tmp_interp[Gr.dims.gw:-Gr.dims.gw]), np.min(tmp_interp[Gr.dims.gw:-Gr.dims.gw])
+
+
+
         return

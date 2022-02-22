@@ -1,0 +1,133 @@
+{
+    "conditional_stats": {
+        "classes": [
+            "Spectra"
+        ], 
+        "frequency": 43200.0, 
+        "stats_dir": "cond_stats"
+    }, 
+    "damping": {
+        "Rayleigh": {
+            "gamma_r": 0.01,
+            "z_d": 10000.0
+        }, 
+        "scheme": "Rayleigh"
+    }, 
+    "diffusion": {
+        "qt_entropy_source": false
+    }, 
+    "fields_io": {
+        "diagnostic_fields": [
+            "ql", 
+            "temperature", 
+            "buoyancy"
+        ], 
+        "fields_dir": "fields", 
+        "frequency": 86400.0
+    }, 
+    "grid": {
+        "dims": 3, 
+        "dx": 400.0,
+        "dy": 400.0,
+        "dz": 100.0,
+        "gw": 3, 
+        "nx": 6, 
+        "ny": 6,
+        "nz": 256
+    }, 
+    "meta": {
+        "ZGILS": {}, 
+        "casename": "GCMMean",
+        "simname": "GCMVarying", 
+        "uuid": "6ab5ffc2-ba4c-4cae-8668-85505b39ddb9"
+    }, 
+    "microphysics": {
+        "SB_Liquid": {
+            "mu_rain": 2, 
+            "nu_droplet": 2
+        }, 
+        "ccn": 100000000.0, 
+        "cloud_sedimentation": true, 
+        "phase_partitioning": "liquid_only", 
+        "scheme": "SB_Liquid"
+    }, 
+    "momentum_transport": {
+        "order": 5
+    }, 
+    "mpi": {
+        "nprocx": 1, 
+        "nprocy": 1, 
+        "nprocz": 1
+    }, 
+    "output": {
+        "output_root": "./"
+    }, 
+    "radiation": {
+        "RRTM": {
+            "frequency": 90.0
+        }
+    }, 
+    "restart": {
+        "delete_old": true, 
+        "frequency": 360.0,
+        "init_from": true, 
+        "input_path": "/Users/kpressel/PycharmProjects/pycles_new_master/Output.GCMVarying.9ddb9/Restart/360", 
+        "output": true, 
+        "times_retained": [360,
+            86400, 
+            172800, 
+            259200, 
+            345600, 
+            432000, 
+            518400, 
+            604800, 
+            691200, 
+            777600, 
+            864000, 
+            950400, 
+            1036800, 
+            1123200, 
+            1209600, 
+            1296000, 
+            1382400, 
+            1468800, 
+            1555200, 
+            1641600, 
+            1728000
+        ]
+    }, 
+    "scalar_transport": {
+        "order": 5, 
+        "order_sedimentation": 5
+    }, 
+    "sgs": {
+        "Smagorinsky": {
+            "iles": false
+        }, 
+        "scheme": "Smagorinsky"
+    }, 
+    "stats_io": {
+        "auxiliary": [
+            "Flux"
+        ], 
+        "frequency": 600.0,
+        "stats_dir": "stats",
+        "segment": true
+    },
+    "thermodynamics": {
+        "latentheat": "variable",
+        "s_prognostic": false
+    }, 
+    "time_stepping": {
+        "cfl_limit": 0.7, 
+        "dt_initial": 1.0, 
+        "dt_max": 10.0, 
+        "t_max": 1728000.0, 
+        "ts_type": 2
+    },
+    "gcm":{
+    "file": "./forcing/0_66x/f_data_tv_70.pkl",
+    "lw_tau0_eqtr": 4.8,
+    "lw_tau0_pole": 1.2
+    }
+}
