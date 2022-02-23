@@ -67,6 +67,12 @@ cdef class TimeStepping:
         except:
             self.acceleration_factor = 1.0
 
+        try:
+            self.statIOdt = namelist['stats_io']['frequency']
+        except:
+            Pa.root_print('statsIOfrequency set to dt_max')
+            self.statIOdt = self.dt_max
+
         #Now initialize the correct time stepping routine
         if self.ts_type == 2:
             self.initialize_second(PV)
@@ -285,7 +291,6 @@ cdef class TimeStepping:
                             w = fmax(fabs( DV.values[DV.sedv_index[isedv]*Gr.dims.npg + ijk ] + PV.values[w_shift+ijk]), w)
 
                         cfl_max_local = fmax(cfl_max_local, self.dt * (fabs(PV.values[u_shift + ijk])*dxi[0] + fabs(PV.values[v_shift+ijk])*dxi[1] + w*(1.0/Gr.dzpl[k])))
-                        #cfl_max_local = fmax(cfl_max_local, self.dt * (fabs(PV.values[u_shift + ijk])*dxi[0] + fabs(PV.values[v_shift+ijk])*dxi[1] + w*dxi[2]))
 
         mpi.MPI_Allreduce(&cfl_max_local,&self.cfl_max,1,
                           mpi.MPI_DOUBLE,mpi.MPI_MAX,Pa.comm_world)

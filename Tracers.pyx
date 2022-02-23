@@ -469,7 +469,6 @@ cdef class UpdraftTracers:
         tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[press_shift], &self.updraft_indicator[0])
         NS.write_profile('updraft_perturbation_pressure_potential', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
-        tmp = Pa.HorizontalMeanConditional(Gr, &wpz_half[0], &self.updraft_indicator[0])
 
         tmp = Pa.HorizontalMeanConditional(Gr, &PV.values[q_shift], &self.updraft_indicator[0])
         NS.write_profile('updraft_qt', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
