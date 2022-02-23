@@ -138,12 +138,14 @@ double CLIMA_terminal_velocity_sno(double rho, double q_sno){
   }
 }
 
-void CLIMA_conv_q_liq_to_q_rai(double q_liq, double* qr_tendency_aut){
+void CLIMA_conv_q_liq_to_q_rai(double _q_liq, double* qr_tendency_aut){
+  double q_liq = fmax(0., _q_liq);
   *qr_tendency_aut = fmax(0., q_liq - q_liq_threshold) / tau_acnv_rai;
   return;
 }
 
-void CLIMA_conv_q_ice_to_q_sno_no_supersat(double q_ice, double* qs_tendency_aut){
+void CLIMA_conv_q_ice_to_q_sno_no_supersat(double _q_ice, double* qs_tendency_aut){
+  double q_ice = fmax(0., _q_ice);
   *qs_tendency_aut = fmax(0., q_ice - q_ice_threshold) / tau_acnv_sno;
   return;
 }
@@ -160,8 +162,8 @@ void CLIMA_accretion(double _q_liq, double _q_ice, double _q_rai, double _q_sno,
     double q_rai = fmax(0., _q_rai);
     double q_sno = fmax(0., _q_sno);
 
-    double lambda_ice = CLIMA_lambda(q_ice, rho, n0_ice, m0_ice, me_ice, r0_ice, Chi_m_ice, Delta_m_ice);
-    double lambda_rai = CLIMA_lambda(q_rai, rho, n0_rai, m0_rai, me_rai, r0_rai, Chi_m_rai, Delta_m_rai);
+    double lambda_ice = CLIMA_lambda(q_ice, rho, n0_ice,                   m0_ice, me_ice, r0_ice, Chi_m_ice, Delta_m_ice);
+    double lambda_rai = CLIMA_lambda(q_rai, rho, n0_rai,                   m0_rai, me_rai, r0_rai, Chi_m_rai, Delta_m_rai);
     double lambda_sno = CLIMA_lambda(q_sno, rho, CLIMA_n0_sno(q_sno, rho), m0_sno, me_sno, r0_sno, Chi_m_sno, Delta_m_sno);
 
     double v_rai = CLIMA_terminal_velocity_rai(rho, q_rai);
@@ -169,69 +171,88 @@ void CLIMA_accretion(double _q_liq, double _q_ice, double _q_rai, double _q_sno,
 
     double tmp = 0.;
 
+    *qr_tendency_acc = 0.;
+    *ql_tendency_acc = 0.;
+    *qs_tendency_acc = 0.;
+    *qi_tendency_acc = 0.;
+
     // accretion qr ql
-    tmp =
-      q_liq * E_liq_rai * n0_rai * a0_rai * CLIMA_v0_rai(rho) * Chi_a_rai * Chi_v_rai / lambda_rai *
-      tgamma(ae_rai + ve_rai + Delta_a_rai + Delta_v_rai + 1.) /
-      pow(lambda_rai * r0_rai, ae_rai + ve_rai + Delta_a_rai + Delta_v_rai);
-    *qr_tendency_acc =  tmp;
-    *ql_tendency_acc = -tmp;
+    if(q_rai > 0. && q_liq > 0.){
+        tmp =
+          q_liq * E_liq_rai * n0_rai * a0_rai * CLIMA_v0_rai(rho) * Chi_a_rai * Chi_v_rai / lambda_rai *
+          tgamma(ae_rai + ve_rai + Delta_a_rai + Delta_v_rai + 1.) /
+          pow(lambda_rai * r0_rai, ae_rai + ve_rai + Delta_a_rai + Delta_v_rai);
+
+        *qr_tendency_acc =  tmp;
+        *ql_tendency_acc = -tmp;
+    }
 
     // accretion qs qi
-    tmp =
-      q_ice * E_ice_sno * CLIMA_n0_sno(q_sno, rho) * a0_sno * v0_sno * Chi_a_sno * Chi_v_sno / lambda_sno *
-      tgamma(ae_sno + ve_sno + Delta_a_sno + Delta_v_sno + 1.) /
-      pow(lambda_sno * r0_sno, ae_sno + ve_sno + Delta_a_sno + Delta_v_sno);
-    *qs_tendency_acc = tmp;
-    *qi_tendency_acc = -tmp;
+    if(q_sno > 0. && q_ice > 0.){
+        tmp =
+          q_ice * E_ice_sno * CLIMA_n0_sno(q_sno, rho) * a0_sno * v0_sno * Chi_a_sno * Chi_v_sno / lambda_sno *
+          tgamma(ae_sno + ve_sno + Delta_a_sno + Delta_v_sno + 1.) /
+          pow(lambda_sno * r0_sno, ae_sno + ve_sno + Delta_a_sno + Delta_v_sno);
+
+        *qs_tendency_acc = tmp;
+        *qi_tendency_acc = -tmp;
+    }
 
     // accretion qr qi
-    double acc_q_ice_q_rai_ice_sink =
-      q_ice * E_ice_rai * n0_rai * a0_rai * CLIMA_v0_rai(rho) * Chi_a_rai * Chi_v_rai / lambda_rai *
-      tgamma(ae_rai + ve_rai + Delta_a_rai + Delta_v_rai + 1.) /
-      pow(lambda_rai * r0_rai, ae_rai + ve_rai + Delta_a_rai + Delta_v_rai);
-    double acc_q_ice_q_rai_rain_sink = E_ice_rai / rho * n0_rai * n0_ice * m0_rai * a0_rai * CLIMA_v0_rai(rho) *
-      Chi_m_rai * Chi_a_rai * Chi_v_rai / lambda_ice / lambda_rai *
-      tgamma(me_rai + ae_rai + ve_rai + Delta_m_rai + Delta_a_rai + Delta_v_rai +1.) /
-      pow(r0_rai * lambda_rai, me_rai + ae_rai + ve_rai + Delta_m_rai + Delta_a_rai + Delta_v_rai);
-    *qr_tendency_acc -= acc_q_ice_q_rai_rain_sink;
-    *qs_tendency_acc += acc_q_ice_q_rai_rain_sink + acc_q_ice_q_rai_ice_sink;
-    *qi_tendency_acc -= acc_q_ice_q_rai_ice_sink;
+    if(q_rai > 0. && q_ice > 0.){
+        double acc_q_ice_q_rai_ice_sink =
+          q_ice * E_ice_rai * n0_rai * a0_rai * CLIMA_v0_rai(rho) * Chi_a_rai * Chi_v_rai / lambda_rai *
+          tgamma(ae_rai + ve_rai + Delta_a_rai + Delta_v_rai + 1.) /
+          pow(lambda_rai * r0_rai, ae_rai + ve_rai + Delta_a_rai + Delta_v_rai);
+        double acc_q_ice_q_rai_rain_sink = E_ice_rai / rho * n0_rai * n0_ice * m0_rai * a0_rai * CLIMA_v0_rai(rho) *
+          Chi_m_rai * Chi_a_rai * Chi_v_rai / lambda_ice / lambda_rai *
+          tgamma(me_rai + ae_rai + ve_rai + Delta_m_rai + Delta_a_rai + Delta_v_rai +1.) /
+          pow(r0_rai * lambda_rai, me_rai + ae_rai + ve_rai + Delta_m_rai + Delta_a_rai + Delta_v_rai);
+
+        *qr_tendency_acc -= acc_q_ice_q_rai_rain_sink;
+        *qs_tendency_acc += acc_q_ice_q_rai_rain_sink + acc_q_ice_q_rai_ice_sink;
+        *qi_tendency_acc -= acc_q_ice_q_rai_ice_sink;
+    }
 
     // accretion qs ql
-    tmp = -q_liq * E_liq_sno * CLIMA_n0_sno(q_sno, rho) * a0_sno * v0_sno * Chi_a_sno * Chi_v_sno / lambda_sno *
-      tgamma(ae_sno + ve_sno + Delta_a_sno + Delta_v_sno + 1.) /
-      pow(lambda_sno * r0_sno, ae_sno + ve_sno + Delta_a_sno + Delta_v_sno);
+    if(q_sno > 0. && q_liq > 0.){
+        tmp = -q_liq * E_liq_sno * CLIMA_n0_sno(q_sno, rho) * a0_sno * v0_sno * Chi_a_sno * Chi_v_sno / lambda_sno *
+          tgamma(ae_sno + ve_sno + Delta_a_sno + Delta_v_sno + 1.) /
+          pow(lambda_sno * r0_sno, ae_sno + ve_sno + Delta_a_sno + Delta_v_sno);
+
+        if(T>T_freeze){
+          double L_f = CLIMA_latent_heat_fusion(T);
+          double alpha = cv_l / L_f * (T - T_freeze);
+          *qs_tendency_acc += tmp * alpha;
+          *qr_tendency_acc -= tmp * (1. + alpha);
+          *ql_tendency_acc += tmp;
+        }
+        else{
+          *qs_tendency_acc -= tmp;
+          *ql_tendency_acc += tmp;
+        }
+    }
 
     // accretion qr qs
-    if(T>T_freeze){
-     double L_f = CLIMA_latent_heat_fusion(T);
-     double alpha = cv_l / L_f * (T - T_freeze);
-     *qs_tendency_acc += tmp * alpha;
-     *qr_tendency_acc -= tmp * (1. + alpha);
-     *ql_tendency_acc += tmp;
-    }
-    else{
-     *qs_tendency_acc -= tmp;
-     *ql_tendency_acc += tmp;
-    }
-    if(T>T_freeze){
-       tmp = pi / rho * n0_rai * CLIMA_n0_sno(q_sno, rho) * m0_sno * Chi_m_sno * E_rai_sno *
-        fabs(v_rai - v_sno) / pow(r0_sno, me_sno + Delta_m_sno) * (
-          2. * tgamma(me_sno + Delta_m_sno + 1.) / pow(lambda_rai, 3) / pow(lambda_sno, me_sno + Delta_m_sno + 1) +
-          2. * tgamma(me_sno + Delta_m_sno + 2.) / pow(lambda_rai, 2) / pow(lambda_sno, me_sno + Delta_m_sno + 2) +
-              tgamma(me_sno + Delta_m_sno + 3.) / lambda_rai /         pow(lambda_sno, me_sno + Delta_m_sno + 3));
-       *qr_tendency_acc += tmp;
-       *qs_tendency_acc -= tmp;
-    }
-    else{
-      tmp = pi / rho * CLIMA_n0_sno(q_sno, rho) * n0_rai * m0_rai * Chi_m_rai * E_rai_sno *
-        fabs(v_rai - v_sno) / pow(r0_rai, me_rai + Delta_m_rai) * (
-          2. * tgamma(me_rai + Delta_m_rai + 1.) / pow(lambda_sno, 3) / pow(lambda_rai, me_rai + Delta_m_rai + 1) +
-          2. * tgamma(me_rai + Delta_m_rai + 2.) / pow(lambda_sno, 2) / pow(lambda_rai, me_rai + Delta_m_rai + 2) +
-               tgamma(me_rai + Delta_m_rai + 3.) / lambda_sno /         pow(lambda_rai, me_rai + Delta_m_rai + 3));
-      *qs_tendency_acc += tmp;
-      *qr_tendency_acc -= tmp;
+    if(q_sno > 0. && q_liq > 0.){
+        if(T>T_freeze){
+           tmp = pi / rho * n0_rai * CLIMA_n0_sno(q_sno, rho) * m0_sno * Chi_m_sno * E_rai_sno *
+            fabs(v_rai - v_sno) / pow(r0_sno, me_sno + Delta_m_sno) * (
+              2. * tgamma(me_sno + Delta_m_sno + 1.) / pow(lambda_rai, 3) / pow(lambda_sno, me_sno + Delta_m_sno + 1) +
+              2. * tgamma(me_sno + Delta_m_sno + 2.) / pow(lambda_rai, 2) / pow(lambda_sno, me_sno + Delta_m_sno + 2) +
+                  tgamma(me_sno + Delta_m_sno + 3.) / lambda_rai /         pow(lambda_sno, me_sno + Delta_m_sno + 3));
+           *qr_tendency_acc += tmp;
+           *qs_tendency_acc -= tmp;
+        }
+        else{
+          tmp = pi / rho * CLIMA_n0_sno(q_sno, rho) * n0_rai * m0_rai * Chi_m_rai * E_rai_sno *
+            fabs(v_rai - v_sno) / pow(r0_rai, me_rai + Delta_m_rai) * (
+              2. * tgamma(me_rai + Delta_m_rai + 1.) / pow(lambda_sno, 3) / pow(lambda_rai, me_rai + Delta_m_rai + 1) +
+              2. * tgamma(me_rai + Delta_m_rai + 2.) / pow(lambda_sno, 2) / pow(lambda_rai, me_rai + Delta_m_rai + 2) +
+                   tgamma(me_rai + Delta_m_rai + 3.) / lambda_sno /         pow(lambda_rai, me_rai + Delta_m_rai + 3));
+          *qs_tendency_acc += tmp;
+          *qr_tendency_acc -= tmp;
+        }
     }
     return;
 }
@@ -468,13 +489,13 @@ void CLIMA_microphysics_sources(const struct DimStruct *dims, struct LookupStruc
                     qi_tendency_tmp = -qs_tendency_aut
                                       +qs_tendency_acc;
                     qr_tendency_tmp =  qr_tendency_aut
-                                      +qr_tendency_acc;
-                                      //+qr_tendency_evp
-                                      //+qs_tendency_melt;
+                                      +qr_tendency_acc
+                                      +qr_tendency_evp
+                                      +qs_tendency_melt;
                     qs_tendency_tmp =  qs_tendency_aut
-                                      +qs_tendency_acc;
-                                      //+qs_tendency_dep_sub
-                                      //-qs_tendency_melt;
+                                      +qs_tendency_acc
+                                      +qs_tendency_dep_sub
+                                      -qs_tendency_melt;
 
                     //... adjust the rates if necessary (factor of 1.05 is ad-hoc)
                     rate = 1.05 * ql_tendency_tmp * dt_ / (-fmax(ql_tmp, microph_eps));
@@ -487,8 +508,8 @@ void CLIMA_microphysics_sources(const struct DimStruct *dims, struct LookupStruc
                         dt_ = fmax(dt_/rate, 1.0e-3);
                     }
 
-                    //precip_formation_rate_tmp += (qr_tendency_aut + qr_tendency_acc + qs_tendency_aut + qs_tendency_acc) * dt_;
-                    //evap_dep_sub_rate_tmp += (qr_tendency_evp + qs_tendency_dep_sub) * dt_;
+                    precip_formation_rate_tmp += (qr_tendency_aut + qr_tendency_acc + qs_tendency_aut + qs_tendency_acc) * dt_;
+                    evap_dep_sub_rate_tmp += (qr_tendency_evp + qs_tendency_dep_sub) * dt_;
 
                     //integrate forward in time
                     ql_tmp += ql_tendency_tmp * dt_;

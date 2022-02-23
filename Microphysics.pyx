@@ -660,23 +660,23 @@ cdef class Microphysics_CLIMA_1M:
                                          &PV.values[qt_shift],\
                                          &DV.values[t_shift], &DV.values[tw_shift])
 
-        CLIMA_entropy_source_formation(&Gr.dims, &self.CC.LT.LookupStructC,\
-                                       self.Lambda_fp, self.L_fp, &RS.p0_half[0],\
-                                       &DV.values[t_shift], &DV.values[tw_shift],\
-                                       &PV.values[qt_shift], &DV.values[qv_shift],\
-                                       &precip_formation_rate[0], &evap_dep_sub_rate[0],\
-                                       &PV.tendencies[s_shift])
+        #CLIMA_entropy_source_formation(&Gr.dims, &self.CC.LT.LookupStructC,\
+        #                               self.Lambda_fp, self.L_fp, &RS.p0_half[0],\
+        #                               &DV.values[t_shift], &DV.values[tw_shift],\
+        #                               &PV.values[qt_shift], &DV.values[qv_shift],\
+        #                               &precip_formation_rate[0], &evap_dep_sub_rate[0],\
+        #                               &PV.tendencies[s_shift])
 
-        CLIMA_entropy_source_heating(&Gr.dims, &DV.values[t_shift], &DV.values[tw_shift],\
-                                     &PV.values[qr_shift], &DV.values[wqr_shift],\
-                                     &PV.values[qs_shift], &DV.values[wqs_shift],\
-                                     &PV.values[w_shift],\
-                                     &PV.tendencies[s_shift])
+        #CLIMA_entropy_source_heating(&Gr.dims, &DV.values[t_shift], &DV.values[tw_shift],\
+        #                             &PV.values[qr_shift], &DV.values[wqr_shift],\
+        #                             &PV.values[qs_shift], &DV.values[wqs_shift],\
+        #                             &PV.values[w_shift],\
+        #                             &PV.tendencies[s_shift])
 
-        CLIMA_entropy_source_drag(&Gr.dims, &DV.values[t_shift],\
-                                  &PV.values[qr_shift], &DV.values[wqr_shift],\
-                                  &PV.values[qs_shift], &DV.values[wqs_shift],\
-                                  &PV.tendencies[s_shift])
+        #CLIMA_entropy_source_drag(&Gr.dims, &DV.values[t_shift],\
+        #                          &PV.values[qr_shift], &DV.values[wqr_shift],\
+        #                          &PV.values[qs_shift], &DV.values[wqs_shift],\
+        #                          &PV.tendencies[s_shift])
         return
 
     cpdef stats_io(self, Grid.Grid Gr, ReferenceState.ReferenceState RS, Th,\
