@@ -399,7 +399,6 @@ cdef class UpdraftTracers:
             double [:] v_half = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
             double [:] w_half = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
             double [:] dpalphadz = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
-            double [:] wpz_half = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
 
             double [:] mean = Pa.HorizontalMean(Gr, &PV.values[c_shift])
             double [:] mean_square = Pa.HorizontalMeanofSquares(Gr, &PV.values[c_shift], &PV.values[c_shift])
