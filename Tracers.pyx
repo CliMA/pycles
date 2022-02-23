@@ -228,11 +228,6 @@ cdef class UpdraftTracers:
 
         NS.add_profile('updraft_perturbation_pressure_potential', Gr, Pa, units=r'm^2 s^-2 ', nice_name=r'updraft alpha0 * perturbation pressure',
                       desc=r'updraft alpha0 * perturbation pressure')
-        NS.add_profile('updraft_wBudget_PressureGradient', Gr, Pa, units=r'm/s', nice_name=r'updraft average of pressure gradient contribution',
-                      desc=r'updraft average of pressure gradient force')
-        NS.add_profile('updraft_wBudget_removeHorAve', Gr, Pa, units=r'm/s', nice_name=r'remove grid mean w',
-                     desc=r'remove grid mean w')
-
 
         if 'ql' in DV.name_index:
             NS.add_profile('updraft_ql', Gr, Pa, units=r'kg kg^{-1}',nice_name=r'q_{l,u}',
@@ -396,8 +391,6 @@ cdef class UpdraftTracers:
             Py_ssize_t qv_shift = DV.get_varshift(Gr, 'qv')
             Py_ssize_t alpha_shift = DV.get_varshift(Gr, 'alpha')
             Py_ssize_t press_shift = DV.get_varshift(Gr, 'perturbation_pressure_potential')
-            Py_ssize_t pz_shift = DV.get_varshift(Gr, 'wBudget_PressureGradient')
-            Py_ssize_t whor_shift = DV.get_varshift(Gr, 'wBudget_removeHorAve')
             Py_ssize_t ql_shift, th_shift, qr_shift
             double [:] cloudfraction = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
             double [:] tracer_normed = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
@@ -406,8 +399,6 @@ cdef class UpdraftTracers:
             double [:] v_half = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
             double [:] w_half = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
             double [:] dpalphadz = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
-            double [:] wpz_half = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
-            double [:] whor_half = np.zeros((Gr.dims.npg),dtype=np.double, order='c')
 
             double [:] mean = Pa.HorizontalMean(Gr, &PV.values[c_shift])
             double [:] mean_square = Pa.HorizontalMeanofSquares(Gr, &PV.values[c_shift], &PV.values[c_shift])
@@ -455,8 +446,6 @@ cdef class UpdraftTracers:
                         u_half[ijk] = 0.5 * (PV.values[u_shift+ijk-istride] + PV.values[u_shift+ijk])
                         v_half[ijk] = 0.5 * (PV.values[v_shift+ijk-jstride] + PV.values[v_shift+ijk])
                         w_half[ijk] = 0.5 * (PV.values[w_shift+ijk-1] + PV.values[w_shift+ijk])
-                        wpz_half[ijk] = 0.5 * (DV.values[pz_shift+ijk-1] + DV.values[pz_shift+ijk])
-                        whor_half[ijk] = 0.5 * (DV.values[whor_shift+ijk-1] + DV.values[whor_shift+ijk])
 
         tmp = Pa.HorizontalMean(Gr, &self.updraft_indicator[0])
         NS.write_profile('updraft_fraction', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
@@ -480,10 +469,6 @@ cdef class UpdraftTracers:
         tmp = Pa.HorizontalMeanConditional(Gr, &DV.values[press_shift], &self.updraft_indicator[0])
         NS.write_profile('updraft_perturbation_pressure_potential', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
-        tmp = Pa.HorizontalMeanConditional(Gr, &wpz_half[0], &self.updraft_indicator[0])
-        NS.write_profile('updraft_wBudget_PressureGradient', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
-        tmp = Pa.HorizontalMeanConditional(Gr, &whor_half[0], &self.updraft_indicator[0])
-        NS.write_profile('updraft_wBudget_removeHorAve', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
 
         tmp = Pa.HorizontalMeanConditional(Gr, &PV.values[q_shift], &self.updraft_indicator[0])
         NS.write_profile('updraft_qt', tmp[Gr.dims.gw:-Gr.dims.gw], Pa)
