@@ -105,10 +105,13 @@ cdef inline double lambda_constant(double T) nogil:
 
 cdef inline double lambda_T_clima(double T) nogil:
     cdef:
-        double T_freeze = 273.15
+        double Twarm = 273.15
+        double Tcold = 268.15
         double Lambda = 0.0
 
-    if T > T_freeze:
+    if T > Tcold and T <= Twarm:
+        Lambda = pow((T - Tcold)/(Twarm - Tcold), 1.0)
+    elif T > Twarm:
         Lambda = 1.0
     else:
         Lambda = 0.0

@@ -1817,13 +1817,13 @@ def TRMM_LBA():
 
     namelist['grid'] = {}
     namelist['grid']['dims'] = 3
-    namelist['grid']['nx'] = 200
-    namelist['grid']['ny'] = 200
-    namelist['grid']['nz'] = 220
+    namelist['grid']['nx'] = 100 #200
+    namelist['grid']['ny'] = 100 #200
+    namelist['grid']['nz'] = 220 #220
     namelist['grid']['gw'] = 3
-    namelist['grid']['dx'] = 100.0
-    namelist['grid']['dy'] = 100.0
-    namelist['grid']['dz'] = 100.0
+    namelist['grid']['dx'] = 200.0 #100.0
+    namelist['grid']['dy'] = 200.0 #100.0
+    namelist['grid']['dz'] = 100.0 #100.0
     namelist['grid']['stretch'] = True
 
     namelist['mpi'] = {}
