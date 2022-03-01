@@ -133,6 +133,9 @@ def SullivanPatton():
     namelist['damping']['Rayleigh']['gamma_r'] = 0.02
     namelist['damping']['Rayleigh']['z_d'] = 500.0
 
+    namelist['input'] = {}
+    namelist['input']['input_root'] = './'
+
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -216,6 +219,9 @@ def SaturatedBubble():
     namelist['damping'] = {}
     namelist['damping']['scheme'] = 'None'
 
+    namelist['input'] = {}
+    namelist['input']['input_root'] = './'
+    
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -302,6 +308,9 @@ def StableBubble():
     namelist['damping'] = {}
     namelist['damping']['scheme'] = 'None'
 
+    namelist['input'] = {}
+    namelist['input']['input_root'] = './'
+   
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -390,6 +399,9 @@ def Bomex():
     namelist['damping']['Rayleigh']['gamma_r'] = 0.2
     namelist['damping']['Rayleigh']['z_d'] = 600
 
+    namelist['input'] = {}
+    namelist['input']['input_root'] = './'
+   
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -483,6 +495,9 @@ def lifecycle_Tan2018():
     namelist['damping']['Rayleigh']['gamma_r'] = 0.2
     namelist['damping']['Rayleigh']['z_d'] = 600
 
+    namelist['input'] = {}
+    namelist['input']['input_root'] = './'
+   
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -588,6 +603,9 @@ def Soares():
     namelist['damping']['Rayleigh']['gamma_r'] = 0.02
     namelist['damping']['Rayleigh']['z_d'] = 800.0  # ??? depth of damping layer?
 
+    namelist['input'] = {}
+    namelist['input']['input_root'] = './'
+   
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -708,6 +726,9 @@ def Soares_moist():
     namelist['damping']['Rayleigh']['gamma_r'] = 0.02
     namelist['damping']['Rayleigh']['z_d'] = 800.0  # ??? depth of damping layer?
 
+    namelist['input'] = {}
+    namelist['input']['input_root'] = './'
+   
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -819,6 +840,9 @@ def Gabls():
     namelist['damping']['Rayleigh']['gamma_r'] = 0.02
     namelist['damping']['Rayleigh']['z_d'] = 100.0
 
+    namelist['input'] = {}
+    namelist['input']['input_root'] = './'
+   
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -906,6 +930,9 @@ def DYCOMS_RF01():
     namelist['damping']['Rayleigh']['gamma_r'] = 0.002
     namelist['damping']['Rayleigh']['z_d'] = 500.0
 
+    namelist['input'] = {}
+    namelist['input']['input_root'] = './'
+   
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -996,6 +1023,9 @@ def DYCOMS_RF02():
     namelist['damping']['Rayleigh']['gamma_r'] = 0.002
     namelist['damping']['Rayleigh']['z_d'] = 500.0
 
+    namelist['input'] = {}
+    namelist['input']['input_root'] = './'
+   
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -1094,6 +1124,9 @@ def SMOKE():
     namelist['damping']['Rayleigh']['gamma_r'] = 0.002
     namelist['damping']['Rayleigh']['z_d'] = 500.0
 
+    namelist['input'] = {}
+    namelist['input']['input_root'] = './'
+   
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -1191,6 +1224,9 @@ def Rico():
     namelist['damping']['Rayleigh']['gamma_r'] = 0.2
     namelist['damping']['Rayleigh']['z_d'] = 800
 
+    namelist['input'] = {}
+    namelist['input']['input_root'] = './'
+   
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -1293,6 +1329,9 @@ def CGILS_S6(is_p2,is_ctl_omega):
     namelist['radiation']['RRTM'] = {}
     namelist['radiation']['RRTM']['frequency'] = 90.0
 
+    namelist['input'] = {}
+    namelist['input']['input_root'] = './'
+   
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -1413,6 +1452,9 @@ def CGILS_S11(is_p2,is_ctl_omega):
     namelist['radiation']['RRTM'] = {}
     namelist['radiation']['RRTM']['frequency'] = 90.0
 
+    namelist['input'] = {}
+    namelist['input']['input_root'] = './'
+   
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -1531,6 +1573,9 @@ def CGILS_S12(is_p2,is_ctl_omega):
     namelist['radiation']['RRTM'] = {}
     namelist['radiation']['RRTM']['frequency'] = 90.0
 
+    namelist['input'] = {}
+    namelist['input']['input_root'] = './'
+   
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -1659,6 +1704,9 @@ def ZGILS(zgils_loc):
     namelist['radiation']['RRTM'] = {}
     namelist['radiation']['RRTM']['frequency'] = 90.0
 
+    namelist['input'] = {}
+    namelist['input']['input_root'] = './'
+   
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -1766,6 +1814,9 @@ def GCMVarying():
     namelist['radiation']['use_RRTM'] = False
     # namelist['radiation']['RRTM'] = {}
 
+    namelist['input'] = {}
+    namelist['input']['input_root'] = './'
+   
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -1863,6 +1914,9 @@ def TRMM_LBA():
     namelist['damping']['Rayleigh']['gamma_r'] = 0.2
     namelist['damping']['Rayleigh']['z_d'] = 4000
 
+    namelist['input'] = {}
+    namelist['input']['input_root'] = './'
+   
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -1956,6 +2010,9 @@ def ARM_SGP():
     namelist['damping']['Rayleigh']['gamma_r'] = 0.2
     namelist['damping']['Rayleigh']['z_d'] = 900
 
+    namelist['input'] = {}
+    namelist['input']['input_root'] = './'
+   
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -2051,6 +2108,9 @@ def GATE_III():
     namelist['damping']['Rayleigh']['gamma_r'] = 0.2
     namelist['damping']['Rayleigh']['z_d'] = 7000
 
+    namelist['input'] = {}
+    namelist['input']['input_root'] = './'
+   
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
