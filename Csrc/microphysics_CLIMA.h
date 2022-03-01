@@ -395,6 +395,7 @@ void CLIMA_microphysics_sources(const struct DimStruct *dims, struct LookupStruc
                                 double dt,
                                 double* restrict precip_formation_rate,
                                 double* restrict evaporation_sublimation_rate,
+                                double* restrict melt_rate,
                                 double* restrict qr_tendency_micro,
                                 double* restrict qs_tendency_micro,
                                 double* restrict qr_tendency,
@@ -406,6 +407,7 @@ void CLIMA_microphysics_sources(const struct DimStruct *dims, struct LookupStruc
     double qi_tendency_tmp = 0.;
     double precip_formation_rate_tmp = 0;
     double evaporation_sublimation_rate_tmp = 0;
+    double melt_rate_tmp = 0;
 
     double qr_tendency_aut = 0.;
     double qs_tendency_aut = 0.;
@@ -446,6 +448,7 @@ void CLIMA_microphysics_sources(const struct DimStruct *dims, struct LookupStruc
 
                 precip_formation_rate_tmp = 0.;
                 evaporation_sublimation_rate_tmp = 0.;
+                melt_rate_tmp = 0.;
 
                 double time_added = 0.0, dt_, rate;
                 ssize_t iter_count = 0;
@@ -500,6 +503,7 @@ void CLIMA_microphysics_sources(const struct DimStruct *dims, struct LookupStruc
 
                     precip_formation_rate_tmp += (qr_tendency_aut + qr_tendency_acc + qs_tendency_aut + qs_tendency_acc + fmax(0.0, qs_tendency_dep_sub)) * dt_;
                     evaporation_sublimation_rate_tmp += (qr_tendency_evp + fmin(0.0, qs_tendency_dep_sub)) * dt_;
+                    melt_rate_tmp += qs_tendency_melt * dt_;
 
                     //integrate forward in time
                     ql_tmp += ql_tendency_tmp * dt_;
@@ -527,6 +531,7 @@ void CLIMA_microphysics_sources(const struct DimStruct *dims, struct LookupStruc
 
                 precip_formation_rate[ijk] = precip_formation_rate_tmp/dt;
                 evaporation_sublimation_rate[ijk]  =  evaporation_sublimation_rate_tmp/dt;
+                melt_rate[ijk] = melt_rate_tmp/dt;
             }
         }
     }
@@ -561,9 +566,7 @@ void CLIMA_qt_source_formation(const struct DimStruct *dims,
 }
 
 //TODO - double check the signs with EDMF implementation
-//TODO - double check the entropy source terms
 //TODO - check specific and latent heats ci, cv, cp_l, L_f etc
-
 void CLIMA_entropy_source_formation(const struct DimStruct *dims, struct LookupStruct *LT,
                                     double (*lam_fp)(double), double (*L_fp)(double, double),
                                     double* restrict p0,
@@ -599,21 +602,22 @@ void CLIMA_entropy_source_formation(const struct DimStruct *dims, struct LookupS
                 const double L_fp_Tw = L_fp(Twet[ijk], lam_Tw);
 
                 const double pv_star_T  = lookup(LT, T[ijk]);
-                const double pv_star_Tw = lookup(LT,Twet[ijk]);
+                const double pv_star_Tw = lookup(LT, Twet[ijk]);
 
                 const double pv = pv_c(p0[k], qt[ijk], qv[ijk]);
                 const double pd = p0[k] - pv;
-                //const double pd = pd_c(p0[k], qt[ijk], qv[ijk]);
 
                 const double sd_T = sd_c(pd, T[ijk]);
 
-                const double sv_T  = sv_c(pv, T[ijk]);
-                const double sv_Tw = sv_c(pv, Twet[ijk]);
+                const double sv_star_T  = sv_c(pv_star_T,  T[ijk] );
+                const double sv_star_Tw = sv_c(pv_star_Tw, Twet[ijk]);
 
-                const double sc_T  = sc_c(L_fp_T,  T[ijk]);
-                const double sc_Tw = sc_c(L_fp_T,  Twet[ijk]); //TODO - should it not be L_fp_Tw?
+                const double S_P = sd_T - sv_star_T + L_fp_T/T[ijk];
+                const double S_E = sv_star_Tw - L_fp_Tw/Twet[ijk] - sd_T;
+                const double S_D = -Rv * log(pv/pv_star_T) + cpv * log(T[ijk]/Twet[ijk]);
 
-                entropy_tendency[ijk] += -(sd_T - sv_T - sc_T) * precip_formation_rate[ijk] -(sv_Tw + sc_Tw - sd_T) * evaporation_sublimation_rate[ijk];
+                entropy_tendency[ijk] += S_P * precip_formation_rate[ijk] - (S_E + S_D) * evaporation_sublimation_rate[ijk];
+
             }
         }
     }
@@ -625,9 +629,9 @@ void CLIMA_entropy_source_heating(const struct DimStruct *dims,
                                double* restrict qr, double* restrict w_qr,
                                double* restrict qs, double* restrict w_qs,
                                double* restrict w,
+                               double* restrict melt_rate,
                                double* restrict entropy_tendency){
 
-    // (copied from SB implementation)
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
     const ssize_t imin = dims->gw;
@@ -638,6 +642,8 @@ void CLIMA_entropy_source_heating(const struct DimStruct *dims,
     const ssize_t kmax = dims->nlg[2]-dims->gw;
     const double dzi = 1.0/dims->dx[2];
 
+    const double lhf = 3.34e5; //TODO
+
     for(ssize_t i=imin; i<imax; i++){
         const ssize_t ishift = i * istride;
         for(ssize_t j=jmin; j<jmax; j++){
@@ -647,6 +653,7 @@ void CLIMA_entropy_source_heating(const struct DimStruct *dims,
 
                 entropy_tendency[ijk] += qr[ijk] * (fabs(w_qr[ijk]) - w[ijk]) * cl * (Twet[ijk+1] - Twet[ijk]) * dzi / T[ijk];
                 entropy_tendency[ijk] += qs[ijk] * (fabs(w_qs[ijk]) - w[ijk]) * ci * (Twet[ijk+1] - Twet[ijk]) * dzi / T[ijk];
+                entropy_tendency[ijk] += fabs(melt_rate[ijk]) * lhf / T[ijk]; //TODO - what is the sign here
             }
         }
     }
@@ -659,7 +666,6 @@ void CLIMA_entropy_source_drag(const struct DimStruct *dims,
                                double* restrict qs, double* restrict w_qs,
                                double* restrict entropy_tendency){
 
-    // (copied from SB implementation)
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
     const ssize_t imin = dims->gw;

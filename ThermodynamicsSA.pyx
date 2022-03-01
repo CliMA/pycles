@@ -527,7 +527,7 @@ cdef class ThermodynamicsSA:
         with nogil:
             for pi in xrange(z_pencil.n_local_pencils):
                 for k in xrange(kmin, kmax):
-                    if ql_pencils[pi, k] > 0.0:
+                    if ql_pencils[pi, k] + qi_pencils[pi, k] > 0.0:
                         cb = fmin(cb, Gr.zp_half[gw + k])
                         ct = fmax(ct, Gr.zp_half[gw + k])
 
