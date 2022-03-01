@@ -1,0 +1,106 @@
+{
+    "conditional_stats": {
+        "classes": [
+            "Spectra"
+        ], 
+        "frequency": 360.0, 
+        "stats_dir": "cond_stats"
+    }, 
+    "damping": {
+        "Rayleigh": {
+            "gamma_r": 0.2, 
+            "z_d": 600
+        }, 
+        "scheme": "Rayleigh"
+    }, 
+    "diffusion": {
+        "qt_entropy_source": false
+    }, 
+    "fields_io": {
+        "diagnostic_fields": [
+            "ql", 
+            "temperature", 
+            "buoyancy_frequency", 
+            "viscosity"
+        ], 
+        "fields_dir": "fields", 
+        "frequency": 1800.0
+    }, 
+    "grid": {
+        "dims": 3, 
+        "dx": 100.0, 
+        "dy": 100.0, 
+        "dz": 40.0, 
+        "gw": 3, 
+        "nx": 64, 
+        "ny": 64, 
+        "nz": 75
+    }, 
+    "initialization": {
+        "random_seed_factor": 1
+    }, 
+    "input": {
+        "input_root": "./"
+    }, 
+    "meta": {
+        "casename": "Bomex", 
+        "simname": "Bomex", 
+        "uuid": "test"
+    }, 
+    "microphysics": {
+        "phase_partitioning": "liquid_only", 
+        "scheme": "None_SA"
+    }, 
+    "momentum_transport": {
+        "order": 5
+    }, 
+    "mpi": {
+        "nprocx": 1, 
+        "nprocy": 1, 
+        "nprocz": 1
+    }, 
+    "output": {
+        "output_root": "./"
+    }, 
+    "restart": {
+        "frequency": 600.0, 
+        "init_altered": false, 
+        "init_from": false, 
+        "input_path": "./", 
+        "output": true
+    }, 
+    "scalar_transport": {
+        "order": 5
+    }, 
+    "sgs": {
+        "Smagorinsky": {
+            "iles": true
+        }, 
+        "scheme": "Smagorinsky"
+    }, 
+    "stats_io": {
+        "auxiliary": [
+            "Cumulus", 
+            "Flux", 
+            "TKE"
+        ], 
+        "frequency": 100.0, 
+        "stats_dir": "stats"
+    }, 
+    "thermodynamics": {
+        "latentheat": "constant"
+    }, 
+    "time_stepping": {
+        "cfl_limit": 0.7, 
+        "dt_initial": 10.0, 
+        "dt_max": 10.0, 
+        "t_max": 360.0, 
+        "ts_type": 3
+    }, 
+    "tracers": {
+        "scheme": "UpdraftTracers", 
+        "timescale": 15.0, 
+        "use_lcl_tracers": false, 
+        "use_tracers": true
+    }
+}
