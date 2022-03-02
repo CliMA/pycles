@@ -80,15 +80,6 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
             if(count > 1e2){
                printf("%s \t %d\n", "count", count);
             }
-            if(T_n < 268.15 && lam_fp(T_n) > 0.0 ){
-               printf("%s \n", "Looking into below freezing stuff");
-               printf("%s \t %f\n", "T_1", T_1);
-               printf("%s \t %f\n", "T_2", T_2);
-               printf("%s \t %f\n", "T_n", T_n);
-               printf("%s \t %e\n", "lambda", lam_fp(T_n));
-               printf("%s \t %e\n", "ql", lam_fp(T_n) * sigma_2);
-               printf("%s \t %e\n", "qi", (1.0 - lam_fp(T_n)) * sigma_2);
-            }
 
         } while((delta_T >= 1.0e-3 || sigma_2 < -1.0e-3) && count < 1e2);
         *T  = T_2;

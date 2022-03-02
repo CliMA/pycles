@@ -106,7 +106,7 @@ cdef inline double lambda_constant(double T) nogil:
 cdef inline double lambda_T_clima(double T) nogil:
     cdef:
         double Twarm = 273.15
-        double Tcold = 268.15
+        double Tcold = 263.15
         double Lambda = 0.0
 
     if T > Tcold and T <= Twarm:
@@ -124,6 +124,7 @@ cdef inline double lambda_T(double T) nogil:
         double Tcold = 263.15
         double Lambda = 0.0
 
+    #POW_N can be modified in generate_parameters_a1m.py
     if T > Tcold and T <= Twarm:
         Lambda = pow((T - Tcold)/(Twarm - Tcold), POW_N)
     elif T > Twarm:
