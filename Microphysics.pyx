@@ -534,10 +534,10 @@ cdef extern from "microphysics_CLIMA.h":
                                    double* qs, double* w_qs,\
                                    double* entropy_tendency) nogil
 
-    void CLIMA_autoconversion_wrapper(Grid.DimStruct *dims,\
-                                      double* ql, double* qi,\
-                                      double* qr_tendency_aut,\
-                                      double* qs_tendency_aut) nogil
+    void CLIMA_autoconversion_wrapper(\
+        Grid.DimStruct *dims,
+        double* ql, double* qi,\
+        double* qr_tendency_aut, double* qs_tendency_aut) nogil
 
     void CLIMA_accretion_wrapper(Grid.DimStruct *dims, double* density,\
                                  double* temperature,
@@ -771,7 +771,8 @@ cdef class Microphysics_CLIMA_1M:
 
 
         # autoconversion tendencies of qr and qs
-        CLIMA_autoconversion_wrapper(&Gr.dims, &DV.values[ql_shift], &DV.values[qi_shift],\
+        CLIMA_autoconversion_wrapper(&Gr.dims,\
+                                     &DV.values[ql_shift], &DV.values[qi_shift],\
                                      &qr_tendency[0], &qs_tendency[0])
         tmp = Pa.HorizontalMean(Gr, &qr_tendency[0])
         NS.write_profile('qr_autoconversion', tmp[gw: -gw], Pa)
