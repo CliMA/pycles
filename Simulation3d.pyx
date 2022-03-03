@@ -206,7 +206,6 @@ class Simulation3d:
                 self.TS.update(self.Gr, self.PV, self.Pa)
                 PV_.Update_all_bcs(self.Gr, self.Pa)
                 self.Pr.update(self.Gr, self.RS, self.DV, self.PV, self.Pa)
-                self.TS.update_pressure(self.Gr, self.PV, self.DV, self.Pa)
                 self.TS.adjust_timestep(self.Gr, self.PV, self.DV,self.Pa)
                 self.io()
             time2 = time.time()
