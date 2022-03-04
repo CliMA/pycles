@@ -515,7 +515,7 @@ void CLIMA_microphysics_sources(const struct DimStruct *dims, struct LookupStruc
                     dt_ = dt - time_added;
                     // ... check the source term magnitudes ...
                     ql_tendency_tmp = -qr_tendency_aut + ql_tendency_acc;
-                    qi_tendency_tmp = -qs_tendency_aut + qs_tendency_acc;
+                    qi_tendency_tmp = -qs_tendency_aut + qi_tendency_acc;
                     qr_tendency_tmp =  qr_tendency_aut + qr_tendency_acc + qr_tendency_evp - qs_tendency_melt;
                     qs_tendency_tmp =  qs_tendency_aut + qs_tendency_acc + qs_tendency_dep_sub + qs_tendency_melt;
 
