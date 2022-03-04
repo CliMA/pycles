@@ -221,7 +221,7 @@ def SaturatedBubble():
 
     namelist['input'] = {}
     namelist['input']['input_root'] = './'
-    
+
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -310,7 +310,7 @@ def StableBubble():
 
     namelist['input'] = {}
     namelist['input']['input_root'] = './'
-   
+
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -401,7 +401,7 @@ def Bomex():
 
     namelist['input'] = {}
     namelist['input']['input_root'] = './'
-   
+
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -497,7 +497,7 @@ def lifecycle_Tan2018():
 
     namelist['input'] = {}
     namelist['input']['input_root'] = './'
-   
+
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -605,7 +605,7 @@ def Soares():
 
     namelist['input'] = {}
     namelist['input']['input_root'] = './'
-   
+
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -728,7 +728,7 @@ def Soares_moist():
 
     namelist['input'] = {}
     namelist['input']['input_root'] = './'
-   
+
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -842,7 +842,7 @@ def Gabls():
 
     namelist['input'] = {}
     namelist['input']['input_root'] = './'
-   
+
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -932,7 +932,7 @@ def DYCOMS_RF01():
 
     namelist['input'] = {}
     namelist['input']['input_root'] = './'
-   
+
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -994,9 +994,6 @@ def DYCOMS_RF02():
     namelist['time_stepping']['dt_max'] = 10.0
     namelist['time_stepping']['t_max'] = 6.0 * 3600.0
 
-    namelist['thermodynamics'] = {}
-    namelist['thermodynamics']['latentheat'] = 'variable'
-
     #namelist['microphysics'] = {}
     #namelist['microphysics']['phase_partitioning'] = 'liquid_only'
     #namelist['microphysics']['cloud_sedimentation'] = False
@@ -1005,6 +1002,9 @@ def DYCOMS_RF02():
     #namelist['microphysics']['SB_Liquid'] = {}
     #namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
     #namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['latentheat'] = 'variable'
 
     namelist['microphysics'] = {}
     namelist['microphysics']['scheme'] = 'CLIMA_1M'
@@ -1031,14 +1031,14 @@ def DYCOMS_RF02():
 
     namelist['input'] = {}
     namelist['input']['input_root'] = './'
-   
+
     namelist['output'] = {}
-    namelist['output']['output_root'] = '/groups/esm/ajaruga/seifert_beheng_with_precip_paths/'
+    namelist['output']['output_root'] = '/groups/esm/ajaruga/PR_testing/'
 
     namelist['restart'] = {}
     namelist['restart']['output'] = True
     namelist['restart']['init_from'] = False
-    namelist['restart']['input_path'] = '/groups/esm/ajaruga/seifert_beheng_with_precip_paths/'
+    namelist['restart']['input_path'] = '/groups/esm/ajaruga/PR_testing/'
     namelist['restart']['frequency'] = 10 * 3600.0
     namelist['restart']['init_altered'] = False
 
@@ -1137,7 +1137,7 @@ def SMOKE():
 
     namelist['input'] = {}
     namelist['input']['input_root'] = './'
-   
+
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -1195,21 +1195,22 @@ def Rico():
     namelist['time_stepping']['dt_max'] = 10.0
     namelist['time_stepping']['t_max'] = 3600.0*24.0
 
-    namelist['thermodynamics'] = {}
-    namelist['thermodynamics']['latentheat'] = 'constant'
-    namelist['microphysics'] = {}
-    namelist['microphysics']['phase_partitioning'] = 'liquid_only'
-    namelist['microphysics']['cloud_sedimentation'] = False
-    namelist['microphysics']['ccn'] = 70.0e6
-    namelist['microphysics']['scheme'] = 'SB_Liquid'
-    namelist['microphysics']['SB_Liquid'] = {}
-    namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
-    namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
-
     #namelist['thermodynamics'] = {}
     #namelist['thermodynamics']['latentheat'] = 'constant'
     #namelist['microphysics'] = {}
-    #namelist['microphysics']['scheme'] = 'CLIMA_1M'
+    #namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+    #namelist['microphysics']['cloud_sedimentation'] = False
+    #namelist['microphysics']['ccn'] = 70.0e6
+    #namelist['microphysics']['scheme'] = 'SB_Liquid'
+    #namelist['microphysics']['SB_Liquid'] = {}
+    #namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
+    #namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
+
+    namelist['thermodynamics'] = {}
+    namelist['thermodynamics']['latentheat'] = 'variable'
+
+    namelist['microphysics'] = {}
+    namelist['microphysics']['scheme'] = 'CLIMA_1M'
 
     namelist['tracers'] = {}
     namelist['tracers']['use_tracers'] = True
@@ -1240,9 +1241,9 @@ def Rico():
 
     namelist['input'] = {}
     namelist['input']['input_root'] = './'
-   
+
     namelist['output'] = {}
-    namelist['output']['output_root'] = '/groups/esm/ajaruga/seifert_beheng_with_precip_paths/'
+    namelist['output']['output_root'] = '/groups/esm/ajaruga/PR_testing/'
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
@@ -1261,7 +1262,7 @@ def Rico():
     namelist['restart'] = {}
     namelist['restart']['output'] = True
     namelist['restart']['init_from'] = False
-    namelist['restart']['input_path'] = '/groups/esm/ajaruga/seifert_beheng_with_precip_paths/'
+    namelist['restart']['input_path'] = '/groups/esm/ajaruga/PR_testing/'
     namelist['restart']['frequency'] = 600.0
     namelist['restart']['init_altered'] = False
 
@@ -1345,7 +1346,7 @@ def CGILS_S6(is_p2,is_ctl_omega):
 
     namelist['input'] = {}
     namelist['input']['input_root'] = './'
-   
+
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -1468,7 +1469,7 @@ def CGILS_S11(is_p2,is_ctl_omega):
 
     namelist['input'] = {}
     namelist['input']['input_root'] = './'
-   
+
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -1589,7 +1590,7 @@ def CGILS_S12(is_p2,is_ctl_omega):
 
     namelist['input'] = {}
     namelist['input']['input_root'] = './'
-   
+
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -1720,7 +1721,7 @@ def ZGILS(zgils_loc):
 
     namelist['input'] = {}
     namelist['input']['input_root'] = './'
-   
+
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -1830,7 +1831,7 @@ def GCMVarying():
 
     namelist['input'] = {}
     namelist['input']['input_root'] = './'
-   
+
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -1934,7 +1935,7 @@ def TRMM_LBA():
 
     namelist['input'] = {}
     namelist['input']['input_root'] = './'
-   
+
     namelist['output'] = {}
     namelist['output']['output_root'] = '/groups/esm/ajaruga/clima_micro_new_lambda_and_L/'
 
@@ -2030,7 +2031,7 @@ def ARM_SGP():
 
     namelist['input'] = {}
     namelist['input']['input_root'] = './'
-   
+
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 
@@ -2128,7 +2129,7 @@ def GATE_III():
 
     namelist['input'] = {}
     namelist['input']['input_root'] = './'
-   
+
     namelist['output'] = {}
     namelist['output']['output_root'] = './'
 

@@ -644,8 +644,6 @@ void CLIMA_entropy_source_formation(const struct DimStruct *dims, struct LookupS
                 const double S_E = sv_star_Tw - L_fp_Tw/Twet[ijk] - sd_T;
                 const double S_D = -Rv * log(pv/pv_star_T) + cpv * log(T[ijk]/Twet[ijk]);
 
-                const double tmp = S_P * precip_formation_rate[ijk] - (S_E + S_D) * evaporation_sublimation_rate[ijk];
-
                 entropy_tendency[ijk] += S_P * precip_formation_rate[ijk] - (S_E + S_D) * evaporation_sublimation_rate[ijk];
             }
         }
