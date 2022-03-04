@@ -109,7 +109,7 @@ void exchange_coefficients_byun(double Ri, double zb, double z0, double* cm, dou
 
     //Monin-Obukhov similarity based on
     //Daewon W. Byun, 1990: On the Analytical Solutions of Flux-Profile Relationships for the Atmospheric Surface Layer. J. Appl. Meteor., 29, 652–657.
-    //doi: http://dx.doi.org/10.1175/1520-0450(1990)029<0652:OTASOF>2.0.CO;2
+    //doi: https://doi.org/10.1175/1520-0450(1990)029<0652:OTASOF>2.0.CO;2
 
 
     const double logz = log(zb/z0);

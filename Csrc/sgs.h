@@ -201,7 +201,7 @@ void tke_buoyant_production(const struct DimStruct *dims,  double* restrict e_te
 
 //J. Mailhot and R. Benoit, 1982: A Finite-Element Model of the Atmospheric Boundary Layer Suitable
 //for Use with Numerical Weather Prediction Models. J. Atmos. Sci., 39, 2249–2266.
-//doi: http://dx.doi.org/10.1175/1520-0469(1982)039<2249:AFEMOT>2.0.CO;2
+//doi: https://doi.org/10.1175/1520-0469(1982)039<2249:AFEMOT>2.0.CO;2
 void tke_surface(const struct DimStruct *dims, double* e, double* lmo, double* ustar, double h_bl, double zb){
     const ssize_t istride = dims->nlg[1] * dims->nlg[2];
     const ssize_t jstride = dims->nlg[2];
