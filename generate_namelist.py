@@ -983,8 +983,8 @@ def DYCOMS_RF02():
     namelist['grid']['dz'] = 5.0
 
     namelist['mpi'] = {}
-    namelist['mpi']['nprocx'] = 8
-    namelist['mpi']['nprocy'] = 8
+    namelist['mpi']['nprocx'] = 1
+    namelist['mpi']['nprocy'] = 1
     namelist['mpi']['nprocz'] = 1
 
     namelist['time_stepping'] = {}
@@ -994,20 +994,14 @@ def DYCOMS_RF02():
     namelist['time_stepping']['dt_max'] = 10.0
     namelist['time_stepping']['t_max'] = 6.0 * 3600.0
 
-    #namelist['microphysics'] = {}
-    #namelist['microphysics']['phase_partitioning'] = 'liquid_only'
-    #namelist['microphysics']['cloud_sedimentation'] = False
-    #namelist['microphysics']['ccn'] = 70.0e6
-    #namelist['microphysics']['scheme'] = 'SB_Liquid'
-    #namelist['microphysics']['SB_Liquid'] = {}
-    #namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
-    #namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
-
     namelist['thermodynamics'] = {}
-    namelist['thermodynamics']['latentheat'] = 'variable'
+    namelist['thermodynamics']['latentheat'] = 'constant'
 
     namelist['microphysics'] = {}
-    namelist['microphysics']['scheme'] = 'CLIMA_1M'
+    namelist['microphysics']['scheme'] = 'SB_Liquid'
+    namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+    namelist['microphysics']['cloud_sedimentation'] = True
+    namelist['microphysics']['ccn'] = 55.0e6
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
@@ -1018,10 +1012,10 @@ def DYCOMS_RF02():
     namelist['diffusion']['qt_entropy_source'] = False
 
     namelist['momentum_transport'] = {}
-    namelist['momentum_transport']['order'] = 5
+    namelist['momentum_transport']['order'] = 7
 
     namelist['scalar_transport'] = {}
-    namelist['scalar_transport']['order'] = 5
+    namelist['scalar_transport']['order'] = 7
 
     namelist['damping'] = {}
     namelist['damping']['scheme'] = 'Rayleigh'
@@ -1033,38 +1027,33 @@ def DYCOMS_RF02():
     namelist['input']['input_root'] = './'
 
     namelist['output'] = {}
-    namelist['output']['output_root'] = '/groups/esm/ajaruga/PR_testing/'
+    namelist['output']['output_root'] = './'
 
     namelist['restart'] = {}
     namelist['restart']['output'] = True
     namelist['restart']['init_from'] = False
-    namelist['restart']['input_path'] = '/groups/esm/ajaruga/PR_testing/'
-    namelist['restart']['frequency'] = 10 * 3600.0
+    namelist['restart']['input_path'] = './'
+    namelist['restart']['frequency'] = 600.0
     namelist['restart']['init_altered'] = False
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
     namelist['stats_io']['auxiliary'] = ['DYCOMS', 'Flux', 'TKE']
-    namelist['stats_io']['frequency'] = 20 * 60.0
+    namelist['stats_io']['frequency'] = 60.0
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
-    namelist['fields_io']['frequency'] = 10 * 3600.0
-    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature']
+    namelist['fields_io']['frequency'] = 3600.0
+    namelist['fields_io']['diagnostic_fields'] = ['ql','temperature','buoyancy_frequency','viscosity', 'buoyancy', 'thetali']
 
     namelist['visualization'] = {}
     namelist['visualization']['frequency'] = 1e6
 
     namelist['conditional_stats'] ={}
     namelist['conditional_stats']['classes'] = ['Spectra']
-    namelist['conditional_stats']['frequency'] = 20 * 60.0
+    namelist['conditional_stats']['frequency'] = 600.0
     namelist['conditional_stats']['stats_dir'] = 'cond_stats'
 
-    namelist['tracers'] = {}
-    namelist['tracers']['use_tracers'] = True
-    namelist['tracers']['scheme'] = 'UpdraftTracers'
-    namelist['tracers']['use_lcl_tracers'] = False
-    namelist['tracers']['timescale'] = 15.0
 
     namelist['meta'] = {}
     namelist['meta']['simname'] = 'DYCOMS_RF02'
@@ -1184,8 +1173,8 @@ def Rico():
     namelist['grid']['dz'] = 40.0
 
     namelist['mpi'] = {}
-    namelist['mpi']['nprocx'] = 8
-    namelist['mpi']['nprocy'] = 8
+    namelist['mpi']['nprocx'] = 1
+    namelist['mpi']['nprocy'] = 1
     namelist['mpi']['nprocz'] = 1
 
     namelist['time_stepping'] = {}
@@ -1195,22 +1184,18 @@ def Rico():
     namelist['time_stepping']['dt_max'] = 10.0
     namelist['time_stepping']['t_max'] = 3600.0*24.0
 
-    #namelist['thermodynamics'] = {}
-    #namelist['thermodynamics']['latentheat'] = 'constant'
-    #namelist['microphysics'] = {}
-    #namelist['microphysics']['phase_partitioning'] = 'liquid_only'
-    #namelist['microphysics']['cloud_sedimentation'] = False
-    #namelist['microphysics']['ccn'] = 70.0e6
-    #namelist['microphysics']['scheme'] = 'SB_Liquid'
-    #namelist['microphysics']['SB_Liquid'] = {}
-    #namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
-    #namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
-
     namelist['thermodynamics'] = {}
-    namelist['thermodynamics']['latentheat'] = 'variable'
+    namelist['thermodynamics']['latentheat'] = 'constant'
 
     namelist['microphysics'] = {}
-    namelist['microphysics']['scheme'] = 'CLIMA_1M'
+    namelist['microphysics']['phase_partitioning'] = 'liquid_only'
+    namelist['microphysics']['cloud_sedimentation'] = False
+    namelist['microphysics']['ccn'] = 70.0e6
+    namelist['microphysics']['scheme'] = 'SB_Liquid'
+    namelist['microphysics']['SB_Liquid'] = {}
+
+    namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
+    namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
 
     namelist['tracers'] = {}
     namelist['tracers']['use_tracers'] = True
@@ -1227,10 +1212,10 @@ def Rico():
     namelist['diffusion']['qt_entropy_source'] = False
 
     namelist['momentum_transport'] = {}
-    namelist['momentum_transport']['order'] = 5
+    namelist['momentum_transport']['order'] = 7
 
     namelist['scalar_transport'] = {}
-    namelist['scalar_transport']['order'] = 5
+    namelist['scalar_transport']['order'] = 7
     namelist['scalar_transport']['order_sedimentation'] = 1
 
     namelist['damping'] = {}
@@ -1243,16 +1228,16 @@ def Rico():
     namelist['input']['input_root'] = './'
 
     namelist['output'] = {}
-    namelist['output']['output_root'] = '/groups/esm/ajaruga/PR_testing/'
+    namelist['output']['output_root'] = './'
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
     namelist['stats_io']['auxiliary'] = ['Cumulus', 'Flux', 'TKE']
-    namelist['stats_io']['frequency'] = 30 * 60
+    namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
-    namelist['fields_io']['frequency'] = 3600.0*36.0
+    namelist['fields_io']['frequency'] = 1800.0
     namelist['fields_io']['diagnostic_fields'] = ['ql', 'qr', 'temperature','buoyancy_frequency','viscosity', 'buoyancy', 'thetali']
 
     namelist['meta'] = {}
@@ -1262,13 +1247,13 @@ def Rico():
     namelist['restart'] = {}
     namelist['restart']['output'] = True
     namelist['restart']['init_from'] = False
-    namelist['restart']['input_path'] = '/groups/esm/ajaruga/PR_testing/'
+    namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
     namelist['restart']['init_altered'] = False
 
     namelist['conditional_stats'] ={}
     namelist['conditional_stats']['classes'] = ['Spectra']
-    namelist['conditional_stats']['frequency'] = 30 * 60
+    namelist['conditional_stats']['frequency'] = 600.0
     namelist['conditional_stats']['stats_dir'] = 'cond_stats'
     return namelist
 
@@ -1869,18 +1854,18 @@ def TRMM_LBA():
 
     namelist['grid'] = {}
     namelist['grid']['dims'] = 3
-    namelist['grid']['nx'] = 100 #200
-    namelist['grid']['ny'] = 100 #200
-    namelist['grid']['nz'] = 220 #220
+    namelist['grid']['nx'] = 200
+    namelist['grid']['ny'] = 200
+    namelist['grid']['nz'] = 220
     namelist['grid']['gw'] = 3
-    namelist['grid']['dx'] = 200.0 #100.0
-    namelist['grid']['dy'] = 200.0 #100.0
-    namelist['grid']['dz'] = 100.0 #100.0
+    namelist['grid']['dx'] = 100.0
+    namelist['grid']['dy'] = 100.0
+    namelist['grid']['dz'] = 100.0
     namelist['grid']['stretch'] = True
 
     namelist['mpi'] = {}
-    namelist['mpi']['nprocx'] = 8
-    namelist['mpi']['nprocy'] = 8
+    namelist['mpi']['nprocx'] = 1
+    namelist['mpi']['nprocy'] = 1
     namelist['mpi']['nprocz'] = 1
 
     namelist['time_stepping'] = {}
@@ -1890,21 +1875,18 @@ def TRMM_LBA():
     namelist['time_stepping']['dt_max'] = 10.0
     namelist['time_stepping']['t_max'] = 3600.0 * 6.0
 
-    #namelist['thermodynamics'] = {}
-    #namelist['thermodynamics']['latentheat'] = 'constant'
-    #namelist['microphysics'] = {}
-    #namelist['microphysics']['scheme'] = 'Arctic_1M' #T_Liquid'
-    #namelist['microphysics']['phase_partitioning'] = 'liquid_only' # liquid_ice
-    #namelist['microphysics']['cloud_sedimentation'] = False
-    #namelist['microphysics']['ccn'] = 70.0e6
-    #namelist['microphysics']['SB_Liquid']['nu_droplet'] = 0
-    #namelist['microphysics']['SB_Liquid']['mu_rain'] = 1
-
     namelist['thermodynamics'] = {}
-    namelist['thermodynamics']['latentheat'] = 'variable'
+    namelist['thermodynamics']['latentheat'] = 'constant'
 
     namelist['microphysics'] = {}
-    namelist['microphysics']['scheme'] = 'CLIMA_1M'
+    namelist['microphysics']['scheme'] = 'Arctic_1M' #T_Liquid'
+    namelist['microphysics']['phase_partitioning'] = 'liquid_only' # liquid_ice
+
+    #namelist['thermodynamics'] = {}
+    #namelist['thermodynamics']['latentheat'] = 'variable'
+
+    #namelist['microphysics'] = {}
+    #namelist['microphysics']['scheme'] = 'CLIMA_1M'
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'
@@ -1937,16 +1919,16 @@ def TRMM_LBA():
     namelist['input']['input_root'] = './'
 
     namelist['output'] = {}
-    namelist['output']['output_root'] = '/groups/esm/ajaruga/PR_testing/'
+    namelist['output']['output_root'] = './'
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
     namelist['stats_io']['auxiliary'] = ['Cumulus', 'Flux', 'TKE']
-    namelist['stats_io']['frequency'] = 30 * 60
+    namelist['stats_io']['frequency'] = 100.0
 
     namelist['fields_io'] = {}
     namelist['fields_io']['fields_dir'] = 'fields'
-    namelist['fields_io']['frequency'] = 3600.0 * 10.0
+    namelist['fields_io']['frequency'] = 1800.0
     namelist['fields_io']['diagnostic_fields'] = ['ql','qr', 'qi','temperature', 'buoyancy_frequency', 'viscosity', 'buoyancy' , 'thetali']
 
     namelist['meta'] = {}
@@ -1956,13 +1938,13 @@ def TRMM_LBA():
     namelist['restart'] = {}
     namelist['restart']['output'] = True
     namelist['restart']['init_from'] = False
-    namelist['restart']['input_path'] = '/groups/esm/ajaruga/PR_testing/'
+    namelist['restart']['input_path'] = './'
     namelist['restart']['frequency'] = 600.0
     namelist['restart']['init_altered'] = False
 
     namelist['conditional_stats'] = {}
     namelist['conditional_stats']['classes'] = ['Spectra']
-    namelist['conditional_stats']['frequency'] = 30 * 60
+    namelist['conditional_stats']['frequency'] = 600.0
     namelist['conditional_stats']['stats_dir'] = 'cond_stats'
 
     return namelist
