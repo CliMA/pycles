@@ -1937,7 +1937,7 @@ def TRMM_LBA():
     namelist['input']['input_root'] = './'
 
     namelist['output'] = {}
-    namelist['output']['output_root'] = '/groups/esm/ajaruga/clima_micro_new_lambda_and_L/'
+    namelist['output']['output_root'] = '/groups/esm/ajaruga/PR_testing/'
 
     namelist['stats_io'] = {}
     namelist['stats_io']['stats_dir'] = 'stats'
@@ -1956,7 +1956,7 @@ def TRMM_LBA():
     namelist['restart'] = {}
     namelist['restart']['output'] = True
     namelist['restart']['init_from'] = False
-    namelist['restart']['input_path'] = '/groups/esm/ajaruga/clima_micro_new_lambda_and_L/'
+    namelist['restart']['input_path'] = '/groups/esm/ajaruga/PR_testing/'
     namelist['restart']['frequency'] = 600.0
     namelist['restart']['init_altered'] = False
 
