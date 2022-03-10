@@ -563,11 +563,11 @@ cdef class Microphysics_CLIMA_1M:
     def __init__(self, ParallelMPI.ParallelMPI Par, LatentHeat LH, namelist):
         # Create the appropriate linkages to the bulk thermodynamics
         LH.Lambda_fp = lambda_T_clima
-        LH.L_fp = latent_heat_variable_with_T
+        LH.L_fp = latent_heat_variable_with_lambda
         self.thermodynamics_type = 'SA'
         #also set local versions
         self.Lambda_fp = lambda_T_clima
-        self.L_fp = latent_heat_variable_with_T
+        self.L_fp = latent_heat_variable_with_lambda
         self.CC = ClausiusClapeyron()
         self.CC.initialize(namelist, LH, Par)
 

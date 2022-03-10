@@ -1876,17 +1876,10 @@ def TRMM_LBA():
     namelist['time_stepping']['t_max'] = 3600.0 * 6.0
 
     namelist['thermodynamics'] = {}
-    namelist['thermodynamics']['latentheat'] = 'constant'
+    namelist['thermodynamics']['latentheat'] = 'variable'
 
     namelist['microphysics'] = {}
-    namelist['microphysics']['scheme'] = 'Arctic_1M' #T_Liquid'
-    namelist['microphysics']['phase_partitioning'] = 'liquid_only' # liquid_ice
-
-    #namelist['thermodynamics'] = {}
-    #namelist['thermodynamics']['latentheat'] = 'variable'
-
-    #namelist['microphysics'] = {}
-    #namelist['microphysics']['scheme'] = 'CLIMA_1M'
+    namelist['microphysics']['scheme'] = 'CLIMA_1M'
 
     namelist['sgs'] = {}
     namelist['sgs']['scheme'] = 'Smagorinsky'

@@ -7,7 +7,9 @@ cimport TimeStepping
 from NetCDFIO cimport NetCDFIO_Stats
 from Thermodynamics cimport LatentHeat, ClausiusClapeyron
 from libc.math cimport pow, fmax, fmin, tanh
+include 'parameters.pxi'
 include 'parameters_micro.pxi'
+include 'parameters_clima.pxi'
 
 cdef:
     double lambda_constant(double T) nogil
@@ -105,13 +107,11 @@ cdef inline double lambda_constant(double T) nogil:
 
 cdef inline double lambda_T_clima(double T) nogil:
     cdef:
-        double Twarm = 273.15
-        double Tcold = 263.15
         double Lambda = 0.0
 
-    if T > Tcold and T <= Twarm:
-        Lambda = pow((T - Tcold)/(Twarm - Tcold), 1.0)
-    elif T > Twarm:
+    if T > T_icenuc and T <= Tf:
+        Lambda = pow((T - T_icenuc)/(Tf - T_icenuc), pow_icenuc)
+    elif T > Tf:
         Lambda = 1.0
     else:
         Lambda = 0.0
@@ -145,7 +145,7 @@ cdef inline double latent_heat_variable_with_T(double T, double Lambda) nogil:
 
 cdef inline double latent_heat_variable_with_lambda(double T, double Lambda) nogil:
     cdef:
-        double Lv = 2.501e6
-        double Ls = 2.8334e6
+        double Lv = LH_v0
+        double Ls = LH_s0
 
     return (Lv * Lambda) + (Ls * (1.0 - Lambda))

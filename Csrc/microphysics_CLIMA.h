@@ -1,84 +1,12 @@
 #pragma once
 #include "parameters.h"
+#include "parameters_clima.h"
 #include "thermodynamic_functions.h"
 #include "advection_interpolation.h"
 #include "entropies.h"
 
-// see CLIMA CloudMicrophysics.jl documentation
-// CLIMA microphysics parameters - size distributions and relations
-#define rho_cloud_liq 1e3
-#define rho_cloud_ice 916.7
-
-#define r0_ice 1e-5
-#define r0_rai 1e-3
-#define r0_sno 1e-3
-
-#define n0_ice 2e7
-#define me_ice 3.0
-#define m0_ice 4.0/3 * pi * rho_cloud_ice * pow(r0_ice, me_ice)
-#define Chi_m_ice 1.0
-#define Delta_m_ice 0.0
-
-#define r_ice_snow 62.5 * 1e-6
-
-#define q_liq_threshold 5e-4
-#define q_ice_threshold 1e-6
-#define tau_acnv_rai 2.5e3
-#define tau_acnv_sno 1e2
-
-#define n0_rai 8e6 * 2
-#define me_rai 3.0
-#define ae_rai 2.0
-#define ve_rai 0.5
-#define m0_rai 4.0/3 * pi * rho_cloud_liq * pow(r0_rai, me_rai)
-#define a0_rai pi * pow(r0_rai, ae_rai)
-#define Chi_m_rai 1.0
-#define Delta_m_rai 0.0
-#define Chi_a_rai 1.0
-#define Delta_a_rai 0.0
-#define Chi_v_rai 1.0
-#define Delta_v_rai 0.0
-
-#define mu_sno 4.36 * 1e9
-#define nu_sno 0.63
-#define me_sno 2.0
-#define ae_sno 2.0
-#define ve_sno 0.25
-#define m0_sno 1e-1 * pow(r0_sno, me_sno)
-#define a0_sno 0.3 * pi * pow(r0_sno, ae_sno)
-#define v0_sno pow(2.0, 9.0/4) * pow(r0_sno, ve_sno)
-#define Chi_m_sno 1.0
-#define Delta_m_sno 0.0
-#define Chi_a_sno 1.0
-#define Delta_a_sno 0.0
-#define Chi_v_sno 1.0
-#define Delta_v_sno 0.0
-
-// CLIMA microphysics parameters - processes
-#define C_drag 0.55
-#define K_therm 2.4e-2
-#define D_vapor 2.26e-5
-#define nu_air 1.6e-5
-#define N_sc 1.6/2.26
-
-#define a_vent_rai 1.5
-#define b_vent_rai 0.53
-#define a_vent_sno 0.65
-#define b_vent_sno 0.44
-
-#define E_liq_rai 0.8
-#define E_liq_sno 0.1
-#define E_ice_rai 1.0
-#define E_ice_sno 0.1
-#define E_rai_sno 1.0
-
-// additional parameters for pycles implementation
-#define max_iter 10
-#define microph_rate_eps 1e-3
-#define microph_eps 1e-16
-
 double CLIMA_latent_heat_fusion(double T){
-  const double LH_f0 = 2.8344e6 - 2.5008e6;
+  const double LH_f0 = LH_s0 - LH_v0;
   return LH_f0 + (cl - ci) * (T - Tt);
 }
 

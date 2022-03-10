@@ -77,11 +77,8 @@ void eos_c(struct LookupStruct *LT, double (*lam_fp)(double), double (*L_fp)(dou
                printf("%s \t %f\n", "s_2", s_2);
                printf("%s \t %d\n", "count", count);
             }
-            if(count > 1e2){
-               printf("%s \t %d\n", "count", count);
-            }
 
-        } while((delta_T >= 1.0e-3 || sigma_2 < -1.0e-3) && count < 1e2);
+        } while(delta_T >= 1.0e-3 || sigma_2 < -1.0e-3);
         *T  = T_2;
         *qv = qv_star_2;
         *ql = lam_fp(T_2) * sigma_2;
