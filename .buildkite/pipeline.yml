@@ -1,0 +1,39 @@
+env:
+  MPICH_VERSION: "4.0.0"
+  OPENMPI_VERSION: "4.1.1"
+  CUDA_VERSION: "11.2"
+  OPENBLAS_NUM_THREADS: 1
+
+steps:
+  - label: "init :computer:"
+    key: "init_cpu_env"
+    command:
+
+      - "source /home/zhaoyi/central_python2.7.15/bin/activate"
+      - "module purge"
+      - "module load hdf5/1.10.1"
+      - "module load netcdf-c/4.6.1"
+      - "module load netcdf-cxx/4.3.0"
+      - "module load netcdf-fortran/4.4.4"
+      - "module load openmpi/1.10.7"
+      - "python generate_parameters.py"
+      - "python generate_parameters_a1m.py"
+      - "CC=mpicc python setup.py build_ext --inplace"
+
+    agents:
+      config: cpu
+      queue: central
+      slurm_ntasks: 1
+
+  - wait
+
+  - label: ":computer: tests"
+    key: "cpu_test1"
+    command:
+      - "source /home/zhaoyi/central_python2.7.15/bin/activate"
+      - "srun python main.py Bomex.in"
+    agents:
+      config: cpu
+      queue: central
+      slurm_ntasks: 1
+
