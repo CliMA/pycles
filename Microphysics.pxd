@@ -9,7 +9,6 @@ from Thermodynamics cimport LatentHeat, ClausiusClapeyron
 from libc.math cimport pow, fmax, fmin, tanh
 include 'parameters.pxi'
 include 'parameters_micro.pxi'
-include 'parameters_clima.pxi'
 
 cdef:
     double lambda_constant(double T) nogil

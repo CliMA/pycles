@@ -1,6 +1,5 @@
 #pragma once
 #include "parameters.h"
-#include "parameters_clima.h"
 #include "thermodynamic_functions.h"
 #include "advection_interpolation.h"
 #include "entropies.h"
