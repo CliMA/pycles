@@ -126,4 +126,3 @@ def ThermodynamicsFactory(namelist, Micro, LatentHeat LH,ParallelMPI.ParallelMPI
         return ThermodynamicsDry(namelist,LH,Par)
     if(Micro.thermodynamics_type=='SA'):
         return ThermodynamicsSA(namelist,LH,Par)
-
