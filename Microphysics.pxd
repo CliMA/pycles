@@ -108,8 +108,8 @@ cdef inline double lambda_T_clima(double T) nogil:
     cdef:
         double Lambda = 0.0
 
-    if T > T_icenuc and T <= Tf:
-        Lambda = pow((T - T_icenuc)/(Tf - T_icenuc), pow_icenuc)
+    if T > CLIMA_T_icenuc and T <= Tf:
+        Lambda = pow((T - CLIMA_T_icenuc)/(Tf - CLIMA_T_icenuc), CLIMA_pow_icenuc)
     elif T > Tf:
         Lambda = 1.0
     else:
@@ -144,7 +144,7 @@ cdef inline double latent_heat_variable_with_T(double T, double Lambda) nogil:
 
 cdef inline double latent_heat_variable_with_lambda(double T, double Lambda) nogil:
     cdef:
-        double Lv = LH_v0
-        double Ls = LH_s0
+        double Lv = CLIMA_LH_v0
+        double Ls = CLIMA_LH_s0
 
     return (Lv * Lambda) + (Ls * (1.0 - Lambda))

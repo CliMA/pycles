@@ -5,21 +5,21 @@
 #include "entropies.h"
 
 double CLIMA_latent_heat_fusion(double T){
-  const double LH_f0 = LH_s0 - LH_v0;
+  const double LH_f0 = CLIMA_LH_s0 - CLIMA_LH_v0;
   return LH_f0 + (cl - ci) * (T - Tt);
 }
 
 double CLIMA_v0_rai(double rho){
-  return sqrt(8./3./ C_drag * (rho_cloud_liq / rho - 1.) * g * r0_rai);
+  return sqrt(8./3./ CLIMA_C_drag * (CLIMA_rho_cloud_liq / rho - 1.) * g * CLIMA_r0_rai);
 }
 
 double CLIMA_n0_sno(double q_sno, double rho){
-  return mu_sno * pow(rho * fmax(0., q_sno), nu_sno);
+  return CLIMA_mu_sno * pow(rho * fmax(0., q_sno), CLIMA_nu_sno);
 }
 
 double CLIMA_lambda(double q, double rho, double n0, double m0, double me,
                     double r0, double Chi_m, double Delta_m){
-  if(q > microph_eps){
+  if(q > CLIMA_microph_eps){
     return pow(
              Chi_m * m0 * n0 * tgamma(me + Delta_m + 1.) / rho / q / pow(r0, me + Delta_m),
              1. / (me + Delta_m + 1.)
@@ -31,12 +31,13 @@ double CLIMA_lambda(double q, double rho, double n0, double m0, double me,
 }
 
 double CLIMA_terminal_velocity_rai(double rho, double q_rai){
-  if(q_rai > microph_eps){
-    double lambda_rai = CLIMA_lambda(q_rai, rho, n0_rai, m0_rai, me_rai, r0_rai, Chi_m_rai, Delta_m_rai);
+  if(q_rai > CLIMA_microph_eps){
+    double lambda_rai = CLIMA_lambda(q_rai, rho, CLIMA_n0_rai, CLIMA_m0_rai,
+                                     CLIMA_me_rai, CLIMA_r0_rai, CLIMA_Chi_m_rai, CLIMA_Delta_m_rai);
 
-    return Chi_v_rai * CLIMA_v0_rai(rho) * pow(lambda_rai * r0_rai, - ve_rai - Delta_v_rai) *
-           tgamma(me_rai + ve_rai + Delta_m_rai + Delta_v_rai + 1.) /
-           tgamma(me_rai + Delta_m_rai + 1.);
+    return CLIMA_Chi_v_rai * CLIMA_v0_rai(rho) * pow(lambda_rai * CLIMA_r0_rai, - CLIMA_ve_rai - CLIMA_Delta_v_rai) *
+           tgamma(CLIMA_me_rai + CLIMA_ve_rai + CLIMA_Delta_m_rai + CLIMA_Delta_v_rai + 1.) /
+           tgamma(CLIMA_me_rai + CLIMA_Delta_m_rai + 1.);
   }
   else{
     return 0.;
@@ -44,12 +45,13 @@ double CLIMA_terminal_velocity_rai(double rho, double q_rai){
 }
 
 double CLIMA_terminal_velocity_sno(double rho, double q_sno){
-  if(q_sno > microph_eps){
-    double lambda_sno = CLIMA_lambda(q_sno, rho, CLIMA_n0_sno(q_sno, rho), m0_sno, me_sno, r0_sno, Chi_m_sno, Delta_m_sno);
+  if(q_sno > CLIMA_microph_eps){
+    double lambda_sno = CLIMA_lambda(q_sno, rho, CLIMA_n0_sno(q_sno, rho), CLIMA_m0_sno,
+                                     CLIMA_me_sno, CLIMA_r0_sno, CLIMA_Chi_m_sno, CLIMA_Delta_m_sno);
 
-    return Chi_v_sno * v0_sno * pow(lambda_sno * r0_sno, - ve_sno - Delta_v_sno) *
-           tgamma(me_sno + ve_sno + Delta_m_sno + Delta_v_sno + 1.) /
-           tgamma(me_sno + Delta_m_sno + 1.);
+    return CLIMA_Chi_v_sno * CLIMA_v0_sno * pow(lambda_sno * CLIMA_r0_sno, - CLIMA_ve_sno - CLIMA_Delta_v_sno) *
+           tgamma(CLIMA_me_sno + CLIMA_ve_sno + CLIMA_Delta_m_sno + CLIMA_Delta_v_sno + 1.) /
+           tgamma(CLIMA_me_sno + CLIMA_Delta_m_sno + 1.);
   }
   else{
     return 0.;
@@ -58,13 +60,13 @@ double CLIMA_terminal_velocity_sno(double rho, double q_sno){
 
 void CLIMA_conv_q_liq_to_q_rai(double _q_liq, double* qr_tendency_aut){
   double q_liq = fmax(0., _q_liq);
-  *qr_tendency_aut = fmax(0., q_liq - q_liq_threshold) / tau_acnv_rai;
+  *qr_tendency_aut = fmax(0., q_liq - CLIMA_q_liq_threshold) / CLIMA_tau_acnv_rai;
   return;
 }
 
 void CLIMA_conv_q_ice_to_q_sno_no_supersat(double _q_ice, double* qs_tendency_aut){
   double q_ice = fmax(0., _q_ice);
-  *qs_tendency_aut = fmax(0., q_ice - q_ice_threshold) / tau_acnv_sno;
+  *qs_tendency_aut = fmax(0., q_ice - CLIMA_q_ice_threshold) / CLIMA_tau_acnv_sno;
   return;
 }
 
@@ -85,12 +87,14 @@ void CLIMA_conv_q_ice_to_q_sno(double _q_tot, double _q_liq, double _q_ice, doub
 
   *qs_tendency_aut = 0.;
 
-  if(q_ice > microph_eps && S > 0.){
-    double G = 1. / (L / K_therm / T * (L / Rv / T - 1.) + Rv * T / D_vapor / pv_s);
-    double lambda_ice = CLIMA_lambda(q_ice, rho, n0_ice, m0_ice, me_ice, r0_ice, Chi_m_ice, Delta_m_ice);
+  if(q_ice > CLIMA_microph_eps && S > 0.){
+    double G = 1. / (L / CLIMA_K_therm / T * (L / Rv / T - 1.) + Rv * T / CLIMA_D_vapor / pv_s);
+    double lambda_ice = CLIMA_lambda(q_ice, rho, CLIMA_n0_ice, CLIMA_m0_ice, CLIMA_me_ice,
+                                     CLIMA_r0_ice, CLIMA_Chi_m_ice, CLIMA_Delta_m_ice);
 
-    *qs_tendency_aut = 4. * pi * S * G * n0_ice / rho * exp(-lambda_ice * r_ice_snow) *
-                      (pow(r_ice_snow, 2) / (me_ice + Delta_m_ice) + (r_ice_snow * lambda_ice + 1.) / pow(lambda_ice, 2));
+    *qs_tendency_aut = 4. * pi * S * G * CLIMA_n0_ice / rho * exp(-lambda_ice * CLIMA_r_ice_snow) *
+                      (pow(CLIMA_r_ice_snow, 2) / (CLIMA_me_ice + CLIMA_Delta_m_ice) +
+                      (CLIMA_r_ice_snow * lambda_ice + 1.) / pow(lambda_ice, 2));
   }
   return;
 }
@@ -103,9 +107,12 @@ void CLIMA_accretion(double _q_liq, double _q_ice, double _q_rai, double _q_sno,
   double q_rai = fmax(0., _q_rai);
   double q_sno = fmax(0., _q_sno);
 
-  double lambda_ice = CLIMA_lambda(q_ice, rho, n0_ice,                   m0_ice, me_ice, r0_ice, Chi_m_ice, Delta_m_ice);
-  double lambda_rai = CLIMA_lambda(q_rai, rho, n0_rai,                   m0_rai, me_rai, r0_rai, Chi_m_rai, Delta_m_rai);
-  double lambda_sno = CLIMA_lambda(q_sno, rho, CLIMA_n0_sno(q_sno, rho), m0_sno, me_sno, r0_sno, Chi_m_sno, Delta_m_sno);
+  double lambda_ice = CLIMA_lambda(q_ice, rho, CLIMA_n0_ice, CLIMA_m0_ice,
+                                   CLIMA_me_ice, CLIMA_r0_ice, CLIMA_Chi_m_ice, CLIMA_Delta_m_ice);
+  double lambda_rai = CLIMA_lambda(q_rai, rho, CLIMA_n0_rai, CLIMA_m0_rai,
+                                   CLIMA_me_rai, CLIMA_r0_rai, CLIMA_Chi_m_rai, CLIMA_Delta_m_rai);
+  double lambda_sno = CLIMA_lambda(q_sno, rho, CLIMA_n0_sno(q_sno, rho), CLIMA_m0_sno,
+                                   CLIMA_me_sno, CLIMA_r0_sno, CLIMA_Chi_m_sno, CLIMA_Delta_m_sno);
 
   double v_rai = CLIMA_terminal_velocity_rai(rho, q_rai);
   double v_sno = CLIMA_terminal_velocity_sno(rho, q_sno);
@@ -118,37 +125,37 @@ void CLIMA_accretion(double _q_liq, double _q_ice, double _q_rai, double _q_sno,
   *qi_tendency_acc = 0.;
 
   // accretion qr ql
-  if(q_rai > microph_eps && q_liq > microph_eps){
+  if(q_rai > CLIMA_microph_eps && q_liq > CLIMA_microph_eps){
     tmp =
-        q_liq * E_liq_rai * n0_rai * a0_rai * CLIMA_v0_rai(rho) * Chi_a_rai * Chi_v_rai / lambda_rai *
-        tgamma(ae_rai + ve_rai + Delta_a_rai + Delta_v_rai + 1.) /
-        pow(lambda_rai * r0_rai, ae_rai + ve_rai + Delta_a_rai + Delta_v_rai);
+        q_liq * CLIMA_E_liq_rai * CLIMA_n0_rai * CLIMA_a0_rai * CLIMA_v0_rai(rho) * CLIMA_Chi_a_rai * CLIMA_Chi_v_rai / lambda_rai *
+        tgamma(CLIMA_ae_rai + CLIMA_ve_rai + CLIMA_Delta_a_rai + CLIMA_Delta_v_rai + 1.) /
+        pow(lambda_rai * CLIMA_r0_rai, CLIMA_ae_rai + CLIMA_ve_rai + CLIMA_Delta_a_rai + CLIMA_Delta_v_rai);
 
     *qr_tendency_acc += tmp;
     *ql_tendency_acc -= tmp;
   }
 
   // accretion qs qi
-  if(q_sno > microph_eps && q_ice > microph_eps){
+  if(q_sno > CLIMA_microph_eps && q_ice > CLIMA_microph_eps){
     tmp =
-        q_ice * E_ice_sno * CLIMA_n0_sno(q_sno, rho) * a0_sno * v0_sno * Chi_a_sno * Chi_v_sno / lambda_sno *
-        tgamma(ae_sno + ve_sno + Delta_a_sno + Delta_v_sno + 1.) /
-        pow(lambda_sno * r0_sno, ae_sno + ve_sno + Delta_a_sno + Delta_v_sno);
+        q_ice * CLIMA_E_ice_sno * CLIMA_n0_sno(q_sno, rho) * CLIMA_a0_sno * CLIMA_v0_sno * CLIMA_Chi_a_sno * CLIMA_Chi_v_sno / lambda_sno *
+        tgamma(CLIMA_ae_sno + CLIMA_ve_sno + CLIMA_Delta_a_sno + CLIMA_Delta_v_sno + 1.) /
+        pow(lambda_sno * CLIMA_r0_sno, CLIMA_ae_sno + CLIMA_ve_sno + CLIMA_Delta_a_sno + CLIMA_Delta_v_sno);
 
     *qs_tendency_acc += tmp;
     *qi_tendency_acc -= tmp;
   }
 
   // accretion qr qi
-  if(q_rai > microph_eps && q_ice > microph_eps){
+  if(q_rai > CLIMA_microph_eps && q_ice > CLIMA_microph_eps){
     double acc_q_ice_q_rai_ice_sink =
-      q_ice * E_ice_rai * n0_rai * a0_rai * CLIMA_v0_rai(rho) * Chi_a_rai * Chi_v_rai / lambda_rai *
-      tgamma(ae_rai + ve_rai + Delta_a_rai + Delta_v_rai + 1.) /
-      pow(lambda_rai * r0_rai, ae_rai + ve_rai + Delta_a_rai + Delta_v_rai);
-    double acc_q_ice_q_rai_rain_sink = E_ice_rai / rho * n0_rai * n0_ice * m0_rai * a0_rai * CLIMA_v0_rai(rho) *
-      Chi_m_rai * Chi_a_rai * Chi_v_rai / lambda_ice / lambda_rai *
-      tgamma(me_rai + ae_rai + ve_rai + Delta_m_rai + Delta_a_rai + Delta_v_rai +1.) /
-      pow(r0_rai * lambda_rai, me_rai + ae_rai + ve_rai + Delta_m_rai + Delta_a_rai + Delta_v_rai);
+      q_ice * CLIMA_E_ice_rai * CLIMA_n0_rai * CLIMA_a0_rai * CLIMA_v0_rai(rho) * CLIMA_Chi_a_rai * CLIMA_Chi_v_rai / lambda_rai *
+      tgamma(CLIMA_ae_rai + CLIMA_ve_rai + CLIMA_Delta_a_rai + CLIMA_Delta_v_rai + 1.) /
+      pow(lambda_rai * CLIMA_r0_rai, CLIMA_ae_rai + CLIMA_ve_rai + CLIMA_Delta_a_rai + CLIMA_Delta_v_rai);
+    double acc_q_ice_q_rai_rain_sink = CLIMA_E_ice_rai / rho * CLIMA_n0_rai * CLIMA_n0_ice * CLIMA_m0_rai * CLIMA_a0_rai * CLIMA_v0_rai(rho) *
+      CLIMA_Chi_m_rai * CLIMA_Chi_a_rai * CLIMA_Chi_v_rai / lambda_ice / lambda_rai *
+      tgamma(CLIMA_me_rai + CLIMA_ae_rai + CLIMA_ve_rai + CLIMA_Delta_m_rai + CLIMA_Delta_a_rai + CLIMA_Delta_v_rai +1.) /
+      pow(CLIMA_r0_rai * lambda_rai, CLIMA_me_rai + CLIMA_ae_rai + CLIMA_ve_rai + CLIMA_Delta_m_rai + CLIMA_Delta_a_rai + CLIMA_Delta_v_rai);
 
     *qr_tendency_acc -= acc_q_ice_q_rai_rain_sink;
     *qs_tendency_acc += acc_q_ice_q_rai_rain_sink + acc_q_ice_q_rai_ice_sink;
@@ -156,10 +163,10 @@ void CLIMA_accretion(double _q_liq, double _q_ice, double _q_rai, double _q_sno,
   }
 
   // accretion qs ql
-  if(q_sno >  microph_eps && q_liq > microph_eps){
-    tmp = -q_liq * E_liq_sno * CLIMA_n0_sno(q_sno, rho) * a0_sno * v0_sno * Chi_a_sno * Chi_v_sno / lambda_sno *
-          tgamma(ae_sno + ve_sno + Delta_a_sno + Delta_v_sno + 1.) /
-          pow(lambda_sno * r0_sno, ae_sno + ve_sno + Delta_a_sno + Delta_v_sno);
+  if(q_sno >  CLIMA_microph_eps && q_liq > CLIMA_microph_eps){
+    tmp = -q_liq * CLIMA_E_liq_sno * CLIMA_n0_sno(q_sno, rho) * CLIMA_a0_sno * CLIMA_v0_sno * CLIMA_Chi_a_sno * CLIMA_Chi_v_sno / lambda_sno *
+          tgamma(CLIMA_ae_sno + CLIMA_ve_sno + CLIMA_Delta_a_sno + CLIMA_Delta_v_sno + 1.) /
+          pow(lambda_sno * CLIMA_r0_sno, CLIMA_ae_sno + CLIMA_ve_sno + CLIMA_Delta_a_sno + CLIMA_Delta_v_sno);
 
     if(T>Tf){
       double L_f = CLIMA_latent_heat_fusion(T);
@@ -175,22 +182,22 @@ void CLIMA_accretion(double _q_liq, double _q_ice, double _q_rai, double _q_sno,
   }
 
   // accretion qr qs
-  if(q_sno >  microph_eps && q_rai > microph_eps){
+  if(q_sno >  CLIMA_microph_eps && q_rai > CLIMA_microph_eps){
     if(T>Tf){
-      tmp = pi / rho * n0_rai * CLIMA_n0_sno(q_sno, rho) * m0_sno * Chi_m_sno * E_rai_sno *
-        fabs(v_rai - v_sno) / pow(r0_sno, me_sno + Delta_m_sno) * (
-          2. * tgamma(me_sno + Delta_m_sno + 1.) / pow(lambda_rai, 3) / pow(lambda_sno, me_sno + Delta_m_sno + 1) +
-          2. * tgamma(me_sno + Delta_m_sno + 2.) / pow(lambda_rai, 2) / pow(lambda_sno, me_sno + Delta_m_sno + 2) +
-               tgamma(me_sno + Delta_m_sno + 3.) / lambda_rai /         pow(lambda_sno, me_sno + Delta_m_sno + 3));
+      tmp = pi / rho * CLIMA_n0_rai * CLIMA_n0_sno(q_sno, rho) * CLIMA_m0_sno * CLIMA_Chi_m_sno * CLIMA_E_rai_sno *
+        fabs(v_rai - v_sno) / pow(CLIMA_r0_sno, CLIMA_me_sno + CLIMA_Delta_m_sno) * (
+          2. * tgamma(CLIMA_me_sno + CLIMA_Delta_m_sno + 1.) / pow(lambda_rai, 3) / pow(lambda_sno, CLIMA_me_sno + CLIMA_Delta_m_sno + 1) +
+          2. * tgamma(CLIMA_me_sno + CLIMA_Delta_m_sno + 2.) / pow(lambda_rai, 2) / pow(lambda_sno, CLIMA_me_sno + CLIMA_Delta_m_sno + 2) +
+               tgamma(CLIMA_me_sno + CLIMA_Delta_m_sno + 3.) / lambda_rai /         pow(lambda_sno, CLIMA_me_sno + CLIMA_Delta_m_sno + 3));
        *qr_tendency_acc += tmp;
        *qs_tendency_acc -= tmp;
     }
     else{
-      tmp = pi / rho * CLIMA_n0_sno(q_sno, rho) * n0_rai * m0_rai * Chi_m_rai * E_rai_sno *
-        fabs(v_rai - v_sno) / pow(r0_rai, me_rai + Delta_m_rai) * (
-          2. * tgamma(me_rai + Delta_m_rai + 1.) / pow(lambda_sno, 3) / pow(lambda_rai, me_rai + Delta_m_rai + 1) +
-          2. * tgamma(me_rai + Delta_m_rai + 2.) / pow(lambda_sno, 2) / pow(lambda_rai, me_rai + Delta_m_rai + 2) +
-               tgamma(me_rai + Delta_m_rai + 3.) / lambda_sno /         pow(lambda_rai, me_rai + Delta_m_rai + 3));
+      tmp = pi / rho * CLIMA_n0_sno(q_sno, rho) * CLIMA_n0_rai * CLIMA_m0_rai * CLIMA_Chi_m_rai * CLIMA_E_rai_sno *
+        fabs(v_rai - v_sno) / pow(CLIMA_r0_rai, CLIMA_me_rai + CLIMA_Delta_m_rai) * (
+          2. * tgamma(CLIMA_me_rai + CLIMA_Delta_m_rai + 1.) / pow(lambda_sno, 3) / pow(lambda_rai, CLIMA_me_rai + CLIMA_Delta_m_rai + 1) +
+          2. * tgamma(CLIMA_me_rai + CLIMA_Delta_m_rai + 2.) / pow(lambda_sno, 2) / pow(lambda_rai, CLIMA_me_rai + CLIMA_Delta_m_rai + 2) +
+               tgamma(CLIMA_me_rai + CLIMA_Delta_m_rai + 3.) / lambda_sno /         pow(lambda_rai, CLIMA_me_rai + CLIMA_Delta_m_rai + 3));
       *qs_tendency_acc += tmp;
       *qr_tendency_acc -= tmp;
     }
@@ -214,18 +221,18 @@ void CLIMA_rain_evaporation(double _q_tot, double _q_liq, double _q_ice, double 
   double q_v = fmax(0., q_tot - q_liq - q_ice);
   double S = q_v/qv_sat - 1;
 
-  if(q_rai > microph_eps && S < 0.){
+  if(q_rai > CLIMA_microph_eps && S < 0.){
 
-    double G = 1. / (L / K_therm / T * (L / Rv / T - 1.) + Rv * T / D_vapor / pv_s);
+    double G = 1. / (L / CLIMA_K_therm / T * (L / Rv / T - 1.) + Rv * T / CLIMA_D_vapor / pv_s);
 
-    double lambda_rai = CLIMA_lambda(q_rai, rho, n0_rai, m0_rai, me_rai, r0_rai, Chi_m_rai, Delta_m_rai);
+    double lambda_rai = CLIMA_lambda(q_rai, rho, CLIMA_n0_rai, CLIMA_m0_rai, CLIMA_me_rai, CLIMA_r0_rai, CLIMA_Chi_m_rai, CLIMA_Delta_m_rai);
 
     *qr_tendency_evp = fmin(0.,
-      4. * pi * n0_rai / rho * S * G / pow(lambda_rai, 2) *
-      (a_vent_rai + b_vent_rai * pow(nu_air / D_vapor, 1./3.) /
-        pow(r0_rai * lambda_rai, (ve_rai + Delta_v_rai) / 2.) *
-        pow(2. * CLIMA_v0_rai(rho) * Chi_v_rai / nu_air / lambda_rai, 1./2.) *
-        tgamma((ve_rai + Delta_v_rai + 5.) / 2.)
+      4. * pi * CLIMA_n0_rai / rho * S * G / pow(lambda_rai, 2) *
+      (CLIMA_a_vent_rai + CLIMA_b_vent_rai * pow(CLIMA_nu_air / CLIMA_D_vapor, 1./3.) /
+        pow(CLIMA_r0_rai * lambda_rai, (CLIMA_ve_rai + CLIMA_Delta_v_rai) / 2.) *
+        pow(2. * CLIMA_v0_rai(rho) * CLIMA_Chi_v_rai / CLIMA_nu_air / lambda_rai, 1./2.) *
+        tgamma((CLIMA_ve_rai + CLIMA_Delta_v_rai + 5.) / 2.)
       ));
   }
   else{
@@ -250,18 +257,18 @@ void CLIMA_snow_deposition_sublimation(double _q_tot, double _q_liq, double _q_i
   double q_v = fmax(0.0, q_tot - q_liq - q_ice);
   double S = q_v/qv_sat - 1;
 
-  if(q_sno > microph_eps){
+  if(q_sno > CLIMA_microph_eps){
 
-    double G = 1. / (L / K_therm / T * (L / Rv / T - 1.) + Rv * T / D_vapor / pv_s);
+    double G = 1. / (L / CLIMA_K_therm / T * (L / Rv / T - 1.) + Rv * T / CLIMA_D_vapor / pv_s);
 
-    double lambda_sno = CLIMA_lambda(q_sno, rho, CLIMA_n0_sno(q_sno, rho), m0_sno, me_sno, r0_sno, Chi_m_sno, Delta_m_sno);
+    double lambda_sno = CLIMA_lambda(q_sno, rho, CLIMA_n0_sno(q_sno, rho), CLIMA_m0_sno, CLIMA_me_sno, CLIMA_r0_sno, CLIMA_Chi_m_sno, CLIMA_Delta_m_sno);
 
     *qs_tendency_dep_sub =
       4. * pi * CLIMA_n0_sno(q_sno, rho) / rho * S * G / pow(lambda_sno, 2) *
-      (a_vent_sno + b_vent_sno * pow(nu_air / D_vapor, 1./3.) /
-        pow(r0_sno * lambda_sno, (ve_sno + Delta_v_sno) / 2.) *
-        pow(2. * v0_sno * Chi_v_sno / nu_air / lambda_sno, 1./2.) *
-        tgamma((ve_sno + Delta_v_sno + 5.) / 2.)
+      (CLIMA_a_vent_sno + CLIMA_b_vent_sno * pow(CLIMA_nu_air / CLIMA_D_vapor, 1./3.) /
+        pow(CLIMA_r0_sno * lambda_sno, (CLIMA_ve_sno + CLIMA_Delta_v_sno) / 2.) *
+        pow(2. * CLIMA_v0_sno * CLIMA_Chi_v_sno / CLIMA_nu_air / lambda_sno, 1./2.) *
+        tgamma((CLIMA_ve_sno + CLIMA_Delta_v_sno + 5.) / 2.)
       );
   }
   else{
@@ -274,18 +281,18 @@ void CLIMA_snow_melt(double _q_sno, double rho, double T, double* qs_tendency_me
 
   double q_sno = fmax(0., _q_sno);
 
-  if(q_sno > microph_eps && T > Tf){
+  if(q_sno > CLIMA_microph_eps && T > Tf){
 
     double L_f = CLIMA_latent_heat_fusion(T);
 
-    double lambda_sno = CLIMA_lambda(q_sno, rho, CLIMA_n0_sno(q_sno, rho), m0_sno, me_sno, r0_sno, Chi_m_sno, Delta_m_sno);
+    double lambda_sno = CLIMA_lambda(q_sno, rho, CLIMA_n0_sno(q_sno, rho), CLIMA_m0_sno, CLIMA_me_sno, CLIMA_r0_sno, CLIMA_Chi_m_sno, CLIMA_Delta_m_sno);
 
     *qs_tendency_melt =
-      -4. * pi * CLIMA_n0_sno(q_sno, rho) / rho * K_therm / L_f * (T - Tf) / pow(lambda_sno, 2) *
-      (a_vent_sno + b_vent_sno * pow(nu_air / D_vapor, 1./3.) /
-        pow(r0_sno * lambda_sno, (ve_sno + Delta_v_sno) / 2.) *
-        pow(2. * v0_sno * Chi_v_sno / nu_air / lambda_sno, 1./2.) *
-        tgamma((ve_sno + Delta_v_sno + 5.) / 2.)
+      -4. * pi * CLIMA_n0_sno(q_sno, rho) / rho * CLIMA_K_therm / L_f * (T - Tf) / pow(lambda_sno, 2) *
+      (CLIMA_a_vent_sno + CLIMA_b_vent_sno * pow(CLIMA_nu_air / CLIMA_D_vapor, 1./3.) /
+        pow(CLIMA_r0_sno * lambda_sno, (CLIMA_ve_sno + CLIMA_Delta_v_sno) / 2.) *
+        pow(2. * CLIMA_v0_sno * CLIMA_Chi_v_sno / CLIMA_nu_air / lambda_sno, 1./2.) *
+        tgamma((CLIMA_ve_sno + CLIMA_Delta_v_sno + 5.) / 2.)
       );
   }
   else{
@@ -448,11 +455,11 @@ void CLIMA_microphysics_sources(const struct DimStruct *dims, struct LookupStruc
 
                     //... adjust the rates if necessary (rate factor is ad-hoc)
                     double rate_constant = 1.25;
-                    rate = rate_constant * ql_tendency_tmp * dt_ / (-fmax(ql_tmp, microph_rate_eps));
-                    rate = fmax(rate_constant * qr_tendency_tmp * dt_ / (-fmax(qr_tmp, microph_rate_eps)), rate);
-                    rate = fmax(rate_constant * qi_tendency_tmp * dt_ / (-fmax(qi_tmp, microph_rate_eps)), rate);
-                    rate = fmax(rate_constant * qs_tendency_tmp * dt_ / (-fmax(qs_tmp, microph_rate_eps)), rate);
-                    if(rate > 1.0 && iter_count < max_iter){
+                    rate = rate_constant * ql_tendency_tmp * dt_ / (-fmax(ql_tmp, CLIMA_microph_rate_eps));
+                    rate = fmax(rate_constant * qr_tendency_tmp * dt_ / (-fmax(qr_tmp, CLIMA_microph_rate_eps)), rate);
+                    rate = fmax(rate_constant * qi_tendency_tmp * dt_ / (-fmax(qi_tmp, CLIMA_microph_rate_eps)), rate);
+                    rate = fmax(rate_constant * qs_tendency_tmp * dt_ / (-fmax(qs_tmp, CLIMA_microph_rate_eps)), rate);
+                    if(rate > 1.0 && iter_count < CLIMA_max_iter){
                         //Limit the timestep, but don't allow it to become vanishingly small
                         //Don't adjust if we have reached the maximum iteration number
                         dt_ = fmax(dt_/rate, 1.0e-3);
