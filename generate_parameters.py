@@ -34,7 +34,7 @@ def main():
     # Clima 1-moment microphysics
     parameters['CLIMA_rho_cloud_liq'] = 1e3
     parameters['CLIMA_rho_cloud_ice'] = 916.7
-    parameters['CLIMA_T_icenuc'] = 263.15
+    parameters['CLIMA_T_icenuc'] = 233.0
     parameters['CLIMA_pow_icenuc'] = 1.0
     parameters['CLIMA_LH_v0'] = 2.5008e6
     parameters['CLIMA_LH_s0'] = 2.8344e6
