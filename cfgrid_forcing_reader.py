@@ -1,5 +1,5 @@
 import netCDF4 as nc
-#import pylab as plt
+import pylab as plt
 import numpy as np
 import os
 from scipy.signal import savgol_filter
@@ -49,8 +49,12 @@ class cfreader_grid:
         lat_mask = np.round(lat)==np.round(self.lat)
         lon_mask = np.round(lon)==np.round(self.lon)
         var_handle = op_grp.variables[var][...,lat_mask,lon_mask].squeeze()
-        assert ((ntime, nlev) == var_handle.shape or (ntime,) == var_handle.shape)
-        data = np.mean(var_handle, axis=0)
+        if ntime==1:
+            assert ((nlev,) == var_handle.shape or () == var_handle.shape)
+            data = var_handle
+        else:
+            assert ((ntime, nlev) == var_handle.shape or (ntime,) == var_handle.shape)
+            data = np.mean(var_handle, axis=0)
         op_grp.close()
         #print var, data
 
@@ -69,11 +73,15 @@ class cfreader_grid:
         lat_mask = np.round(lat)==np.round(self.lat)
         lon_mask = np.round(lon)==np.round(self.lon)
         var_handle = op_grp.variables[var][...,lat_mask,lon_mask].squeeze()
-        assert((ntime,) == var_handle.shape)
-        data = var_handle[:]
+        if ntime==1:
+            assert(() == var_handle.shape)
+            data = var_handle
+        else:
+            assert((ntime,) == var_handle.shape)
+            data = np.mean(var_handle[:], axis=0)
         op_grp.close()
 
-        return np.mean(data, axis=0)
+        return data
 
     def get_interp_profile(self, var, z, zero_bottom=False, filter=True):
         
@@ -147,11 +155,11 @@ def main():
     return
 
 if __name__ == "__main__":
-    path = './AM4_amip.2009-2014.07.nc'
-    lat = 17.0
-    lon = 211.25
+    path = './IPSL-CM6A-LR_historical.185507.nc'
+    lat = 39.3
+    lon = 265.0
 
-    rdr = cfreader(path, lat, lon)
+    rdr = cfreader_grid(path, lat, lon)
 
     #t = rdr.get_profile_mean('temp')
     #sphum = rdr.get_profile_mean('sphum')
@@ -165,16 +173,16 @@ if __name__ == "__main__":
         os.makedirs(interp_test_dir )
 
     vars = ['ta', 'hus',
-            'ua', 'va']
+            'ua', 'va', 'wap']
     height_gcm = rdr.get_profile_mean('zg')
-    height_les = np.linspace(0.0, 25600.0, 256)
+    height_les = np.linspace(0.0, 5000.0, 200)
     for v in vars:
         var_gcm = rdr.get_profile_mean(v)
         var_les_filt = rdr.get_interp_profile(v, height_les)
         var_les = rdr.get_interp_profile(v, height_les, filter=False)
 
         plt.figure()
-        plt.plot(var_gcm, height_gcm, 'o')
+        #plt.plot(var_gcm, height_gcm, 'o')
         plt.plot(var_les, height_les)
         plt.plot(var_les_filt, height_les, '.')
         plt.savefig(os.path.join(interp_test_dir, v + '_linear.pdf'))
