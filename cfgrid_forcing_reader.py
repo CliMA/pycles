@@ -1,5 +1,5 @@
 import netCDF4 as nc
-import pylab as plt
+#import pylab as plt
 import numpy as np
 import os
 from scipy.signal import savgol_filter
@@ -175,14 +175,14 @@ if __name__ == "__main__":
     vars = ['ta', 'hus',
             'ua', 'va', 'wap']
     height_gcm = rdr.get_profile_mean('zg')
-    height_les = np.linspace(0.0, 5000.0, 200)
+    height_les = np.linspace(0.0, 25600.0, 256)
     for v in vars:
         var_gcm = rdr.get_profile_mean(v)
         var_les_filt = rdr.get_interp_profile(v, height_les)
         var_les = rdr.get_interp_profile(v, height_les, filter=False)
 
         plt.figure()
-        #plt.plot(var_gcm, height_gcm, 'o')
+        plt.plot(var_gcm, height_gcm, 'o')
         plt.plot(var_les, height_les)
         plt.plot(var_les_filt, height_les, '.')
         plt.savefig(os.path.join(interp_test_dir, v + '_linear.pdf'))
