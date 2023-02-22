@@ -1030,7 +1030,7 @@ cdef class SurfaceRico(SurfaceBase):
             double [:] windspeed = np.zeros(Gr.dims.nlg[0]*Gr.dims.nlg[1], dtype=np.double, order='c')
             double ustar_
             double buoyancy_flux, theta_flux
-            double theta_surface = RS.Tg * exner_c(RS.Pg)
+            double theta_surface = RS.Tg / exner_c(RS.Pg)
 
             double cm_sqrt = sqrt(self.cm)
 
