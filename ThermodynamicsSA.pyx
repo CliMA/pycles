@@ -469,7 +469,7 @@ cdef class ThermodynamicsSA:
             ci_weighted_sum /= mean_divisor
 
         ci_weighted_sum = Pa.domain_scalar_sum(ci_weighted_sum)
-        NS.write_ts('cloud_fraction', ci_weighted_sum, Pa)
+        NS.write_ts('cloud_cover', ci_weighted_sum, Pa)
 
         # 062119[ZS]: Compute all or nothing cloud fraction for qc > 1.e-5
         ci_threshold = np.empty((z_pencil.n_local_pencils), dtype=np.double, order='c')
