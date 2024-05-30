@@ -44,7 +44,7 @@ def main(path, o_path):
         n_2 = dims['n_2'][0]
 
 
-	 x = dims['x'][:]
+	x = dims['x'][:]
         y = dims['y'][:] 
         z = dims['z'][:]  
 
@@ -126,6 +126,6 @@ def write_field(fname, f, data):
     rootgrp.close()
 
 if __name__ == "__main__":
-    o_path = "/central/groups/esm/zhaoyi/GCMForcedLES/cfsite/test/Output.cfsite23_era5_200307.4x/fields/432000/"
-    path = "/central/groups/esm/zhaoyi/GCMForcedLES/cfsite/test/Output.cfsite23_era5_200307.4x/fields/432000/" 
+    o_path = "/central/groups/esm/zhaoyi/pycles_clima/cfgrid/Output.cflat38lon270_dx10dz10_IPSL-CM6A-LR_historical.185007.4x/fields/92400/"
+    path = "/central/groups/esm/zhaoyi/pycles_clima/cfgrid/Output.cflat38lon270_dx10dz10_IPSL-CM6A-LR_historical.185007.4x/fields/92400/" 
     main(path, o_path)

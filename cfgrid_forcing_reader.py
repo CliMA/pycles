@@ -39,8 +39,9 @@ class cfreader_grid:
 
         return
 
-    def get_profile_mean(self, var, zero_bottom=False):
+    def get_profile_mean(self, var, zero_bottom=False, instant=False, t_idx=0):
 
+        # not working for instantaneous forcing
         op_grp = nc.Dataset(self.file, 'r')
         ntime = np.size(op_grp.dimensions['time'])
         nlev = np.size(op_grp.dimensions['lev'])
@@ -63,8 +64,9 @@ class cfreader_grid:
         else:
             return np.append(data, data[-1])[:-1]
 
-    def get_timeseries_mean(self, var):
+    def get_timeseries_mean(self, var, instant=False, t_idx=0):
 
+        # not working for instantaneous forcing
         op_grp = nc.Dataset(self.file, 'r')
         ntime = np.size(op_grp.dimensions['time'])
         nlev = np.size(op_grp.dimensions['lev'])
@@ -83,7 +85,7 @@ class cfreader_grid:
 
         return data
 
-    def get_interp_profile(self, var, z, zero_bottom=False, filter=True):
+    def get_interp_profile(self, var, z, zero_bottom=False, filter=True, instant=False, t_idx=0):
         
         '''
         :param var: name of variable in fms data
@@ -92,14 +94,14 @@ class cfreader_grid:
         :return: array of var interpolated onto z
         '''
 
-        data = self.get_profile_mean(var, zero_bottom)
-        z_gcm = self.get_profile_mean('zg', zero_bottom=True)
+        data = self.get_profile_mean(var, zero_bottom, instant=False, t_idx=0)
+        z_gcm = self.get_profile_mean('zg', zero_bottom=True, instant=False, t_idx=0)
 
         yn, dir_loc = mdi_interp(z_gcm, data, z) 
 
         return yn 
 
-    def get_interp_profile_old(self, var, z, zero_bottom=False, filter=False):
+    def get_interp_profile_old(self, var, z, zero_bottom=False, filter=False, instant=False, t_idx=0):
         
         '''
         :param var: name of variable in fms data
@@ -108,8 +110,8 @@ class cfreader_grid:
         :return: array of var interpolated onto z
         '''
 
-        data = self.get_profile_mean(var, zero_bottom)
-        z_gcm = self.get_profile_mean('zg', zero_bottom=True)
+        data = self.get_profile_mean(var, zero_bottom, instant=False, t_idx=0)
+        z_gcm = self.get_profile_mean('zg', zero_bottom=True, instant=False, t_idx=0)
         #print data 
         #print z_gcm 
         p_interp1= pchip(z_gcm[:].filled(), data[:].filled())#np.interp(z, z_gcm[:], data[:])
@@ -142,12 +144,15 @@ class cfreader_grid:
 
 
     def get_value(self, var):
-        rt_grp = nc.Dataset(self.file, 'r')
-        op_grp = rt_grp[self.op_grp]
-        var_handle =  op_grp.variables[var]
+        op_grp = nc.Dataset(self.file, 'r')
+        lat = np.array(op_grp.variables['lat'])
+        lon = np.array(op_grp.variables['lon'])
+        lat_mask = np.round(lat)==np.round(self.lat)
+        lon_mask = np.round(lon)==np.round(self.lon)
+        var_handle = op_grp.variables[var][lat_mask,lon_mask].squeeze()
         assert(() == var_handle.shape)
 
-        return var_handle[0]
+        return var_handle
 
 
 def main():
@@ -181,14 +186,17 @@ if __name__ == "__main__":
         var_les_filt = rdr.get_interp_profile(v, height_les)
         var_les = rdr.get_interp_profile(v, height_les, filter=False)
 
-        plt.figure()
-        plt.plot(var_gcm, height_gcm, 'o')
-        plt.plot(var_les, height_les)
-        plt.plot(var_les_filt, height_les, '.')
-        plt.savefig(os.path.join(interp_test_dir, v + '_linear.pdf'))
-        plt.close()
+        #plt.figure()
+        #plt.plot(var_gcm, height_gcm, 'o')
+        #plt.plot(var_les, height_les)
+        #plt.plot(var_les_filt, height_les, '.')
+        #plt.savefig(os.path.join(interp_test_dir, v + '_linear.pdf'))
+        #plt.close()
 
     ts_mean = rdr.get_timeseries_mean('ts')
     print(ts_mean)
+
+    coszen = rdr.get_value('coszen')
+    print(coszen)
 
     main()
